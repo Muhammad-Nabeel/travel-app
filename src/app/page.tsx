@@ -1,65 +1,182 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Building2, PlaneTakeoff, ShieldCheck } from "lucide-react";
+
+import { featuredPackages } from "@/lib/mock-data";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="flex-1 pb-20">
+      <section className="hero-grid border-b border-black/5">
+        <div className="section-shell py-6">
+          <div className="navbar rounded-full border border-black/5 bg-white/70 px-4 shadow-sm backdrop-blur">
+            <div className="flex-1">
+              <Link
+                href="/"
+                className="display-font text-3xl font-semibold tracking-wide text-brand-strong"
+              >
+                Safar Umrah
+              </Link>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/flights" className="btn btn-ghost btn-sm">
+                Flights
+              </Link>
+              <Link href="/hotels" className="btn btn-ghost btn-sm">
+                Hotels
+              </Link>
+              <Link href="/umrah-packages" className="btn btn-ghost btn-sm">
+                Packages
+              </Link>
+              <Link href="/admin" className="btn btn-primary btn-sm">
+                Admin
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-10 py-16 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+            <div className="space-y-8">
+              <div className="badge badge-secondary badge-outline px-4 py-4 text-xs uppercase tracking-[0.32em]">
+                Sabre + Amadeus Ready Foundation
+              </div>
+              <div className="space-y-5">
+                <h1 className="display-font max-w-4xl text-6xl leading-none text-brand-strong sm:text-7xl">
+                  Flights, hotels, and Umrah packages managed from one platform.
+                </h1>
+                <p className="max-w-2xl text-lg leading-8 text-muted">
+                  This starter implementation gives you a branded public site,
+                  admin package flow, Prisma data model, and placeholder flight
+                  and hotel search APIs ready to be wired to Sabre and Amadeus.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/umrah-packages"
+                  className="btn btn-primary btn-lg rounded-full px-7"
+                >
+                  View Packages
+                  <ArrowRight className="size-4" />
+                </Link>
+                <Link
+                  href="/admin/packages"
+                  className="btn btn-outline btn-lg rounded-full px-7"
+                >
+                  Open Admin Section
+                </Link>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
+                  <PlaneTakeoff className="mb-4 size-5 text-brand" />
+                  <h2 className="font-semibold">Flight Search</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    Normalized search flow ready for Sabre and Amadeus adapters.
+                  </p>
+                </article>
+                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
+                  <Building2 className="mb-4 size-5 text-accent" />
+                  <h2 className="font-semibold">Hotel Search</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    Hotel availability pages and API boundaries prepared for
+                    provider wiring.
+                  </p>
+                </article>
+                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
+                  <ShieldCheck className="mb-4 size-5 text-brand-strong" />
+                  <h2 className="font-semibold">Admin Packages</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    Admin-managed Umrah inventory with pricing, schedules, and
+                    publish state.
+                  </p>
+                </article>
+              </div>
+            </div>
+
+            <div className="surface ring-soft rounded-[2rem] border border-white/80 p-6 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.22em] text-muted">
+                    Implementation Snapshot
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-brand-strong">
+                    Phase 1 modules
+                  </h2>
+                </div>
+                <span className="badge badge-primary badge-outline">MVP</span>
+              </div>
+              <div className="space-y-4 text-sm leading-7 text-muted">
+                <div className="rounded-2xl bg-white/70 p-4">
+                  <p className="font-semibold text-foreground">Stack</p>
+                  <p>
+                    Next.js App Router, TypeScript, Tailwind CSS v4, DaisyUI,
+                    Prisma ORM, MySQL.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/70 p-4">
+                  <p className="font-semibold text-foreground">Domain areas</p>
+                  <p>
+                    Flights, hotels, bookings, public package browsing, and
+                    admin package management.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/70 p-4">
+                  <p className="font-semibold text-foreground">
+                    Provider strategy
+                  </p>
+                  <p>
+                    Search endpoints currently return normalized placeholder
+                    data and are ready for adapter-based provider integration.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section className="section-shell py-16">
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.28em] text-muted">
+              Admin-Curated Packages
+            </p>
+            <h2 className="display-font mt-3 text-5xl text-brand-strong">
+              Featured Umrah inventory
+            </h2>
+          </div>
+          <Link href="/umrah-packages" className="btn btn-ghost rounded-full">
+            Browse all
+          </Link>
         </div>
-      </main>
-    </div>
+        <div className="grid gap-5 lg:grid-cols-3">
+          {featuredPackages.map((item) => (
+            <article
+              key={item.slug}
+              className="surface ring-soft rounded-[2rem] border border-white/80 p-6"
+            >
+              <div className="flex items-center justify-between text-sm text-muted">
+                <span>{item.departureCity}</span>
+                <span className="badge badge-outline">{item.status}</span>
+              </div>
+              <h3 className="mt-5 text-2xl font-semibold text-brand-strong">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-muted">
+                {item.description}
+              </p>
+              <div className="mt-6 flex items-end justify-between">
+                <div>
+                  <p className="text-sm text-muted">Starting from</p>
+                  <p className="text-3xl font-semibold text-foreground">
+                    SAR {item.price}
+                  </p>
+                </div>
+                <p className="text-sm font-medium text-brand">
+                  {item.duration}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }

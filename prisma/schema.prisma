@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  AGENT
+}
+
+enum PackageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  FAILED
+}
+
+enum SearchProvider {
+  SABRE
+  AMADEUS
+  INTERNAL
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  passwordHash   String?
+  phone          String?
+  role           Role            @default(CUSTOMER)
+  bookings       Booking[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  packageOrders  PackageBooking[]
+}
+
+model UmrahPackage {
+  id                String           @id @default(cuid())
+  slug              String           @unique
+  title             String
+  subtitle          String?
+  description       String           @db.Text
+  makkahNights      Int
+  madinahNights     Int
+  departureCity     String
+  airlineNotes      String?
+  hotelSummary      String?
+  inclusions        Json
+  exclusions        Json
+  basePrice         Decimal          @db.Decimal(10, 2)
+  currency          String           @default("SAR")
+  seatsAvailable    Int              @default(0)
+  startDate         DateTime
+  endDate           DateTime
+  status            PackageStatus    @default(DRAFT)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  packageBookings   PackageBooking[]
+}
+
+model FlightSearchLog {
+  id              String         @id @default(cuid())
+  origin          String
+  destination     String
+  departureDate   DateTime
+  returnDate      DateTime?
+  adults          Int            @default(1)
+  children        Int            @default(0)
+  infants         Int            @default(0)
+  cabinClass      String?
+  provider        SearchProvider
+  requestPayload  Json
+  responsePayload Json?
+  searchedAt      DateTime       @default(now())
+}
+
+model HotelSearchLog {
+  id              String         @id @default(cuid())
+  cityCode        String
+  checkInDate     DateTime
+  checkOutDate    DateTime
+  guests          Int            @default(1)
+  rooms           Int            @default(1)
+  provider        SearchProvider
+  requestPayload  Json
+  responsePayload Json?
+  searchedAt      DateTime       @default(now())
+}
+
+model Booking {
+  id               String          @id @default(cuid())
+  reference        String          @unique
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  status           BookingStatus   @default(PENDING)
+  provider         SearchProvider
+  providerRecord   String?
+  totalAmount      Decimal         @db.Decimal(10, 2)
+  currency         String          @default("SAR")
+  flightData       Json?
+  hotelData        Json?
+  paymentData      Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model PackageBooking {
+  id             String         @id @default(cuid())
+  packageId      String
+  package        UmrahPackage   @relation(fields: [packageId], references: [id])
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  travelers      Int            @default(1)
+  status         BookingStatus  @default(PENDING)
+  totalAmount    Decimal        @db.Decimal(10, 2)
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}

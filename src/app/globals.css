@@ -1,26 +1,121 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6efe4;
+  --foreground: #1d2b24;
+  --card: #fffaf2;
+  --muted: #56675f;
+  --brand: #0f766e;
+  --brand-strong: #134e4a;
+  --accent: #d97706;
+  --ring: rgba(15, 118, 110, 0.2);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-plus-jakarta-sans);
+  --font-display: var(--font-cormorant-garamond);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@plugin "daisyui/theme" {
+  name: "safar";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #fffaf2;
+  --color-base-200: #f6efe4;
+  --color-base-300: #ece1d0;
+  --color-base-content: #1d2b24;
+  --color-primary: #0f766e;
+  --color-primary-content: #effcf9;
+  --color-secondary: #d97706;
+  --color-secondary-content: #fff7ed;
+  --color-accent: #134e4a;
+  --color-accent-content: #ecfdf5;
+  --color-neutral: #21332b;
+  --color-neutral-content: #f8fafc;
+  --color-info: #2563eb;
+  --color-success: #15803d;
+  --color-warning: #ca8a04;
+  --color-error: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
+  background-image:
+    radial-gradient(
+      circle at top left,
+      rgba(217, 119, 6, 0.12),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(15, 118, 110, 0.18),
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 250, 242, 0.96) 0%,
+      rgba(246, 239, 228, 1) 100%
+    );
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.display-font {
+  font-family: var(--font-cormorant-garamond), serif;
+}
+
+.surface {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 250, 242, 0.92) 0%,
+    rgba(255, 255, 255, 0.78) 100%
+  );
+  backdrop-filter: blur(12px);
+}
+
+.section-shell {
+  margin-inline: auto;
+  width: min(1180px, calc(100% - 2rem));
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(19, 78, 74, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 78, 74, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.ring-soft {
+  box-shadow:
+    0 0 0 1px rgba(29, 43, 36, 0.06),
+    0 18px 45px rgba(24, 39, 75, 0.08);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--ring);
 }
