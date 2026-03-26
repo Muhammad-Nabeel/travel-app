@@ -80,3 +80,23 @@ export const hotelResults = [
         currency: "SAR",
     },
 ];
+
+export const travelPartners = [
+    "flynas",
+    "Pakistan Intl",
+    "airblue",
+    "airsial",
+    "Sky Tours",
+    "OneTravel",
+    "Trip.com",
+];
+
+export const topDestinations = [
+    { city: "Dubai", fare: "PKR 38,400", notes: "Round-trip flights" },
+    { city: "Kuwait City", fare: "PKR 72,290", notes: "Round-trip flights" },
+    { city: "Bangkok", fare: "PKR 127,837", notes: "Round-trip flights" },
+    { city: "Peshawar", fare: "PKR 35,340", notes: "Round-trip flights" },
+    { city: "Taif", fare: "PKR 104,252", notes: "Round-trip flights" },
+    { city: "Salalah", fare: "PKR 89,536", notes: "Round-trip flights" },
+    { city: "Tabuk", fare: "PKR 89,423", notes: "Round-trip flights" },
+];

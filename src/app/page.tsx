@@ -1,180 +1,135 @@
-import Link from "next/link";
-import { ArrowRight, Building2, PlaneTakeoff, ShieldCheck } from "lucide-react";
+import { ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 
-import { featuredPackages } from "@/lib/mock-data";
+import { AirportSearchCard } from "@/components/airport-search-card";
+import { topDestinations, travelPartners } from "@/lib/mock-data";
 
 export default function Home() {
   return (
-    <main className="flex-1 pb-20">
-      <section className="hero-grid border-b border-black/5">
-        <div className="section-shell py-6">
-          <div className="navbar rounded-full border border-black/5 bg-white/70 px-4 shadow-sm backdrop-blur">
-            <div className="flex-1">
-              <Link
-                href="/"
-                className="display-font text-3xl font-semibold tracking-wide text-brand-strong"
-              >
-                Safar Umrah
-              </Link>
+    <main className="flex-1 bg-slate-100 text-slate-900">
+      <section className="home-hero pb-14 pt-7">
+        <div className="section-shell">
+          <div className="mb-10 flex items-center justify-between">
+            <div className="text-3xl font-bold tracking-tight text-white">
+              safar
             </div>
-            <div className="flex gap-2">
-              <Link href="/flights" className="btn btn-ghost btn-sm">
-                Flights
-              </Link>
-              <Link href="/hotels" className="btn btn-ghost btn-sm">
-                Hotels
-              </Link>
-              <Link href="/umrah-packages" className="btn btn-ghost btn-sm">
-                Packages
-              </Link>
-              <Link href="/admin" className="btn btn-primary btn-sm">
-                Admin
-              </Link>
+            <div className="hidden items-center gap-3 text-xs font-semibold text-white/90 sm:flex">
+              <span>EN</span>
+              <span className="rounded-full border border-white/40 px-3 py-1">
+                Support
+              </span>
+              <span className="rounded-full border border-white/40 px-3 py-1">
+                My Trips
+              </span>
+              <span className="rounded-full bg-white px-4 py-1 text-slate-900">
+                Login
+              </span>
             </div>
           </div>
 
-          <div className="grid gap-10 py-16 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div className="space-y-8">
-              <div className="badge badge-secondary badge-outline px-4 py-4 text-xs uppercase tracking-[0.32em]">
-                Sabre + Amadeus Ready Foundation
-              </div>
-              <div className="space-y-5">
-                <h1 className="display-font max-w-4xl text-6xl leading-none text-brand-strong sm:text-7xl">
-                  Flights, hotels, and Umrah packages managed from one platform.
-                </h1>
-                <p className="max-w-2xl text-lg leading-8 text-muted">
-                  This starter implementation gives you a branded public site,
-                  admin package flow, Prisma data model, and placeholder flight
-                  and hotel search APIs ready to be wired to Sabre and Amadeus.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/umrah-packages"
-                  className="btn btn-primary btn-lg rounded-full px-7"
-                >
-                  View Packages
-                  <ArrowRight className="size-4" />
-                </Link>
-                <Link
-                  href="/admin/packages"
-                  className="btn btn-outline btn-lg rounded-full px-7"
-                >
-                  Open Admin Section
-                </Link>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
-                  <PlaneTakeoff className="mb-4 size-5 text-brand" />
-                  <h2 className="font-semibold">Flight Search</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Normalized search flow ready for Sabre and Amadeus adapters.
-                  </p>
-                </article>
-                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
-                  <Building2 className="mb-4 size-5 text-accent" />
-                  <h2 className="font-semibold">Hotel Search</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Hotel availability pages and API boundaries prepared for
-                    provider wiring.
-                  </p>
-                </article>
-                <article className="surface ring-soft rounded-3xl border border-white/70 p-5">
-                  <ShieldCheck className="mb-4 size-5 text-brand-strong" />
-                  <h2 className="font-semibold">Admin Packages</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Admin-managed Umrah inventory with pricing, schedules, and
-                    publish state.
-                  </p>
-                </article>
-              </div>
-            </div>
-
-            <div className="surface ring-soft rounded-[2rem] border border-white/80 p-6 sm:p-8">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.22em] text-muted">
-                    Implementation Snapshot
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-brand-strong">
-                    Phase 1 modules
-                  </h2>
-                </div>
-                <span className="badge badge-primary badge-outline">MVP</span>
-              </div>
-              <div className="space-y-4 text-sm leading-7 text-muted">
-                <div className="rounded-2xl bg-white/70 p-4">
-                  <p className="font-semibold text-foreground">Stack</p>
-                  <p>
-                    Next.js App Router, TypeScript, Tailwind CSS v4, DaisyUI,
-                    Prisma ORM, MySQL.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/70 p-4">
-                  <p className="font-semibold text-foreground">Domain areas</p>
-                  <p>
-                    Flights, hotels, bookings, public package browsing, and
-                    admin package management.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/70 p-4">
-                  <p className="font-semibold text-foreground">
-                    Provider strategy
-                  </p>
-                  <p>
-                    Search endpoints currently return normalized placeholder
-                    data and are ready for adapter-based provider integration.
-                  </p>
-                </div>
-              </div>
+          <div className="mx-auto max-w-4xl text-center text-white">
+            <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
+              One simple search for flights and Umrah journeys
+            </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-white/90 sm:text-base">
+              Type a city name to search airports from a public dataset API and
+              jump directly into your flights flow.
+            </p>
+            <div className="mt-7">
+              <AirportSearchCard />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section-shell py-16">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.28em] text-muted">
-              Admin-Curated Packages
-            </p>
-            <h2 className="display-font mt-3 text-5xl text-brand-strong">
-              Featured Umrah inventory
-            </h2>
+      <section className="bg-white py-10">
+        <div className="section-shell text-center">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            Trusted by 83 million+ travellers worldwide
+          </h2>
+          <div className="mt-5 grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="text-2xl font-bold">4.7</p>
+              <p className="text-sm text-slate-500">230,575+ reviews</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold">4.6</p>
+              <p className="text-sm text-slate-500">91,002+ reviews</p>
+            </div>
           </div>
-          <Link href="/umrah-packages" className="btn btn-ghost rounded-full">
-            Browse all
-          </Link>
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
-          {featuredPackages.map((item) => (
-            <article
-              key={item.slug}
-              className="surface ring-soft rounded-[2rem] border border-white/80 p-6"
-            >
-              <div className="flex items-center justify-between text-sm text-muted">
-                <span>{item.departureCity}</span>
-                <span className="badge badge-outline">{item.status}</span>
-              </div>
-              <h3 className="mt-5 text-2xl font-semibold text-brand-strong">
-                {item.title}
+      </section>
+
+      <section className="py-10">
+        <div className="section-shell">
+          <h2 className="text-center text-xl font-semibold text-slate-800 sm:text-2xl">
+            700+ travel websites. One simple search
+          </h2>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-slate-500">
+            {travelPartners.map((partner) => (
+              <span
+                key={partner}
+                className="rounded-full bg-white px-4 py-2 shadow-sm"
+              >
+                {partner}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <article className="rounded-2xl bg-white p-5 shadow-sm">
+              <Sparkles className="mb-3 size-5 text-lime-500" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                Best flight deals in one place
               </h3>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                {item.description}
+              <p className="mt-2 text-sm text-slate-500">
+                Compare routes quickly with city-based airport suggestions.
               </p>
-              <div className="mt-6 flex items-end justify-between">
-                <div>
-                  <p className="text-sm text-muted">Starting from</p>
-                  <p className="text-3xl font-semibold text-foreground">
-                    SAR {item.price}
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-brand">
-                  {item.duration}
-                </p>
-              </div>
             </article>
-          ))}
+            <article className="rounded-2xl bg-white p-5 shadow-sm">
+              <WalletCards className="mb-3 size-5 text-sky-600" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                Flexible ways to pay
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                Prepare your flow for package deposits and installment options.
+              </p>
+            </article>
+            <article className="rounded-2xl bg-white p-5 shadow-sm">
+              <ShieldCheck className="mb-3 size-5 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                Support available 24/7
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                Admin and operations panels are ready for next phase
+                integration.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-16">
+        <div className="section-shell">
+          <h2 className="mb-5 text-center text-xl font-semibold text-slate-800 sm:text-2xl">
+            Top searched destinations from Karachi
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            {topDestinations.map((destination) => (
+              <article
+                key={destination.city}
+                className="destination-tile relative overflow-hidden rounded-xl p-4 text-white"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="relative">
+                  <h3 className="text-lg font-semibold">{destination.city}</h3>
+                  <p className="mt-8 text-xs text-white/85">
+                    {destination.notes}
+                  </p>
+                  <p className="text-sm font-bold">{destination.fare}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>

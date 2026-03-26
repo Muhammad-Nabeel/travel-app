@@ -2,7 +2,20 @@ import { PlaneTakeoff } from "lucide-react";
 
 import { flightResults } from "@/lib/mock-data";
 
-export default function FlightsPage() {
+type FlightsPageProps = {
+  searchParams?: Promise<{
+    origin?: string;
+    destination?: string;
+    originCity?: string;
+    destinationCity?: string;
+  }>;
+};
+
+export default async function FlightsPage({ searchParams }: FlightsPageProps) {
+  const params = await searchParams;
+  const origin = params?.origin ?? "LHE";
+  const destination = params?.destination ?? "JED";
+
   return (
     <main className="section-shell flex-1 py-14">
       <div className="surface ring-soft rounded-[2rem] border border-white/80 p-8">
@@ -23,7 +36,7 @@ export default function FlightsPage() {
             <span className="label-text mb-2 text-sm text-muted">Origin</span>
             <input
               className="input input-bordered rounded-2xl bg-white"
-              defaultValue="LHE"
+              defaultValue={origin}
             />
           </label>
           <label className="form-control">
@@ -32,7 +45,7 @@ export default function FlightsPage() {
             </span>
             <input
               className="input input-bordered rounded-2xl bg-white"
-              defaultValue="JED"
+              defaultValue={destination}
             />
           </label>
           <label className="form-control">
@@ -54,8 +67,8 @@ export default function FlightsPage() {
         </div>
 
         <p className="mt-4 text-sm leading-6 text-muted">
-          The next step here is wiring this page to Sabre and Amadeus adapters
-          through a normalized service layer.
+          Showing the selected route from the homepage airport search. Next step
+          is wiring live fares from Sabre and Amadeus adapters.
         </p>
 
         <div className="mt-8 space-y-4">
