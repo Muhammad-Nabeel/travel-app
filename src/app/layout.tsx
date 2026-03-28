@@ -34,7 +34,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <NavBar />
-        <main className="mx-auto max-w-6xl p-6">
+        <main className="w-full">
           <Suspense fallback={<Loading />}>{children}</Suspense>
         </main>
       </body>

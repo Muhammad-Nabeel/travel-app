@@ -41,7 +41,7 @@ const NavBar = () => {
             <PlaneTakeoff className="size-4" />
           </span>
           <span className="display-font text-2xl leading-none">
-            Safar Umrah
+            Safar
           </span>
         </Link>
 

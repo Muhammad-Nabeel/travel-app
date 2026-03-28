@@ -114,6 +114,36 @@ model Booking {
   updatedAt        DateTime        @updatedAt
 }
 
+model Destination {
+  id          String   @id @default(cuid())
+  city        String
+  country     String
+  iataCode    String?
+  fare        String
+  notes       String?
+  gradient    String   @default("blue")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  destinationId  String
+  title          String
+  category       String   @default("tourist-attraction")
+  description    String?  @db.Text
+  imageUrl       String
+  cost           String
+  reviews        Float    @default(4.5)
+  reviewCount    Int      @default(0)
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model PackageBooking {
   id             String         @id @default(cuid())
   packageId      String
