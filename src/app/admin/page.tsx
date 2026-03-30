@@ -50,6 +50,18 @@ export default function AdminPage() {
               destinations.
             </p>
           </Link>
+          <Link
+            href="/admin/blog"
+            className="rounded-3xl border border-black/5 bg-white/80 p-6 transition hover:-translate-y-0.5"
+          >
+            <h2 className="text-xl font-semibold text-foreground">
+              Blog posts
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Write, publish, and manage articles shown in the homepage blog
+              slider.
+            </p>
+          </Link>
           <div className="rounded-3xl border border-dashed border-black/10 bg-white/50 p-6">
             <h2 className="text-xl font-semibold text-foreground">
               Provider configuration

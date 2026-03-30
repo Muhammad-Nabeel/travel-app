@@ -4,6 +4,7 @@ import "./globals.css";
 import NavBar from "./navbar";
 import { Suspense } from "react";
 import Loading from "./loading";
+import { SiteFooter } from "@/components/shared/site-footer";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -34,9 +35,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <NavBar />
-        <main className="w-full">
+        <main className="w-full flex-1">
           <Suspense fallback={<Loading />}>{children}</Suspense>
         </main>
+        <SiteFooter />
       </body>
     </html>
   );

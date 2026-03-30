@@ -1,105 +1,80 @@
-import { PlaneTakeoff } from "lucide-react";
-
-import { flightResults } from "@/lib/mock-data";
+import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
+import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
+import { searchFlights } from "@/lib/flights/search-service";
 
 type FlightsPageProps = {
   searchParams?: Promise<{
+    tripType?: string;
     origin?: string;
     destination?: string;
-    originCity?: string;
-    destinationCity?: string;
+    departureDate?: string;
+    returnDate?: string;
+    adults?: string;
+    children?: string;
+    infants?: string;
+    cabinClass?: string;
+    directOnly?: string;
   }>;
 };
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {
-  const params = await searchParams;
-  const origin = params?.origin ?? "LHE";
-  const destination = params?.destination ?? "JED";
+  const resolvedSearchParams = (await searchParams) ?? {};
+  console.log("[Flights Page] Received searchParams:", resolvedSearchParams);
 
-  return (
-    <main className="section-shell flex-1 py-14">
-      <div className="surface ring-soft rounded-[2rem] border border-white/80 p-8">
-        <div className="flex items-center gap-3">
-          <PlaneTakeoff className="size-6 text-brand" />
+  const result = await searchFlights(resolvedSearchParams);
+  console.log("[Flights Page] Search result:", {
+    ok: result.ok,
+    errors: result.ok ? "none" : result.errors,
+  });
+
+  if (!result.ok) {
+    return (
+      <main className="section-shell flex-1 py-10">
+        <div className="alert alert-error bg-red-50 text-red-900">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Flights
-            </p>
-            <h1 className="display-font text-5xl text-brand-strong">
-              Flight search foundation
-            </h1>
+            <span>
+              Flight search query is invalid. Please review route, dates, and
+              passenger details.
+            </span>
+            {process.env.NODE_ENV === "development" && (
+              <pre className="mt-2 text-xs bg-red-100 p-2 rounded overflow-auto max-h-40">
+                {JSON.stringify(result.errors, null, 2)}
+              </pre>
+            )}
           </div>
         </div>
+      </main>
+    );
+  }
 
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">Origin</span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue={origin}
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">
-              Destination
-            </span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue={destination}
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">
-              Departure date
-            </span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="2026-04-12"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">Adults</span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="1"
-            />
-          </label>
-        </div>
+  const { query } = result;
 
-        <p className="mt-4 text-sm leading-6 text-muted">
-          Showing the selected route from the homepage airport search. Next step
-          is wiring live fares from Sabre and Amadeus adapters.
-        </p>
+  return (
+    <main className="flex-1 py-6">
+      <FlightSearchEngine
+        variant="embedded"
+        initialValues={{
+          tripType: query.tripType,
+          directOnly: query.directOnly,
+          adults: query.adults,
+          children: query.children,
+          infants: query.infants,
+          cabinClass: query.cabinClass,
+          origin: query.origin,
+          originIata: query.origin,
+          destination: query.destination,
+          destinationIata: query.destination,
+          departureDate: query.departureDate,
+          returnDate: query.returnDate,
+        }}
+      />
 
-        <div className="mt-8 space-y-4">
-          {flightResults.map((flight) => (
-            <article
-              key={flight.id}
-              className="rounded-[1.5rem] border border-black/5 bg-white/80 p-5"
-            >
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.18em] text-muted">
-                    {flight.provider}
-                  </p>
-                  <h2 className="mt-2 text-xl font-semibold text-foreground">
-                    {flight.airline}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    {flight.origin} to {flight.destination} · {flight.cabin}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted">Sample fare</p>
-                  <p className="text-3xl font-semibold text-brand-strong">
-                    {flight.currency} {flight.price}
-                  </p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
+      <FlightsResultsPanel
+        offers={result.results}
+        query={result.query}
+        source={result.source}
+        warnings={result.warnings}
+      />
     </main>
   );
 }

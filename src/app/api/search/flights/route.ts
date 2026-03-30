@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { flightResults } from "@/lib/mock-data";
-import { flightSearchSchema } from "@/lib/validations/search";
+import { searchFlights } from "@/lib/flights/search-service";
 
-export function GET(request: NextRequest) {
-    const parseResult = flightSearchSchema.safeParse({
-        origin: request.nextUrl.searchParams.get("origin") ?? "LHE",
-        destination: request.nextUrl.searchParams.get("destination") ?? "JED",
-        departureDate: request.nextUrl.searchParams.get("departureDate") ?? "2026-04-12",
-        adults: request.nextUrl.searchParams.get("adults") ?? "1",
-    });
+export async function GET(request: NextRequest) {
+    const result = await searchFlights(request.nextUrl.searchParams);
 
-    if (!parseResult.success) {
+    if (!result.ok) {
         return NextResponse.json(
             {
                 ok: false,
-                errors: parseResult.error.flatten(),
+                errors: result.errors,
             },
             { status: 400 },
         );
@@ -23,8 +17,9 @@ export function GET(request: NextRequest) {
 
     return NextResponse.json({
         ok: true,
-        query: parseResult.data,
-        results: flightResults,
-        note: "Replace mock results with Sabre and Amadeus adapters.",
+        query: result.query,
+        results: result.results,
+        source: result.source,
+        warnings: result.warnings,
     });
 }

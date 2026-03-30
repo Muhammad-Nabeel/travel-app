@@ -105,7 +105,7 @@ export function ActivitiesSlider() {
                 className="h-full w-full object-cover"
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/20 to-transparent" />
 
               {/* Category badge */}
               <div className="absolute right-3 top-3">

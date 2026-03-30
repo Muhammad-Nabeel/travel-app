@@ -157,3 +157,26 @@ model PackageBooking {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogPost {
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  title          String
+  excerpt        String     @db.Text
+  content        String     @db.LongText
+  coverImageUrl  String
+  author         String     @default("AIM Digital")
+  category       String     @default("travel")
+  tags           Json       @default("[]")
+  status         BlogStatus @default(DRAFT)
+  publishedAt    DateTime?
+  sortOrder      Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}

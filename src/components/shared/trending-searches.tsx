@@ -1,3 +1,4 @@
+import { TrendingUp } from "lucide-react";
 import styles from "./trending-searches.module.css";
 
 type TrendingRoute = {
@@ -13,7 +14,10 @@ type TrendingSearchesProps = {
 export function TrendingSearches({ routes, onSelect }: TrendingSearchesProps) {
   return (
     <div className={styles.trendingRoot}>
-      <p className={styles.trendingTitle}>Trending</p>
+      <p className={styles.trendingTitle}>
+        <TrendingUp className="mr-1 inline-block h-3 w-3 align-middle" />
+        Trending searches
+      </p>
       <div className={styles.trendingList}>
         {routes.map((route) => (
           <button
