@@ -15,14 +15,30 @@ import {
 
 import type { FlightOffer } from "@/lib/flights/types";
 import { FlightInfoTooltip } from "@/components/features/flights/flight-info-tooltip";
-import { getAirlineName, getAirportDisplay } from "@/lib/aviation-reference";
+
+type AirportLookupEntry = {
+  iata: string;
+  city: string;
+  country: string;
+  airportName: string;
+};
 
 type FlightResultCardProps = {
   offer: FlightOffer;
   defaultOpen?: boolean;
   highlighted?: boolean;
   onSelect?: () => void;
+  airportLookup?: Record<string, AirportLookupEntry>;
+  airlineLookup?: Record<string, string>;
 };
+
+function normalizeAirportCode(value: string) {
+  return value.trim().toUpperCase().slice(0, 3);
+}
+
+function normalizeAirlineCode(value: string) {
+  return value.trim().toUpperCase().slice(0, 3);
+}
 
 function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("en-US", {
@@ -114,13 +130,17 @@ export function FlightResultCard({
   defaultOpen = false,
   highlighted = false,
   onSelect,
+  airportLookup,
+  airlineLookup,
 }: FlightResultCardProps) {
   const [open, setOpen] = useState(defaultOpen);
   const stopoverInfos = getStopoverInfos(offer);
   const dayOffset = getDayOffsetLabel(offer.departure, offer.arrival);
-  const originRef = getAirportDisplay(offer.origin);
-  const destinationRef = getAirportDisplay(offer.destination);
-  const airlineName = getAirlineName(offer.airline) ?? offer.airline;
+  const originRef = airportLookup?.[normalizeAirportCode(offer.origin)];
+  const destinationRef =
+    airportLookup?.[normalizeAirportCode(offer.destination)];
+  const airlineName =
+    airlineLookup?.[normalizeAirlineCode(offer.airline)] ?? offer.airline;
 
   const hasLegs = (offer.legs?.length ?? 0) > 0;
   const hasMultiSegment =

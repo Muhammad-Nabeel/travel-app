@@ -15,6 +15,13 @@ type FlightsResultsPanelProps = {
 
 type SortBy = "recommended" | "lowest-price" | "shortest-duration" | "earliest";
 
+type AirportLookupEntry = {
+  iata: string;
+  city: string;
+  country: string;
+  airportName: string;
+};
+
 export function FlightsResultsPanel({
   offers,
   query,
@@ -29,6 +36,12 @@ export function FlightsResultsPanel({
   const [page, setPage] = useState(1);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(
     offers[0]?.id ?? null,
+  );
+  const [airportLookup, setAirportLookup] = useState<
+    Record<string, AirportLookupEntry>
+  >({});
+  const [airlineLookup, setAirlineLookup] = useState<Record<string, string>>(
+    {},
   );
 
   const maxPrice = useMemo(() => {
@@ -97,6 +110,58 @@ export function FlightsResultsPanel({
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
   );
+
+  useEffect(() => {
+    if (pagedOffers.length === 0) {
+      setAirportLookup({});
+      setAirlineLookup({});
+      return;
+    }
+
+    const airportCodes = Array.from(
+      new Set(
+        pagedOffers
+          .flatMap((offer) => [offer.origin, offer.destination])
+          .map((c) => c.trim().toUpperCase().slice(0, 3))
+          .filter(Boolean),
+      ),
+    );
+
+    const airlineCodes = Array.from(
+      new Set(
+        pagedOffers
+          .map((offer) => offer.airline.trim().toUpperCase().slice(0, 3))
+          .filter((c) => c.length >= 2),
+      ),
+    );
+
+    const params = new URLSearchParams();
+    if (airportCodes.length > 0) params.set("airports", airportCodes.join(","));
+    if (airlineCodes.length > 0) params.set("airlines", airlineCodes.join(","));
+
+    let cancelled = false;
+
+    fetch(`/api/aviation/lookup?${params.toString()}`, {
+      cache: "force-cache",
+    })
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error("lookup failed")),
+      )
+      .then((data) => {
+        if (cancelled) return;
+        setAirportLookup(data.airports ?? {});
+        setAirlineLookup(data.airlines ?? {});
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAirportLookup({});
+        setAirlineLookup({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pagedOffers]);
 
   useEffect(() => {
     if (pagedOffers.length === 0) {
@@ -295,6 +360,8 @@ export function FlightsResultsPanel({
                   offer={offer}
                   highlighted={selectedOffer?.id === offer.id}
                   onSelect={() => setSelectedOfferId(offer.id)}
+                  airportLookup={airportLookup}
+                  airlineLookup={airlineLookup}
                 />
               ))}
 

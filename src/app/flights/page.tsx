@@ -1,5 +1,6 @@
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
+import { getAirportDisplay } from "@/lib/aviation-reference";
 import { searchFlights } from "@/lib/flights/search-service";
 
 type FlightsPageProps = {
@@ -48,6 +49,14 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   }
 
   const { query } = result;
+  const originDisplay = getAirportDisplay(query.origin);
+  const destinationDisplay = getAirportDisplay(query.destination);
+  const originLabel = originDisplay
+    ? `${originDisplay.city} (${query.origin})`
+    : query.origin;
+  const destinationLabel = destinationDisplay
+    ? `${destinationDisplay.city} (${query.destination})`
+    : query.destination;
 
   return (
     <main className="flex-1 py-6">
@@ -60,9 +69,9 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
           children: query.children,
           infants: query.infants,
           cabinClass: query.cabinClass,
-          origin: query.origin,
+          origin: originLabel,
           originIata: query.origin,
-          destination: query.destination,
+          destination: destinationLabel,
           destinationIata: query.destination,
           departureDate: query.departureDate,
           returnDate: query.returnDate,

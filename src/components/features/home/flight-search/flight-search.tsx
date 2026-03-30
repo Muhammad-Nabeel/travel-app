@@ -16,6 +16,7 @@ import styles from "./flight-search-engine.module.css";
 import { AirportInput, type Airport } from "../../../shared/airport-input";
 import { TrendingSearches } from "../../../shared/trending-searches";
 import type { CabinClass, TripType } from "@/lib/flights/types";
+import { flightSearchSchema } from "@/lib/validations/search";
 
 const CABIN_CLASSES = [
   "Economy",
@@ -118,45 +119,39 @@ export function FlightSearchEngine({
   const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
 
-    // Client-side validation for airport codes
-    const originCode = originIata || origin.trim().toUpperCase();
-    const destCode = destinationIata || destination.trim().toUpperCase();
-    const originMatch = originCode.match(/[A-Z]{3}/);
-    const destMatch = destCode.match(/[A-Z]{3}/);
+    const validation = flightSearchSchema.safeParse({
+      tripType,
+      origin: originIata || origin,
+      destination: destinationIata || destination,
+      departureDate,
+      returnDate,
+      adults,
+      children,
+      infants: boundedInfants,
+      cabinClass,
+      directOnly,
+    });
 
-    if (!originMatch || !originMatch[0]) {
-      window.alert("Please select a valid origin airport.");
-      return;
-    }
-    if (!destMatch || !destMatch[0]) {
-      window.alert("Please select a valid destination airport.");
-      return;
-    }
-    if (!departureDate) {
-      window.alert("Please select a departure date.");
+    if (!validation.success) {
+      const firstIssue = validation.error.issues[0];
+      window.alert(firstIssue?.message ?? "Please review your search details.");
       return;
     }
 
-    if (
-      tripType === "round-trip" &&
-      returnDate &&
-      new Date(returnDate) < new Date(departureDate)
-    ) {
-      window.alert("Return date must be on or after the departure date.");
-      return;
-    }
+    const parsed = validation.data;
 
     const params = new URLSearchParams({
-      tripType,
-      origin: originMatch[0],
-      destination: destMatch[0],
-      departureDate,
-      returnDate: tripType === "round-trip" ? returnDate : "",
-      adults: String(adults),
-      children: String(children),
-      infants: String(boundedInfants),
-      cabinClass,
-      directOnly: String(directOnly),
+      tripType: parsed.tripType,
+      origin: parsed.origin,
+      destination: parsed.destination,
+      departureDate: parsed.departureDate,
+      returnDate:
+        parsed.tripType === "round-trip" ? (parsed.returnDate ?? "") : "",
+      adults: String(parsed.adults),
+      children: String(parsed.children),
+      infants: String(parsed.infants),
+      cabinClass: parsed.cabinClass,
+      directOnly: String(parsed.directOnly),
     });
     router.push(`/flights?${params.toString()}`);
   };
@@ -192,10 +187,7 @@ export function FlightSearchEngine({
           </div>
         ) : null}
 
-        <form
-          className={`${styles.searchCard} mx-auto max-w-6xl`}
-          onSubmit={handleSubmit}
-        >
+        <form className={styles.searchCard} onSubmit={handleSubmit}>
           {/* Controls row */}
           <div className={styles.controlsRow}>
             <div className={styles.tripTypeTabs}>
