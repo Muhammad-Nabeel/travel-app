@@ -1,7 +1,23 @@
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
+import { ActivitiesSlider } from "@/components/features/home/activities-slider";
+import { BlogSlider } from "@/components/features/home/blog-slider";
+import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
+import { CustomerSupport } from "@/components/shared/customer-support";
 import { getAirportDisplay } from "@/lib/aviation-reference";
 import { searchFlights } from "@/lib/flights/search-service";
+
+function HomeLayout() {
+  return (
+    <main className="flex-1">
+      <FlightSearchEngine />
+      <CustomerSupport />
+      <DestinationsSlider />
+      <ActivitiesSlider />
+      <BlogSlider />
+    </main>
+  );
+}
 
 type FlightsPageProps = {
   searchParams?: Promise<{
@@ -20,6 +36,16 @@ type FlightsPageProps = {
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
+
+  // No search yet — render the same layout as the home page
+  if (
+    !resolvedSearchParams.origin ||
+    !resolvedSearchParams.destination ||
+    !resolvedSearchParams.departureDate
+  ) {
+    return <HomeLayout />;
+  }
+
   console.log("[Flights Page] Received searchParams:", resolvedSearchParams);
 
   const result = await searchFlights(resolvedSearchParams);

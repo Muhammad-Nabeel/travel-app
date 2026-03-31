@@ -26,8 +26,51 @@ const CATEGORY_COLORS: Record<string, string> = {
   shopping: "bg-pink-100 text-pink-700",
 };
 
+function ActivitiesSkeleton() {
+  return (
+    <section className="section-shell py-10">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <div className="h-7 w-52 animate-pulse rounded-lg bg-slate-200" />
+          <div className="mt-2 h-4 w-64 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+        </div>
+      </div>
+      <div className="flex gap-4 overflow-hidden pb-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex min-w-[288px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow sm:min-w-[320px]"
+          >
+            <div className="relative h-48 animate-pulse bg-slate-200">
+              <div className="absolute right-3 top-3 h-5 w-20 animate-pulse rounded-full bg-slate-300" />
+            </div>
+            <div className="flex flex-col gap-2 p-4">
+              <div className="h-5 w-3/4 animate-pulse rounded bg-slate-200" />
+              <div className="flex gap-1">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <div
+                    key={j}
+                    className="h-3 w-3 animate-pulse rounded bg-slate-200"
+                  />
+                ))}
+                <div className="ml-1 h-3 w-8 animate-pulse rounded bg-slate-100" />
+              </div>
+              <div className="mt-1 h-4 w-1/3 animate-pulse rounded bg-slate-200" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function ActivitiesSlider() {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -36,8 +79,11 @@ export function ActivitiesSlider() {
     fetch("/api/activities")
       .then((r) => r.json())
       .then((data) => setActivities(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) return <ActivitiesSkeleton />;
 
   const updateArrows = () => {
     const el = scrollRef.current;

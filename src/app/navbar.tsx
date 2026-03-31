@@ -3,12 +3,25 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Moon, PlaneTakeoff, Sun } from "lucide-react";
+import {
+  BedDouble,
+  FileCheck2,
+  LogIn,
+  Moon,
+  Package,
+  Plane,
+  PlaneTakeoff,
+  ShieldCheck,
+  Sun,
+  UserPlus,
+} from "lucide-react";
 
 const links = [
-  { href: "/flights", label: "Flights" },
-  { href: "/hotels", label: "Hotels" },
-  { href: "/umrah-packages", label: "Packages" },
+  { href: "/flights", label: "Flights", icon: Plane },
+  { href: "/hotels", label: "Hotels", icon: BedDouble },
+  { href: "/umrah-packages", label: "Packages", icon: Package },
+  { href: "/insurance", label: "Insurance", icon: ShieldCheck },
+  { href: "/visa", label: "Visa", icon: FileCheck2 },
 ];
 
 const NavBar = () => {
@@ -26,7 +39,7 @@ const NavBar = () => {
   useEffect(() => {
     document.documentElement.setAttribute(
       "data-theme",
-      dark ? "safar-dark" : "safar",
+      dark ? "business" : "corporate",
     );
   }, [dark]);
 
@@ -52,19 +65,21 @@ const NavBar = () => {
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
-          {links.map((item) => {
-            const active = pathname === item.href;
+          {links.map(({ href, label, icon: Icon }) => {
+            const active =
+              pathname === href || (href === "/flights" && pathname === "/");
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={href}
+                href={href}
                 className={
                   active
-                    ? "rounded-full bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/90 hover:text-white!"
-                    : "rounded-full px-4 py-2 text-sm font-medium text-black/80 transition hover:bg-black/10 hover:text-black"
+                    ? "flex items-center gap-1.5 rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                    : "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-black/10 hover:text-black"
                 }
               >
-                {item.label}
+                <Icon className="size-3.5" />
+                {label}
               </Link>
             );
           })}
@@ -82,16 +97,18 @@ const NavBar = () => {
           </button>
 
           <Link
-            href="/admin"
-            className="rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
+            href="/signin"
+            className="flex items-center gap-1.5 rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
           >
-            Admin
+            <LogIn className="size-4" />
+            Sign In
           </Link>
           <Link
-            href="/admin"
-            className="rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
+            href="/signup"
+            className="flex items-center gap-1.5 rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
           >
-            Login / Signup
+            <UserPlus className="size-4" />
+            Sign Up
           </Link>
         </div>
       </nav>

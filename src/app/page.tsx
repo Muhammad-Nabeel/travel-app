@@ -9,13 +9,13 @@ export default function Home() {
     <main className="flex-1">
       <FlightSearchEngine />
 
+      <CustomerSupport />
+
       <DestinationsSlider />
 
       <ActivitiesSlider />
 
       <BlogSlider />
-
-      <CustomerSupport />
     </main>
   );
 }

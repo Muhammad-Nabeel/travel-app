@@ -23,8 +23,36 @@ const GRADIENTS: Record<string, string> = {
   navy: "linear-gradient(130deg, #14213d 0%, #3a506b 45%, #5bc0be 100%)",
 };
 
+function DestinationsSkeleton() {
+  return (
+    <section className="section-shell py-10">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <div className="h-7 w-52 animate-pulse rounded-lg bg-slate-200" />
+          <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+        </div>
+      </div>
+      <div className="flex gap-4 overflow-hidden pb-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-48 min-w-[220px] shrink-0 animate-pulse rounded-2xl bg-slate-200 sm:min-w-[260px]"
+          >
+            <div className="m-3 h-5 w-10 rounded-md bg-white/40" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function DestinationsSlider() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(true);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,8 +61,11 @@ export function DestinationsSlider() {
     fetch("/api/destinations")
       .then((r) => r.json())
       .then((data) => setDestinations(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) return <DestinationsSkeleton />;
 
   const updateArrows = () => {
     const el = scrollRef.current;

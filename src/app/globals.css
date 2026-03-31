@@ -1,29 +1,29 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* ── Light theme tokens ─────────────────────────────────── */
+/* ── Light theme tokens (corporate) ────────────────────── */
 :root {
-  --background: #f0f9ff; /* sky-50 */
-  --foreground: #0c1a2e; /* near-black with blue tint */
+  --background: #f8f9ff; /* near-white with blue tint */
+  --foreground: #1d1d1d; /* corporate base-content */
   --card: #ffffff;
-  --muted: #4d7a99; /* muted steel-blue */
-  --brand: #0284c7; /* sky-600 */
-  --brand-strong: #0369a1; /* sky-700 */
-  --accent: #f59e0b; /* amber-400 keep warm contrast */
-  --ring: rgba(2, 132, 199, 0.22);
+  --muted: #6b7280;
+  --brand: #4b6bfb; /* corporate primary */
+  --brand-strong: #3451fa;
+  --accent: #67cba0; /* corporate accent */
+  --ring: rgba(75, 107, 251, 0.22);
 }
 
-/* ── Dark theme tokens ──────────────────────────────────── */
+/* ── Dark theme tokens (business) ──────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b1622;
-    --foreground: #e0f2fe; /* sky-100 */
-    --card: #112136;
-    --muted: #7ab3ce;
-    --brand: #38bdf8; /* sky-400 */
-    --brand-strong: #7dd3fc; /* sky-300 */
-    --accent: #fbbf24;
-    --ring: rgba(56, 189, 248, 0.25);
+    --background: #1d232a; /* business base-100 */
+    --foreground: #a6adbb; /* business base-content */
+    --card: #191e24;
+    --muted: #6b7280;
+    --brand: #1c4f82; /* business primary */
+    --brand-strong: #1a4270;
+    --accent: #67cba0;
+    --ring: rgba(28, 79, 130, 0.3);
   }
 }
 
@@ -37,54 +37,6 @@
   --color-accent: var(--accent);
   --font-sans: var(--font-plus-jakarta-sans);
   --font-display: var(--font-cormorant-garamond);
-}
-
-/* ── DaisyUI light theme ────────────────────────────────── */
-@plugin "daisyui/theme" {
-  name: "safar";
-  default: true;
-  prefersdark: false;
-  color-scheme: light;
-  --color-base-100: #ffffff;
-  --color-base-200: #f0f9ff; /* sky-50 */
-  --color-base-300: #e0f2fe; /* sky-100 */
-  --color-base-content: #0c1a2e;
-  --color-primary: #0284c7; /* sky-600 */
-  --color-primary-content: #ffffff;
-  --color-secondary: #0ea5e9; /* sky-500 — lighter sky for secondary */
-  --color-secondary-content: #ffffff;
-  --color-accent: #f59e0b; /* amber warmth */
-  --color-accent-content: #1c0a00;
-  --color-neutral: #0f172a;
-  --color-neutral-content: #f0f9ff;
-  --color-info: #0369a1;
-  --color-success: #15803d;
-  --color-warning: #ca8a04;
-  --color-error: #dc2626;
-}
-
-/* ── DaisyUI dark theme ─────────────────────────────────── */
-@plugin "daisyui/theme" {
-  name: "safar-dark";
-  default: false;
-  prefersdark: true;
-  color-scheme: dark;
-  --color-base-100: #0b1622;
-  --color-base-200: #0f2032;
-  --color-base-300: #162a40;
-  --color-base-content: #e0f2fe;
-  --color-primary: #38bdf8; /* sky-400 */
-  --color-primary-content: #0b1622;
-  --color-secondary: #7dd3fc; /* sky-300 */
-  --color-secondary-content: #0b1622;
-  --color-accent: #fbbf24;
-  --color-accent-content: #1c0a00;
-  --color-neutral: #e0f2fe;
-  --color-neutral-content: #0b1622;
-  --color-info: #38bdf8;
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-error: #f87171;
 }
 
 * {
@@ -102,35 +54,35 @@ body {
   background-image:
     radial-gradient(
       circle at top left,
-      rgba(14, 165, 233, 0.1),
-      /* sky-500 tint */ transparent 28%
+      rgba(75, 107, 251, 0.08),
+      /* corporate primary tint */ transparent 28%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(2, 132, 199, 0.12),
-      /* sky-600 tint */ transparent 32%
+      rgba(103, 203, 160, 0.1),
+      /* corporate accent tint */ transparent 32%
     ),
     linear-gradient(
       180deg,
-      rgba(240, 249, 255, 0.97) 0%,
-      /* sky-50 */ rgba(224, 242, 254, 1) 100% /* sky-100 */
+      rgba(248, 249, 255, 0.97) 0%,
+      rgba(235, 238, 255, 1) 100%
     );
 }
 
-[data-theme="safar-dark"] body,
-[data-theme="safar-dark"] {
+[data-theme="business"] body,
+[data-theme="business"] {
   background-image:
     radial-gradient(
       circle at top left,
-      rgba(56, 189, 248, 0.08),
+      rgba(28, 79, 130, 0.15),
       transparent 28%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(14, 165, 233, 0.1),
+      rgba(103, 203, 160, 0.08),
       transparent 32%
     ),
-    linear-gradient(180deg, rgba(11, 22, 34, 0.99) 0%, rgba(15, 32, 50, 1) 100%);
+    linear-gradient(180deg, rgba(29, 35, 42, 0.99) 0%, rgba(25, 30, 36, 1) 100%);
 }
 
 a {
@@ -158,15 +110,15 @@ a {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(2, 132, 199, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(2, 132, 199, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(75, 107, 251, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 107, 251, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
 .ring-soft {
   box-shadow:
-    0 0 0 1px rgba(2, 132, 199, 0.08),
-    0 18px 45px rgba(2, 132, 199, 0.1);
+    0 0 0 1px rgba(75, 107, 251, 0.08),
+    0 18px 45px rgba(75, 107, 251, 0.1);
 }
 
 .destination-tile {
