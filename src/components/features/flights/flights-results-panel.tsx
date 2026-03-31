@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, Clock3, Plane } from "lucide-react";
 
 import { FlightFiltersPanel } from "@/components/features/flights/flight-filters-panel";
@@ -34,6 +35,24 @@ export function FlightsResultsPanel({
 }: FlightsResultsPanelProps) {
   const PAGE_SIZE = 10;
   const isRoundTrip = query.tripType === "round-trip";
+  const router = useRouter();
+
+  function buildBookingUrl(offerId: string) {
+    const p = new URLSearchParams({
+      offerId,
+      tripType: query.tripType,
+      origin: query.origin,
+      destination: query.destination,
+      departureDate: query.departureDate,
+      adults: String(query.adults),
+      children: String(query.children),
+      infants: String(query.infants),
+      cabinClass: query.cabinClass,
+      directOnly: String(query.directOnly),
+    });
+    if (query.returnDate) p.set("returnDate", query.returnDate);
+    return `/flights/booking?${p.toString()}`;
+  }
 
   const [sortBy, setSortBy] = useState<SortBy>("lowest-price");
   const [stopsFilter, setStopsFilter] = useState<"all" | "direct" | "one-plus">(
@@ -479,6 +498,7 @@ export function FlightsResultsPanel({
                 <button
                   type="button"
                   className="btn btn-primary min-w-[96px] rounded-xl shadow-sm"
+                  onClick={() => router.push(buildBookingUrl(selectedOffer.id))}
                 >
                   Book now
                 </button>

@@ -1,15 +1,30 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* ── Light theme tokens ─────────────────────────────────── */
 :root {
-  --background: #f6efe4;
-  --foreground: #1d2b24;
-  --card: #fffaf2;
-  --muted: #56675f;
-  --brand: #0f766e;
-  --brand-strong: #134e4a;
-  --accent: #d97706;
-  --ring: rgba(15, 118, 110, 0.2);
+  --background: #f0f9ff; /* sky-50 */
+  --foreground: #0c1a2e; /* near-black with blue tint */
+  --card: #ffffff;
+  --muted: #4d7a99; /* muted steel-blue */
+  --brand: #0284c7; /* sky-600 */
+  --brand-strong: #0369a1; /* sky-700 */
+  --accent: #f59e0b; /* amber-400 keep warm contrast */
+  --ring: rgba(2, 132, 199, 0.22);
+}
+
+/* ── Dark theme tokens ──────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1622;
+    --foreground: #e0f2fe; /* sky-100 */
+    --card: #112136;
+    --muted: #7ab3ce;
+    --brand: #38bdf8; /* sky-400 */
+    --brand-strong: #7dd3fc; /* sky-300 */
+    --accent: #fbbf24;
+    --ring: rgba(56, 189, 248, 0.25);
+  }
 }
 
 @theme inline {
@@ -24,27 +39,52 @@
   --font-display: var(--font-cormorant-garamond);
 }
 
+/* ── DaisyUI light theme ────────────────────────────────── */
 @plugin "daisyui/theme" {
   name: "safar";
   default: true;
   prefersdark: false;
   color-scheme: light;
-  --color-base-100: #fffaf2;
-  --color-base-200: #f6efe4;
-  --color-base-300: #ece1d0;
-  --color-base-content: #1d2b24;
-  --color-primary: #0f766e;
-  --color-primary-content: #effcf9;
-  --color-secondary: #d97706;
-  --color-secondary-content: #fff7ed;
-  --color-accent: #134e4a;
-  --color-accent-content: #ecfdf5;
-  --color-neutral: #21332b;
-  --color-neutral-content: #f8fafc;
-  --color-info: #2563eb;
+  --color-base-100: #ffffff;
+  --color-base-200: #f0f9ff; /* sky-50 */
+  --color-base-300: #e0f2fe; /* sky-100 */
+  --color-base-content: #0c1a2e;
+  --color-primary: #0284c7; /* sky-600 */
+  --color-primary-content: #ffffff;
+  --color-secondary: #0ea5e9; /* sky-500 — lighter sky for secondary */
+  --color-secondary-content: #ffffff;
+  --color-accent: #f59e0b; /* amber warmth */
+  --color-accent-content: #1c0a00;
+  --color-neutral: #0f172a;
+  --color-neutral-content: #f0f9ff;
+  --color-info: #0369a1;
   --color-success: #15803d;
   --color-warning: #ca8a04;
   --color-error: #dc2626;
+}
+
+/* ── DaisyUI dark theme ─────────────────────────────────── */
+@plugin "daisyui/theme" {
+  name: "safar-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #0b1622;
+  --color-base-200: #0f2032;
+  --color-base-300: #162a40;
+  --color-base-content: #e0f2fe;
+  --color-primary: #38bdf8; /* sky-400 */
+  --color-primary-content: #0b1622;
+  --color-secondary: #7dd3fc; /* sky-300 */
+  --color-secondary-content: #0b1622;
+  --color-accent: #fbbf24;
+  --color-accent-content: #1c0a00;
+  --color-neutral: #e0f2fe;
+  --color-neutral-content: #0b1622;
+  --color-info: #38bdf8;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
 }
 
 * {
@@ -62,19 +102,35 @@ body {
   background-image:
     radial-gradient(
       circle at top left,
-      rgba(217, 119, 6, 0.12),
+      rgba(14, 165, 233, 0.1),
+      /* sky-500 tint */ transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(2, 132, 199, 0.12),
+      /* sky-600 tint */ transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(240, 249, 255, 0.97) 0%,
+      /* sky-50 */ rgba(224, 242, 254, 1) 100% /* sky-100 */
+    );
+}
+
+[data-theme="safar-dark"] body,
+[data-theme="safar-dark"] {
+  background-image:
+    radial-gradient(
+      circle at top left,
+      rgba(56, 189, 248, 0.08),
       transparent 28%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(15, 118, 110, 0.18),
+      rgba(14, 165, 233, 0.1),
       transparent 32%
     ),
-    linear-gradient(
-      180deg,
-      rgba(255, 250, 242, 0.96) 0%,
-      rgba(246, 239, 228, 1) 100%
-    );
+    linear-gradient(180deg, rgba(11, 22, 34, 0.99) 0%, rgba(15, 32, 50, 1) 100%);
 }
 
 a {
@@ -89,8 +145,8 @@ a {
 .surface {
   background: linear-gradient(
     180deg,
-    rgba(255, 250, 242, 0.92) 0%,
-    rgba(255, 255, 255, 0.78) 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(240, 249, 255, 0.8) 100%
   );
   backdrop-filter: blur(12px);
 }
@@ -102,15 +158,15 @@ a {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(19, 78, 74, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(19, 78, 74, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(2, 132, 199, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 132, 199, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
 .ring-soft {
   box-shadow:
-    0 0 0 1px rgba(29, 43, 36, 0.06),
-    0 18px 45px rgba(24, 39, 75, 0.08);
+    0 0 0 1px rgba(2, 132, 199, 0.08),
+    0 18px 45px rgba(2, 132, 199, 0.1);
 }
 
 .destination-tile {
