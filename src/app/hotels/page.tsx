@@ -1,91 +1,99 @@
-import { Building2 } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 
+import { ActivitiesSlider } from "@/components/features/home/activities-slider";
+import { BlogSlider } from "@/components/features/home/blog-slider";
+import { DestinationsSlider } from "@/components/features/home/destinations-slider";
+import { HotelSearchEngine } from "@/components/features/home/hotel-search/hotel-search";
+import { CustomerSupport } from "@/components/shared/customer-support";
 import { hotelResults } from "@/lib/mock-data";
+
+function StarRating({ stars }: { stars: number }) {
+  return (
+    <div className="flex items-center gap-0.5" aria-label={`${stars} stars`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`h-3.5 w-3.5 ${i < stars ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function HotelsPage() {
   return (
-    <main className="section-shell flex-1 py-14">
-      <div className="surface ring-soft rounded-[2rem] border border-white/80 p-8">
-        <div className="flex items-center gap-3">
-          <Building2 className="size-6 text-accent" />
+    <main className="flex-1">
+      {/* Hero search */}
+      <HotelSearchEngine />
+
+      {/* Featured hotels */}
+      <section className="section-shell py-10" aria-label="Featured hotels">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Hotels
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              Featured Hotels
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Curated stays near the Haram — real provider data coming soon
             </p>
-            <h1 className="display-font text-5xl text-brand-strong">
-              Hotel search foundation
-            </h1>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">City</span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="Makkah"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">Check-in</span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="2026-04-12"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">
-              Check-out
-            </span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="2026-04-17"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-2 text-sm text-muted">Guests</span>
-            <input
-              className="input input-bordered rounded-2xl bg-white"
-              defaultValue="2"
-            />
-          </label>
-        </div>
-
-        <p className="mt-4 text-sm leading-6 text-muted">
-          Results below are normalized placeholders so the real provider mapping
-          can be added without changing the UI shape.
-        </p>
-
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
           {hotelResults.map((hotel) => (
             <article
               key={hotel.id}
-              className="rounded-[1.5rem] border border-black/5 bg-white/80 p-5"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.18em] text-muted">
-                    {hotel.provider}
-                  </p>
-                  <h2 className="mt-2 text-xl font-semibold text-foreground">
-                    {hotel.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    {hotel.city} · {hotel.distanceToHaram} from Haram
-                  </p>
+              {/* Colour band */}
+              <div className="h-2 w-full bg-linear-to-r from-emerald-500 to-teal-400" />
+
+              <div className="flex flex-1 flex-col gap-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+                      {hotel.provider}
+                    </p>
+                    <h3 className="mt-1.5 text-lg font-bold text-slate-900 leading-snug">
+                      {hotel.name}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span>
+                        {hotel.city} · {hotel.distanceToHaram} from Haram
+                      </span>
+                    </div>
+                  </div>
+                  <StarRating stars={hotel.stars} />
                 </div>
-                <span className="badge badge-outline">{hotel.stars} stars</span>
-              </div>
-              <div className="mt-6">
-                <p className="text-sm text-muted">Per night</p>
-                <p className="text-3xl font-semibold text-brand-strong">
-                  {hotel.currency} {hotel.nightlyRate}
-                </p>
+
+                <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">
+                      Per night
+                    </p>
+                    <p className="text-2xl font-extrabold text-emerald-700 tabular-nums">
+                      {hotel.currency}{" "}
+                      <span className="text-3xl">{hotel.nightlyRate}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+                  >
+                    View rooms
+                  </button>
+                </div>
               </div>
             </article>
           ))}
         </div>
-      </div>
+      </section>
+
+      <CustomerSupport />
+      <DestinationsSlider />
+      <ActivitiesSlider />
+      <BlogSlider />
     </main>
   );
 }
