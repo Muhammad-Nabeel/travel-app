@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
 
 export type BlogPostRow = {
@@ -103,7 +103,7 @@ function jsonWithSource(data: BlogPostRow[], source: "db" | "dummy") {
 export async function GET(request: NextRequest) {
     const showAll = request.nextUrl.searchParams.get("all") === "true";
 
-    if (!process.env.DATABASE_URL) {
+    if (shouldBypassDatabase()) {
         const filtered = showAll
             ? DUMMY_BLOG_POSTS
             : DUMMY_BLOG_POSTS.filter((p) => p.status === "PUBLISHED");
@@ -128,7 +128,8 @@ export async function GET(request: NextRequest) {
             DUMMY_BLOG_POSTS.filter((p) => p.status === "PUBLISHED"),
             "dummy",
         );
-    } catch {
+    } catch (error) {
+        markDatabaseUnavailable(error);
         const filtered = showAll
             ? DUMMY_BLOG_POSTS
             : DUMMY_BLOG_POSTS.filter((p) => p.status === "PUBLISHED");

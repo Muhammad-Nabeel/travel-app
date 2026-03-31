@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { destinationSchema } from "@/lib/validations/destination";
 
 export type DestinationRow = {
@@ -39,7 +39,7 @@ function jsonWithSource(data: DestinationRow[], source: "db" | "dummy") {
 export async function GET(request: NextRequest) {
     const showAll = request.nextUrl.searchParams.get("all") === "true";
 
-    if (!process.env.DATABASE_URL) {
+    if (shouldBypassDatabase()) {
         return jsonWithSource(
             DUMMY_DESTINATIONS.filter((d) => showAll || d.isActive),
             "dummy",
@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
             DUMMY_DESTINATIONS.filter((d) => d.isActive),
             "dummy",
         );
-    } catch {
+    } catch (error) {
+        markDatabaseUnavailable(error);
         return jsonWithSource(
             DUMMY_DESTINATIONS.filter((d) => showAll || d.isActive),
             "dummy",

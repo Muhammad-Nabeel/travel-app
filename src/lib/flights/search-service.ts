@@ -3,6 +3,7 @@ import { searchSabreFlights } from "@/lib/providers/sabre/flight-search";
 import { flightSearchSchema } from "@/lib/validations/search";
 
 import type {
+    FlightLeg,
     FlightOffer,
     FlightSearchQuery,
     FlightSearchResult,
@@ -44,28 +45,118 @@ function normalizeSearchInput(input: SearchInput) {
     };
 }
 
-function mapMockDataToOffers(): FlightOffer[] {
+function createMockLeg(params: {
+    legIndex: number;
+    airline: string;
+    flightNumber: string;
+    origin: string;
+    destination: string;
+    departure: Date;
+    arrival: Date;
+}): FlightLeg {
+    const durationMinutes = Math.max(
+        Math.round((params.arrival.getTime() - params.departure.getTime()) / 60000),
+        0,
+    );
+
+    return {
+        legIndex: params.legIndex,
+        origin: params.origin,
+        destination: params.destination,
+        departure: params.departure.toISOString(),
+        arrival: params.arrival.toISOString(),
+        durationMinutes,
+        stops: 0,
+        segments: [
+            {
+                segmentIndex: 0,
+                airline: params.airline,
+                flightNumber: params.flightNumber,
+                origin: params.origin,
+                destination: params.destination,
+                departure: params.departure.toISOString(),
+                arrival: params.arrival.toISOString(),
+                durationMinutes,
+                cabin: "Economy",
+                stops: 0,
+            },
+        ],
+    };
+}
+
+function mapMockDataToOffers(query?: FlightSearchQuery): FlightOffer[] {
     return flightResults.map((flight, index) => {
         const departureDate = new Date(flight.departure);
         const arrivalDate = new Date(flight.arrival);
-
-        return {
-            id: flight.id || `mock-${index + 1}`,
-            provider: "Mock",
+        const flightNumber = flight.id.split("-").slice(0, 2).join(" ");
+        const outboundLeg = createMockLeg({
+            legIndex: 0,
             airline: flight.airline,
+            flightNumber,
             origin: flight.origin,
             destination: flight.destination,
-            departure: departureDate.toISOString(),
-            arrival: arrivalDate.toISOString(),
-            durationMinutes: Math.max(
-                Math.round((arrivalDate.getTime() - departureDate.getTime()) / 60000),
-                0,
-            ),
-            stops: 0,
+            departure: departureDate,
+            arrival: arrivalDate,
+        });
+        const outboundPrice = Number(flight.price);
+
+        if (query?.tripType === "round-trip") {
+            const baseReturnDate = query.returnDate
+                ? new Date(query.returnDate)
+                : new Date(departureDate.getTime() + 5 * 24 * 60 * 60 * 1000);
+            const rtDepartureDate = new Date(baseReturnDate);
+            rtDepartureDate.setHours(
+                Math.floor(Math.random() * 12) + 8,
+                Math.floor(Math.random() * 60),
+            );
+            const rtArrivalDate = new Date(rtDepartureDate);
+            rtArrivalDate.setHours(
+                rtArrivalDate.getHours() + Math.max(Math.round(outboundLeg.durationMinutes! / 60), 2),
+            );
+            const returnLeg = createMockLeg({
+                legIndex: 1,
+                airline: flight.airline,
+                flightNumber,
+                origin: flight.destination,
+                destination: flight.origin,
+                departure: rtDepartureDate,
+                arrival: rtArrivalDate,
+            });
+            const returnPrice = Math.ceil(outboundPrice * 0.95);
+
+            return {
+                id: `mock-roundtrip-${index + 1}`,
+                provider: "Mock",
+                airline: flight.airline,
+                origin: outboundLeg.origin,
+                destination: outboundLeg.destination,
+                departure: outboundLeg.departure,
+                arrival: outboundLeg.arrival,
+                durationMinutes: outboundLeg.durationMinutes,
+                stops: outboundLeg.stops,
+                cabin: "Economy",
+                price: outboundPrice + returnPrice,
+                currency: flight.currency,
+                flightNumber,
+                legs: [outboundLeg, returnLeg],
+            } satisfies FlightOffer;
+        }
+
+        return {
+            id: flight.id || `mock-outbound-${index + 1}`,
+            provider: "Mock",
+            airline: flight.airline,
+            origin: outboundLeg.origin,
+            destination: outboundLeg.destination,
+            departure: outboundLeg.departure,
+            arrival: outboundLeg.arrival,
+            durationMinutes: outboundLeg.durationMinutes,
+            stops: outboundLeg.stops,
             cabin: "Economy",
-            price: Number(flight.price),
+            price: outboundPrice,
             currency: flight.currency,
-            flightNumber: flight.id.split("-").slice(0, 2).join(" "),
+            flightNumber,
+            legs: [outboundLeg],
         } satisfies FlightOffer;
     });
 }
@@ -157,7 +248,7 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
         );
     }
 
-    const mockResults = applyQueryFilters(mapMockDataToOffers(), query);
+    const mockResults = applyQueryFilters(mapMockDataToOffers(query), query);
 
     return {
         ok: true,

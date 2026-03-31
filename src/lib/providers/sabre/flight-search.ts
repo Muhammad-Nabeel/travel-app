@@ -187,28 +187,50 @@ function buildSabreSearchCorePayload(
         (code) => ({ Code: code }),
     );
 
+    const originDestinationInformation = [
+        {
+            DepartureDateTime: `${query.departureDate}T00:00:00`,
+            DepartureWindow: "00002359",
+            DestinationLocation: { LocationCode: query.destination },
+            OriginLocation: { LocationCode: query.origin },
+            RPH: "1",
+            TPA_Extensions: {
+                CabinPref: {
+                    Cabin: mapCabinClass(query.cabinClass),
+                    PreferLevel: "Only",
+                },
+                SegmentType: {
+                    Code: "O",
+                },
+                IncludeVendorPref: includeVendorPref,
+            },
+        },
+    ];
+
+    if (query.tripType === "round-trip" && query.returnDate) {
+        originDestinationInformation.push({
+            DepartureDateTime: `${query.returnDate}T00:00:00`,
+            DepartureWindow: "00002359",
+            DestinationLocation: { LocationCode: query.origin },
+            OriginLocation: { LocationCode: query.destination },
+            RPH: "2",
+            TPA_Extensions: {
+                CabinPref: {
+                    Cabin: mapCabinClass(query.cabinClass),
+                    PreferLevel: "Only",
+                },
+                SegmentType: {
+                    Code: "O",
+                },
+                IncludeVendorPref: includeVendorPref,
+            },
+        });
+    }
+
     return {
         AvailableFlightsOnly: true,
         ResponseType: "OTA",
-        OriginDestinationInformation: [
-            {
-                DepartureDateTime: `${query.departureDate}T00:00:00`,
-                DepartureWindow: "00002359",
-                DestinationLocation: { LocationCode: query.destination },
-                OriginLocation: { LocationCode: query.origin },
-                RPH: "1",
-                TPA_Extensions: {
-                    CabinPref: {
-                        Cabin: mapCabinClass(query.cabinClass),
-                        PreferLevel: "Only",
-                    },
-                    SegmentType: {
-                        Code: "O",
-                    },
-                    IncludeVendorPref: includeVendorPref,
-                },
-            },
-        ],
+        OriginDestinationInformation: originDestinationInformation,
         POS: {
             Source: [
                 {
@@ -231,6 +253,12 @@ function buildSabreSearchCorePayload(
                     Name: "200ITINS",
                 },
             },
+            RichContent: {
+                FlightAmenities: true,
+                SeatInfo: true,
+                UniversalProductAttributes: true,
+                UniversalTicketingAttributes: true,
+            },
         },
         TravelPreferences: {
             ETicketDesired: true,
@@ -251,7 +279,9 @@ function buildSabreSearchCorePayload(
                 DataSources: {
                     ATPCO: "Enable",
                     LCC: "Enable",
-                    NDC: "Disable",
+                    // NDC requires IATA NDC certification on the Sabre account.
+                    // Set SABRE_NDC_ENABLED=true in env to turn it on.
+                    NDC: process.env.SABRE_NDC_ENABLED === "true" ? "Enable" : "Disable",
                 },
                 OnlineIndicator: {
                     Ind: false,
@@ -384,6 +414,24 @@ type SabreGroupedItineraryResponse = {
     itineraryGroups?: SabreItineraryGroup[];
 };
 
+// ── Cabin code helper ───────────────────────────────────────────────────────
+
+function mapSabreCabinCode(cabin: string | undefined): CabinClass {
+    switch (cabin?.toUpperCase()) {
+        case "C":
+        case "J":
+            return "Business";
+        case "F":
+        case "P":
+            return "First";
+        case "S":
+        case "W":
+            return "Premium Economy";
+        default:
+            return "Economy";
+    }
+}
+
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
 function timeToMinutes(time: string): number {
@@ -485,7 +533,7 @@ function mapSabreResponseToOffers(data: unknown): FlightOffer[] {
                         departure: depDatetime,
                         arrival: arrDatetime,
                         durationMinutes: sched.elapsedTime,
-                        cabin: "Economy" as CabinClass,
+                        cabin: mapSabreCabinCode(fareSegment?.cabin),
                         bookingClass: fareSegment?.bookingCode,
                         seatsAvailable: fareSegment?.seatsAvailable,
                         stops: sched.stops ?? 0,

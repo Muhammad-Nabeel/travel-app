@@ -2,6 +2,11 @@
 
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 
+import {
+  getAirlineCode,
+  getAirlineLogoSrc,
+} from "../../../lib/flights/airline-branding";
+
 type StopsFilter = "all" | "direct" | "one-plus";
 
 type FlightFiltersPanelProps = {
@@ -11,6 +16,7 @@ type FlightFiltersPanelProps = {
   stopsFilter: StopsFilter;
   selectedAirlines: string[];
   uniqueAirlines: string[];
+  airlineLookup?: Record<string, string>;
   onPriceCapChange: (value: number) => void;
   onStopsFilterChange: (value: StopsFilter) => void;
   onAirlinesChange: (value: string[]) => void;
@@ -55,6 +61,7 @@ export function FlightFiltersPanel({
   stopsFilter,
   selectedAirlines,
   uniqueAirlines,
+  airlineLookup,
   onPriceCapChange,
   onStopsFilterChange,
   onAirlinesChange,
@@ -131,6 +138,12 @@ export function FlightFiltersPanel({
                 <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
                   {uniqueAirlines.map((airline) => {
                     const checked = selectedAirlines.includes(airline);
+                    const airlineCode = getAirlineCode(airline);
+                    const airlineName = airlineLookup?.[airlineCode] ?? airline;
+                    const airlineLogoSrc = getAirlineLogoSrc(
+                      airline,
+                      airlineName,
+                    );
                     return (
                       <label
                         key={airline}
@@ -148,8 +161,21 @@ export function FlightFiltersPanel({
                             );
                           }}
                         />
+                        {airlineLogoSrc ? (
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-base-200 bg-white p-1">
+                            <img
+                              src={airlineLogoSrc}
+                              alt={`${airlineName} logo`}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-[10px] font-bold uppercase text-emerald-600">
+                            {airlineCode}
+                          </div>
+                        )}
                         <span className="text-sm text-base-content">
-                          {airline}
+                          {airlineName}
                         </span>
                       </label>
                     );

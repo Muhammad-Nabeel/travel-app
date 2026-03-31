@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
 
 export type ActivityRow = {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const showAll = request.nextUrl.searchParams.get("all") === "true";
     const destinationId = request.nextUrl.searchParams.get("destinationId");
 
-    if (!process.env.DATABASE_URL) {
+    if (shouldBypassDatabase()) {
         let filtered = DUMMY_ACTIVITIES.filter((a) => showAll || a.isActive);
         if (destinationId) {
             filtered = filtered.filter((a) => a.destinationId === destinationId);
@@ -70,7 +70,8 @@ export async function GET(request: NextRequest) {
             filtered = filtered.filter((a) => a.destinationId === destinationId);
         }
         return jsonWithSource(filtered, "dummy");
-    } catch {
+    } catch (error) {
+        markDatabaseUnavailable(error);
         let filtered = DUMMY_ACTIVITIES.filter((a) => showAll || a.isActive);
         if (destinationId) {
             filtered = filtered.filter((a) => a.destinationId === destinationId);
