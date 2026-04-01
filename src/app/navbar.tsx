@@ -11,7 +11,6 @@ import {
   Package,
   Plane,
   PlaneTakeoff,
-  ShieldCheck,
   Sun,
   UserPlus,
 } from "lucide-react";
@@ -19,8 +18,8 @@ import {
 const links = [
   { href: "/flights", label: "Flights", icon: Plane },
   { href: "/hotels", label: "Hotels", icon: BedDouble },
-  { href: "/umrah-packages", label: "Packages", icon: Package },
-  { href: "/insurance", label: "Insurance", icon: ShieldCheck },
+  { href: "/umrah-packages", label: "Umrah Packages", icon: Package },
+  { href: "/tour-packages", label: "Tour Packages", icon: Package },
   { href: "/visa", label: "Visa", icon: FileCheck2 },
 ];
 

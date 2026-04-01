@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, MapPin, Star } from "lucide-react";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type Activity = {
@@ -145,10 +146,13 @@ export function ActivitiesSlider() {
           >
             {/* Image */}
             <div className="relative h-48 overflow-hidden bg-slate-200">
-              <img
+              <Image
                 src={activity.imageUrl}
                 alt={activity.title}
                 className="h-full w-full object-cover"
+                width={512}
+                height={320}
+                unoptimized
               />
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/20 to-transparent" />

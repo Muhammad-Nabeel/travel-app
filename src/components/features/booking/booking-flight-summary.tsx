@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ArrowRight, CalendarDays, Clock3, Plane } from "lucide-react";
 
 import {
@@ -69,10 +70,13 @@ function LegRow({ leg, label, airline }: LegRowProps) {
       <div className="shrink-0">
         {logoSrc ? (
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-base-200 bg-white p-2 shadow-sm">
-            <img
+            <Image
               src={logoSrc}
               alt={marketingCode}
               className="h-full w-full object-contain"
+              width={48}
+              height={48}
+              unoptimized
             />
           </div>
         ) : (
@@ -153,11 +157,13 @@ function LegRow({ leg, label, airline }: LegRowProps) {
 type BookingFlightSummaryProps = {
   offer: FlightOffer;
   isRoundTrip: boolean;
+  overrideTotalPrice?: number;
 };
 
 export function BookingFlightSummary({
   offer,
   isRoundTrip,
+  overrideTotalPrice,
 }: BookingFlightSummaryProps) {
   const outboundLeg: FlightLeg = offer.legs?.[0] ?? {
     legIndex: 0,
@@ -202,7 +208,7 @@ export function BookingFlightSummary({
             {isRoundTrip ? "Round-trip total" : "One-way total"}
           </p>
           <p className="text-2xl font-bold text-foreground">
-            {formatMoney(offer.price, offer.currency)}
+            {formatMoney(overrideTotalPrice ?? offer.price, offer.currency)}
           </p>
           <p className="text-[11px] text-muted">Taxes & fees included</p>
         </div>

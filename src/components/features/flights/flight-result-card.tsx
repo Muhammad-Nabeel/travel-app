@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import {
   Armchair,
@@ -381,10 +382,13 @@ export function FlightResultCard({
         <div className="flex items-center gap-3 md:pt-2">
           {airlineLogoSrc ? (
             <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-base-200 bg-white p-2 shadow-sm">
-              <img
+              <Image
                 src={airlineLogoSrc}
                 alt={`${airlineName} logo`}
                 className="h-full w-full object-contain"
+                width={48}
+                height={48}
+                unoptimized
               />
             </div>
           ) : (

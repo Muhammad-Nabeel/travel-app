@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, Clock3, Plane } from "lucide-react";
@@ -567,10 +568,13 @@ function StickyLegPill({
       <div className="shrink-0">
         {logoSrc ? (
           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-base-200 bg-white p-1.5 shadow-sm">
-            <img
+            <Image
               src={logoSrc}
               alt={airlineName}
               className="h-full w-full object-contain"
+              width={40}
+              height={40}
+              unoptimized
             />
           </div>
         ) : (

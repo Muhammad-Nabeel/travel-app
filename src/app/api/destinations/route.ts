@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { destinationSchema } from "@/lib/validations/destination";
@@ -91,10 +92,10 @@ export async function POST(request: NextRequest) {
             },
         });
         return NextResponse.json(destination, { status: 201 });
-    } catch (err: any) {
-        if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+        if (err instanceof ZodError) {
             const message = err.issues
-                .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+                .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
                 .join("; ");
             return NextResponse.json(
                 { ok: false, error: `Validation: ${message}` },

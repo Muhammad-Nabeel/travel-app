@@ -10,6 +10,7 @@ import {
   type Gateway,
 } from "@/components/features/booking/payment-gateway-card";
 import type { BookingPayload } from "@/lib/flights/booking-types";
+import { calculateBookingPricing } from "@/lib/pricing/booking-pricing";
 
 // ── Gateway registry ──────────────────────────────────────────────────────────
 // To add a new gateway: append an entry here. No other files need changing.
@@ -80,21 +81,48 @@ const PASSENGER_LABEL: Record<string, string> = {
 
 export function PaymentPageClient() {
   const router = useRouter();
-  const [payload, setPayload] = useState<BookingPayload | null>(null);
-  const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
+  const [payload] = useState<BookingPayload | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
 
-  useEffect(() => {
     const raw = sessionStorage.getItem("booking_payload");
     if (!raw) {
-      router.replace("/flights");
-      return;
+      return null;
     }
+
     try {
-      setPayload(JSON.parse(raw) as BookingPayload);
+      return JSON.parse(raw) as BookingPayload;
     } catch {
+      return null;
+    }
+  });
+  const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
+  const [serviceChargePercent, setServiceChargePercent] = useState(0);
+
+  useEffect(() => {
+    if (!payload) {
       router.replace("/flights");
     }
-  }, [router]);
+  }, [payload, router]);
+
+  useEffect(() => {
+    async function loadPricingSettings() {
+      try {
+        const res = await fetch("/api/settings/site-pricing", {
+          cache: "no-store",
+        });
+        const json = (await res.json()) as {
+          serviceChargePercent?: number;
+        };
+        setServiceChargePercent(Number(json.serviceChargePercent ?? 0));
+      } catch {
+        setServiceChargePercent(0);
+      }
+    }
+
+    void loadPricingSettings();
+  }, []);
 
   if (!payload) {
     return (
@@ -107,6 +135,9 @@ export function PaymentPageClient() {
   const isRoundTrip = payload.query.tripType === "round-trip";
   const totalPassengers = payload.passengers.length;
   const selected = GATEWAYS.find((g) => g.id === selectedGateway);
+  const pricing = calculateBookingPricing(payload.offer.price, {
+    serviceChargePercent,
+  });
 
   function handlePayNow() {
     // TODO: integrate each gateway's SDK / redirect
@@ -206,7 +237,11 @@ export function PaymentPageClient() {
       {/* ── Right column: summary sidebar ───────────────────────────────── */}
       <div className="flex flex-col gap-5 lg:sticky lg:top-24">
         {/* Flight summary card */}
-        <BookingFlightSummary offer={payload.offer} isRoundTrip={isRoundTrip} />
+        <BookingFlightSummary
+          offer={payload.offer}
+          isRoundTrip={isRoundTrip}
+          overrideTotalPrice={pricing.grandTotal}
+        />
 
         {/* Price breakdown + Pay button */}
         <div className="rounded-2xl border border-base-200 bg-base-100 p-5">
@@ -238,12 +273,21 @@ export function PaymentPageClient() {
             );
           })}
 
+          <div className="flex items-center justify-between py-1 text-sm">
+            <span className="text-muted">
+              Service Charges ({serviceChargePercent}%)
+            </span>
+            <span className="font-medium text-foreground">
+              {formatMoney(pricing.serviceChargeAmount, payload.offer.currency)}
+            </span>
+          </div>
+
           <div className="my-3 border-t border-base-200" />
 
           <div className="flex items-center justify-between">
             <span className="font-semibold text-foreground">Total</span>
             <span className="text-xl font-bold text-foreground">
-              {formatMoney(payload.offer.price, payload.offer.currency)}
+              {formatMoney(pricing.grandTotal, payload.offer.currency)}
             </span>
           </div>
           <p className="mt-0.5 text-right text-[11px] text-muted">

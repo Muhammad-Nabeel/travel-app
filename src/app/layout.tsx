@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import NavBar from "./navbar";
 import { Suspense } from "react";
 import Loading from "./loading";
-import { SiteFooter } from "@/components/shared/site-footer";
+import { ConditionalFooter } from "@/components/layout/conditional-footer";
+import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -35,11 +35,11 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NavBar />
+        <ConditionalNavbar />
         <main className="w-full flex-1">
           <Suspense fallback={<Loading />}>{children}</Suspense>
         </main>
-        <SiteFooter />
+        <ConditionalFooter />
       </body>
     </html>
   );

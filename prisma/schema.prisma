@@ -164,6 +164,29 @@ enum BlogStatus {
   ARCHIVED
 }
 
+model TourPackage {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  subtitle       String?
+  destination    String
+  country        String
+  description    String        @db.Text
+  durationDays   Int
+  departureCity  String
+  highlights     Json          @default("[]")
+  inclusions     Json
+  exclusions     Json
+  basePrice      Decimal       @db.Decimal(10, 2)
+  currency       String        @default("PKR")
+  seatsAvailable Int           @default(0)
+  imageUrl       String?
+  status         PackageStatus @default(DRAFT)
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
 model BlogPost {
   id             String     @id @default(cuid())
   slug           String     @unique
@@ -179,4 +202,12 @@ model BlogPost {
   sortOrder      Int        @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model AdminSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

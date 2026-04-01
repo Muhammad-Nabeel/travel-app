@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
@@ -47,7 +48,10 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const where: any = showAll ? {} : { isActive: true };
+        const where: { isActive?: boolean; destinationId?: string } = {};
+        if (!showAll) {
+            where.isActive = true;
+        }
         if (destinationId) {
             where.destinationId = destinationId;
         }
@@ -100,10 +104,10 @@ export async function POST(request: NextRequest) {
             },
         });
         return NextResponse.json(activity, { status: 201 });
-    } catch (err: any) {
-        if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+        if (err instanceof ZodError) {
             const message = err.issues
-                .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+                .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
                 .join("; ");
             return NextResponse.json(
                 { ok: false, error: `Validation: ${message}` },

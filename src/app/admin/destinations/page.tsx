@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ZodError } from "zod";
 import { destinationSchema } from "@/lib/validations/destination";
 
 type Destination = {
@@ -15,6 +16,12 @@ type Destination = {
   gradient: string;
   sortOrder: number;
   isActive: boolean;
+};
+
+type CitySuggestion = {
+  city: string;
+  country: string;
+  iata: string;
 };
 
 const GRADIENT_OPTIONS = [
@@ -56,6 +63,11 @@ export default function AdminDestinationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [cityLookupLoading, setCityLookupLoading] = useState(false);
+  const cityFieldRef = useRef<HTMLLabelElement>(null);
+  const citySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchDestinations = async () => {
     try {
@@ -74,6 +86,28 @@ export default function AdminDestinationsPage() {
     fetchDestinations();
   }, []);
 
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (
+        cityFieldRef.current &&
+        !cityFieldRef.current.contains(e.target as Node)
+      ) {
+        setShowCitySuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (citySearchTimerRef.current) {
+        clearTimeout(citySearchTimerRef.current);
+      }
+    };
+  }, []);
+
   const startEdit = (d: Destination) => {
     setEditingId(d.id);
     setFormData({
@@ -86,13 +120,66 @@ export default function AdminDestinationsPage() {
       sortOrder: String(d.sortOrder),
       isActive: d.isActive,
     });
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setFormData(EMPTY_FORM);
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
     setError("");
+  };
+
+  const handleCityInputChange = (raw: string) => {
+    setFormData((prev) => ({ ...prev, city: raw }));
+
+    if (citySearchTimerRef.current) {
+      clearTimeout(citySearchTimerRef.current);
+    }
+
+    const trimmed = raw.trim();
+
+    if (trimmed.length < 2) {
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
+      setCityLookupLoading(false);
+      return;
+    }
+
+    setCityLookupLoading(true);
+    setShowCitySuggestions(true);
+
+    citySearchTimerRef.current = setTimeout(() => {
+      void fetch(`/api/places/cities?query=${encodeURIComponent(trimmed)}`)
+        .then((res) => res.json())
+        .then((json: { results?: CitySuggestion[] }) => {
+          setCitySuggestions(json.results ?? []);
+          setShowCitySuggestions((json.results?.length ?? 0) > 0);
+          setCityLookupLoading(false);
+        })
+        .catch(() => {
+          setCitySuggestions([]);
+          setShowCitySuggestions(false);
+          setCityLookupLoading(false);
+        });
+    }, 260);
+  };
+
+  const handleCitySuggestionSelect = (item: CitySuggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      city: item.city,
+      country: item.country,
+      iataCode: item.iata,
+    }));
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
   };
 
   const handleSave = async () => {
@@ -135,11 +222,11 @@ export default function AdminDestinationsPage() {
         cancelEdit();
         await fetchDestinations();
       }
-    } catch (err: any) {
-      if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+      if (err instanceof ZodError) {
         // Zod validation error on client
         const message = err.issues
-          .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
           .join(", ");
         setError(message);
       } else if (err instanceof Error) {
@@ -210,6 +297,9 @@ export default function AdminDestinationsPage() {
               onClick={() => {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
+                setCitySuggestions([]);
+                setShowCitySuggestions(false);
+                setCityLookupLoading(false);
               }}
               className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
@@ -238,17 +328,53 @@ export default function AdminDestinationsPage() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   City *
                 </span>
-                <input
-                  {...field("city")}
-                  placeholder="e.g. Dubai"
-                  maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
+                <label className="relative" ref={cityFieldRef}>
+                  <input
+                    value={formData.city}
+                    onFocus={() => {
+                      if (citySuggestions.length > 0) {
+                        setShowCitySuggestions(true);
+                      }
+                    }}
+                    onChange={(e) => handleCityInputChange(e.target.value)}
+                    placeholder="e.g. Dubai"
+                    maxLength={80}
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+
+                  {showCitySuggestions &&
+                    (cityLookupLoading || citySuggestions.length > 0) && (
+                      <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {cityLookupLoading ? (
+                          <p className="px-2 py-2 text-xs text-slate-500">
+                            Searching cities...
+                          </p>
+                        ) : (
+                          citySuggestions.map((item) => (
+                            <button
+                              key={`${item.city}-${item.country}-${item.iata}`}
+                              type="button"
+                              onClick={() => handleCitySuggestionSelect(item)}
+                              className="w-full rounded-md px-2 py-1.5 text-left hover:bg-slate-50"
+                            >
+                              <p className="text-sm font-semibold text-slate-800">
+                                {item.city}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {item.country} - {item.iata}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                </label>
+              </div>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Country *

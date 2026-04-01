@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 
 import {
@@ -163,10 +164,13 @@ export function FlightFiltersPanel({
                         />
                         {airlineLogoSrc ? (
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-base-200 bg-white p-1">
-                            <img
+                            <Image
                               src={airlineLogoSrc}
                               alt={`${airlineName} logo`}
                               className="h-full w-full object-contain"
+                              width={24}
+                              height={24}
+                              unoptimized
                             />
                           </div>
                         ) : (
