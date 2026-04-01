@@ -161,21 +161,21 @@ export default function AdminSettingsPage() {
     <main className="mx-auto w-full max-w-4xl space-y-6">
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-          Settings
+          Administration
         </p>
-        <h1 className="mt-2 text-3xl font-extrabold text-blue-950 sm:text-4xl">
-          Site Settings
+        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+          Platform Settings
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
-          Choose a settings category to configure. Only the selected section
-          opens in the right panel.
+          Manage analytics credentials and pricing controls from a single
+          administrative workspace.
         </p>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[16rem_1fr]">
         <aside className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-            Setting Options
+            Configuration Areas
           </p>
           <div className="mt-3 space-y-2">
             <button
@@ -187,7 +187,7 @@ export default function AdminSettingsPage() {
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
-              GA4 Settings
+              Analytics
             </button>
             <button
               type="button"
@@ -198,7 +198,7 @@ export default function AdminSettingsPage() {
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
-              Service Charges
+              Pricing
             </button>
           </div>
         </aside>
@@ -213,7 +213,14 @@ export default function AdminSettingsPage() {
           ) : activePanel === "ga4" ? (
             <div className="grid gap-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-                GA4 Integration
+                Analytics
+              </p>
+              <h2 className="text-xl font-semibold text-blue-950">
+                Google Analytics 4
+              </h2>
+              <p className="text-sm text-blue-800/80">
+                Configure the tracking property and service account used for
+                executive reporting.
               </p>
 
               <label className="flex flex-col gap-1.5">
@@ -332,13 +339,14 @@ export default function AdminSettingsPage() {
           ) : (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-                Site Pricing
+                Pricing
               </p>
-              <h2 className="mt-2 text-2xl font-bold text-blue-950">
-                Service Charges
+              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+                Service Charge Configuration
               </h2>
               <p className="mt-1 text-sm text-blue-800/80">
-                This percentage is applied in booking price calculation.
+                Define the service charge percentage applied during booking
+                total calculation.
               </p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">

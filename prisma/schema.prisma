@@ -211,3 +211,18 @@ model AdminSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model CustomerReview {
+  id           String   @id @default(cuid())
+  customerName String
+  location     String?
+  rating       Int      @default(5)
+  title        String
+  body         String   @db.Text
+  tripType     String?
+  isVerified   Boolean  @default(false)
+  isPublished  Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

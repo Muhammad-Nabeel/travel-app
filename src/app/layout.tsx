@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import Loading from "./loading";
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
+import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <main className="w-full flex-1">
           <Suspense fallback={<Loading />}>{children}</Suspense>
         </main>
+        <FloatingReviewWidget />
         <ConditionalFooter />
       </body>
     </html>

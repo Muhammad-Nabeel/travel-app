@@ -283,13 +283,14 @@ export default function AdminDestinationsPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Admin
+              Administration
             </p>
-            <h1 className="display-font mt-1 text-4xl text-brand-strong">
-              Popular Destinations
+            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+              Destination Management
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Manage destination cards shown in the homepage slider.
+              Manage the destination content featured throughout the public
+              experience.
             </p>
           </div>
           {editingId === null && (

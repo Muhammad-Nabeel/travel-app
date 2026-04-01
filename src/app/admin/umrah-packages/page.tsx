@@ -176,10 +176,10 @@ export default function AdminPackagesPage() {
         {/* ── Form panel ── */}
         <section className="surface ring-soft rounded-4xl border border-white/80 p-8">
           <p className="text-sm uppercase tracking-[0.24em] text-muted">
-            {editingId ? "Edit Package" : "New Package"}
+            {editingId ? "Package Details" : "Package Creation"}
           </p>
-          <h1 className="display-font mt-3 text-4xl text-brand-strong">
-            {editingId ? "Update details" : "Create Umrah package"}
+          <h1 className="mt-3 text-3xl font-semibold text-brand-strong">
+            {editingId ? "Update Umrah Package" : "Create Umrah Package"}
           </h1>
 
           {/* Cost preview */}

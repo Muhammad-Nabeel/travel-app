@@ -71,7 +71,7 @@ export default async function AdminPage() {
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-            Dashboard
+            Administration
           </p>
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -83,12 +83,12 @@ export default async function AdminPage() {
             {analytics.configured ? "GA4 Connected" : "Fallback Data"}
           </span>
         </div>
-        <h1 className="mt-2 text-3xl font-extrabold text-blue-950 sm:text-4xl">
-          Website Performance Overview
+        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+          Performance Dashboard
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
-          Live operational snapshot with visitor metrics, sales trend, and top
-          user intent signals from search activity.
+          Review visitor behaviour, sales performance, and acquisition trends
+          from a single operational overview.
         </p>
         {analytics.errorReason && (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
@@ -146,8 +146,8 @@ export default async function AdminPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <h2 className="text-3xl font-extrabold text-slate-900">
-            Transactions
+          <h2 className="text-xl font-semibold text-slate-900">
+            Recent Transactions
           </h2>
           <div className="mt-5 overflow-hidden rounded-xl border border-slate-100">
             {transactions.map((row, index) => (
@@ -174,9 +174,9 @@ export default async function AdminPage() {
 
         <article className="rounded-2xl bg-linear-to-br from-blue-600 to-indigo-600 p-6 text-white shadow-sm">
           <p className="text-xs uppercase tracking-[0.16em] text-blue-100">
-            Revenue
+            Revenue Snapshot
           </p>
-          <h3 className="mt-2 text-3xl font-extrabold">21,500 USD</h3>
+          <h3 className="mt-2 text-2xl font-semibold">21,500 USD</h3>
           <p className="mt-1 text-xs text-blue-100">Revenue report -&gt;</p>
 
           <div className="mt-5 grid h-44 grid-cols-20 items-end gap-1.5">
@@ -193,7 +193,9 @@ export default async function AdminPage() {
 
       <section className="grid gap-6 lg:grid-cols-3">
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <h3 className="text-3xl font-extrabold text-slate-900">Sources</h3>
+          <h3 className="text-xl font-semibold text-slate-900">
+            Traffic Sources
+          </h3>
           <div className="mt-4 flex items-center justify-between gap-4">
             <ul className="space-y-1.5 text-sm">
               {sourceChart.map((item) => (
@@ -220,7 +222,9 @@ export default async function AdminPage() {
 
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <p className="text-4xl font-extrabold text-slate-900">19,000</p>
-          <p className="mt-1 text-2xl text-slate-700">Downloads</p>
+          <p className="mt-1 text-xl font-medium text-slate-700">
+            Resource Downloads
+          </p>
           <div className="mt-3 overflow-hidden rounded-xl bg-teal-100/40">
             <Sparkline
               points={[
@@ -235,7 +239,9 @@ export default async function AdminPage() {
 
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <p className="text-4xl font-extrabold text-slate-900">32,800</p>
-          <p className="mt-1 text-2xl text-slate-700">Unique visitors</p>
+          <p className="mt-1 text-xl font-medium text-slate-700">
+            Unique Visitors
+          </p>
           <div className="mt-3 overflow-hidden rounded-xl bg-violet-100/40">
             <Sparkline
               points={[

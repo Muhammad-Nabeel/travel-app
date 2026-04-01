@@ -2,6 +2,7 @@ import { DestinationsSlider } from "@/components/features/home/destinations-slid
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { BlogSlider } from "@/components/features/home/blog-slider";
+import { CustomerReviewsSection } from "@/components/features/home/customer-reviews-section";
 import { CustomerSupport } from "@/components/shared/customer-support";
 
 export default function Home() {
@@ -16,6 +17,8 @@ export default function Home() {
       <ActivitiesSlider />
 
       <BlogSlider />
+
+      <CustomerReviewsSection />
     </main>
   );
 }

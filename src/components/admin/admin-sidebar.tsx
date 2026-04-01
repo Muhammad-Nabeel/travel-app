@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Settings,
   Sparkles,
+  Star,
 } from "lucide-react";
 
 const adminLinks = [
@@ -21,6 +22,7 @@ const adminLinks = [
   { href: "/admin/destinations", label: "Destinations", icon: Compass },
   { href: "/admin/activities", label: "Activities", icon: Sparkles },
   { href: "/admin/blog", label: "Blog", icon: NotebookPen },
+  { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
