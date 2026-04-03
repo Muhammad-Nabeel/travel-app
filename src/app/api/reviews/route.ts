@@ -16,63 +16,13 @@ export type CustomerReviewRow = {
     updatedAt: Date;
 };
 
-const DUMMY_REVIEWS: CustomerReviewRow[] = [
-    {
-        id: "rv01",
-        customerName: "Ahmed Al-Rashdi",
-        location: "Karachi, Pakistan",
-        rating: 5,
-        title: "Outstanding Umrah experience — exceeded every expectation",
-        body: "The team handled every detail flawlessly. From visa arrangements to hotel bookings close to the Haram, everything was perfect. I will definitely use this service again for my next trip.",
-        tripType: "Umrah",
-        isVerified: true,
-        isPublished: true,
-        sortOrder: 1,
-        createdAt: new Date("2026-03-10"),
-        updatedAt: new Date("2026-03-10"),
-    },
-    {
-        id: "rv02",
-        customerName: "Fatima Malik",
-        location: "Lahore, Pakistan",
-        rating: 5,
-        title: "Seamless family holiday — highly professional service",
-        body: "Travelling with three young children always felt daunting but the team made it stress-free. Our Dubai itinerary was perfectly planned and the airport assistance was invaluable.",
-        tripType: "Family",
-        isVerified: true,
-        isPublished: true,
-        sortOrder: 2,
-        createdAt: new Date("2026-03-15"),
-        updatedAt: new Date("2026-03-15"),
-    },
-    {
-        id: "rv03",
-        customerName: "Tariq Hassan",
-        location: "Islamabad, Pakistan",
-        rating: 4,
-        title: "Very good value — great flights at competitive prices",
-        body: "Found flight prices that were significantly lower than any other site I checked. Booking was smooth and customer support replied promptly when I had a query about baggage allowance.",
-        tripType: "Business",
-        isVerified: true,
-        isPublished: true,
-        sortOrder: 3,
-        createdAt: new Date("2026-03-22"),
-        updatedAt: new Date("2026-03-22"),
-    },
-];
-
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const fetchAll = searchParams.get("all") === "true";
     const publishedOnly = !fetchAll;
 
     if (shouldBypassDatabase()) {
-        const list = publishedOnly
-            ? DUMMY_REVIEWS.filter((r) => r.isPublished)
-            : DUMMY_REVIEWS;
-        return NextResponse.json(list, {
-            headers: { "x-review-source": "dummy" },
-        });
+        return NextResponse.json([]);
     }
 
     try {
@@ -82,14 +32,9 @@ export async function GET(request: NextRequest) {
         });
         return NextResponse.json(rows);
     } catch (err) {
-        markDatabaseUnavailable();
+        markDatabaseUnavailable(err);
         console.error("[reviews GET]", err);
-        const list = publishedOnly
-            ? DUMMY_REVIEWS.filter((r) => r.isPublished)
-            : DUMMY_REVIEWS;
-        return NextResponse.json(list, {
-            headers: { "x-review-source": "dummy" },
-        });
+        return NextResponse.json([]);
     }
 }
 

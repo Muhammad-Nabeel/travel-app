@@ -20,6 +20,7 @@ export async function PUT(
                 country: validatedData.country,
                 fare: validatedData.fare,
                 iataCode: validatedData.iataCode,
+                imageUrl: validatedData.imageUrl,
                 notes: validatedData.notes,
                 gradient: validatedData.gradient,
                 sortOrder: validatedData.sortOrder,

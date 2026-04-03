@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Mail, MapPin, PhoneCall, PlaneTakeoff } from "lucide-react";
 
 const quickLinks = [
-  { href: "/flights", label: "Flights" },
-  { href: "/hotels", label: "Hotels" },
-  { href: "/umrah-packages", label: "Umrah Packages" },
+  { href: "/about-us", label: "About Us" },
+  { href: "/contact-us", label: "Contact Us" },
+  { href: "/arrange-a-call", label: "Arrange a Call" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/careers", label: "Careers" },
   { href: "/admin", label: "Admin" },
 ];
 
@@ -77,10 +79,18 @@ export function SiteFooter() {
 
           <nav>
             <h6 className="footer-title">Legal</h6>
-            <a className="link link-hover">Terms & Conditions</a>
-            <a className="link link-hover">Privacy Policy</a>
-            <a className="link link-hover">Refund Policy</a>
-            <a className="link link-hover">Cookie Policy</a>
+            <Link href="/terms-conditions" className="link link-hover">
+              Terms & Conditions
+            </Link>
+            <Link href="/privacy-policy" className="link link-hover">
+              Privacy Policy
+            </Link>
+            <Link href="/refund-policy" className="link link-hover">
+              Refund Policy
+            </Link>
+            <Link href="/cookie-policy" className="link link-hover">
+              Cookie Policy
+            </Link>
           </nav>
         </div>
       </div>

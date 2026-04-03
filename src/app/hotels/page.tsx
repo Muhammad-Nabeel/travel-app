@@ -4,7 +4,6 @@ import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { HotelSearchEngine } from "@/components/features/home/hotel-search/hotel-search";
-import { CustomerSupport } from "@/components/shared/customer-support";
 import { hotelResults } from "@/lib/mock-data";
 
 function StarRating({ stars }: { stars: number }) {
@@ -90,7 +89,6 @@ export default function HotelsPage() {
         </div>
       </section>
 
-      <CustomerSupport />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />

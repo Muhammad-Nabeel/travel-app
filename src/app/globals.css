@@ -156,3 +156,21 @@ textarea:focus {
   outline: none;
   box-shadow: 0 0 0 4px var(--ring);
 }
+
+@keyframes airline-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.airline-marquee {
+  animation: airline-marquee 28s linear infinite;
+}
+
+.airline-marquee:hover {
+  animation-play-state: paused;
+}

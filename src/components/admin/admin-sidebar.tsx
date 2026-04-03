@@ -8,6 +8,7 @@ import {
   Compass,
   LayoutDashboard,
   LogOut,
+  MessagesSquare,
   NotebookPen,
   Package,
   RefreshCw,
@@ -23,6 +24,8 @@ const adminLinks = [
   { href: "/admin/activities", label: "Activities", icon: Sparkles },
   { href: "/admin/blog", label: "Blog", icon: NotebookPen },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/site-pages", label: "Site Pages", icon: MessagesSquare },
+  { href: "/admin/visa", label: "Visa Settings", icon: Compass },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

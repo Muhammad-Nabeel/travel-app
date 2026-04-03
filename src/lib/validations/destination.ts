@@ -17,6 +17,12 @@ export const destinationSchema = z.object({
         .transform((val) => (val.trim() ? val.trim().toUpperCase() : null))
         .nullable()
         .optional(),
+    imageUrl: z
+        .string()
+        .max(500, "Image URL must be under 500 characters")
+        .transform((val) => (val.trim() ? val.trim() : null))
+        .nullable()
+        .optional(),
     fare: z
         .string()
         .min(1, "Fare is required")

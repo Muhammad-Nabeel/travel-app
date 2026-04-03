@@ -4,8 +4,8 @@ import { getStoredGa4Settings } from "@/lib/admin-settings/ga4-settings";
 
 export type AdminKpis = {
     visitors: number;
-    sales: string;
-    conversionRate: string;
+    sessions: number;
+    uniqueVisitors: number;
     avgSessionTime: string;
 };
 
@@ -18,7 +18,7 @@ export type SourceBreakdown = {
 export type AdminAnalyticsData = {
     configured: boolean;
     source: "ga4" | "fallback";
-    revenueBars: number[];
+    durationBars: number[];
     kpis: AdminKpis;
     sources: SourceBreakdown[];
     errorReason?: string;
@@ -42,14 +42,13 @@ function fallbackAnalyticsData(errorReason?: string): AdminAnalyticsData {
     return {
         configured: false,
         source: "fallback",
-        revenueBars: [
-            52, 43, 52, 18, 57, 69, 61, 43, 52, 48, 73, 78, 69, 73, 86, 61, 65, 57,
-            52, 61,
-        ],
+        durationBars: Array.from({ length: 30 }, (_, i) =>
+            Math.max(12, 92 - i * 2),
+        ),
         kpis: {
             visitors: 43883,
-            sales: "PKR 9.8M",
-            conversionRate: "3.7%",
+            sessions: 61520,
+            uniqueVisitors: 36740,
             avgSessionTime: "04:12",
         },
         sources: [
@@ -130,20 +129,20 @@ async function fetchGa4AnalyticsData(
                 { name: "activeUsers" },
                 { name: "sessions" },
                 { name: "averageSessionDuration" },
-                { name: "sessionConversionRate" },
+                { name: "totalUsers" },
             ],
         },
     });
 
-    const barResponse = await analyticsData.properties.runReport({
+    const durationResponse = await analyticsData.properties.runReport({
         property: `properties/${config.propertyId}`,
         auth,
         requestBody: {
             dateRanges: [{ startDate: "20daysAgo", endDate: "today" }],
-            dimensions: [{ name: "date" }],
-            metrics: [{ name: "activeUsers" }],
-            orderBys: [{ dimension: { dimensionName: "date" } }],
-            limit: "20",
+            dimensions: [{ name: "hour" }],
+            metrics: [{ name: "userEngagementDuration" }],
+            orderBys: [{ dimension: { dimensionName: "hour" } }],
+            limit: "24",
         },
     });
 
@@ -152,7 +151,7 @@ async function fetchGa4AnalyticsData(
         auth,
         requestBody: {
             dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-            dimensions: [{ name: "sessionDefaultChannelGroup" }],
+            dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
             metrics: [{ name: "sessions" }],
             orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
             limit: "4",
@@ -163,15 +162,24 @@ async function fetchGa4AnalyticsData(
     const visitors = parseNumber(kpiValues[0]?.value ?? "0");
     const sessions = parseNumber(kpiValues[1]?.value ?? "0");
     const avgSessionSeconds = parseNumber(kpiValues[2]?.value ?? "0");
-    const conversionRate = parseNumber(kpiValues[3]?.value ?? "0");
+    const uniqueVisitors = parseNumber(kpiValues[3]?.value ?? "0");
 
-    const barRaw =
-        barResponse.data.rows?.map((row) => parseNumber(row.metricValues?.[0]?.value ?? "0")) ?? [];
-    const maxBar = Math.max(...barRaw, 1);
-    const revenueBars =
-        barRaw.length > 0
-            ? barRaw.map((value) => Math.max(12, Math.round((value / maxBar) * 86)))
-            : fallbackAnalyticsData().revenueBars;
+    const durationBuckets = Array.from({ length: 24 }, () => 0);
+    const durationRows = durationResponse.data.rows ?? [];
+    durationRows.forEach((row) => {
+        const hourValue = parseNumber(row.dimensionValues?.[0]?.value ?? "-1");
+        if (hourValue < 0 || hourValue > 23) {
+            return;
+        }
+
+        durationBuckets[hourValue] += parseNumber(
+            row.metricValues?.[0]?.value ?? "0",
+        );
+    });
+    const maxBucket = Math.max(...durationBuckets, 1);
+    const durationBars = durationBuckets.map((value) =>
+        Math.max(12, Math.round((value / maxBucket) * 86)),
+    );
 
     const sourceColors = ["#17c8b5", "#9f36f2", "#3b43ff", "#f4b83f"];
     const sourceRows = sourceResponse.data.rows ?? [];
@@ -184,8 +192,10 @@ async function fetchGa4AnalyticsData(
         sourceRows.length > 0 && totalSourceSessions > 0
             ? sourceRows.map((row, index) => {
                 const sessionsForSource = parseNumber(row.metricValues?.[0]?.value ?? "0");
+                const source = row.dimensionValues?.[0]?.value || "Unknown";
+                const medium = row.dimensionValues?.[1]?.value || "";
                 return {
-                    label: row.dimensionValues?.[0]?.value || "Other",
+                    label: `${source}${medium ? ` / ${medium}` : ""}`,
                     color: sourceColors[index] ?? "#9ca3af",
                     percent: Math.max(
                         1,
@@ -203,11 +213,11 @@ async function fetchGa4AnalyticsData(
     return {
         configured: true,
         source: "ga4",
-        revenueBars,
+        durationBars: durationBars.length > 0 ? durationBars : fallbackAnalyticsData().durationBars,
         kpis: {
             visitors,
-            sales: `${sessions.toLocaleString()} sessions`,
-            conversionRate: `${conversionRate.toFixed(2)}%`,
+            sessions,
+            uniqueVisitors,
             avgSessionTime: `${minutes.toString().padStart(2, "0")}:${seconds}`,
         },
         sources,

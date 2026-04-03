@@ -1,58 +1,26 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { headers } from "next/headers";
 
 import type { AdminAnalyticsData } from "@/lib/analytics/ga4";
+import {
+  markDatabaseUnavailable,
+  prisma,
+  shouldBypassDatabase,
+} from "@/lib/db";
 
-type SparklineProps = {
-  points: number[];
-  lineColor: string;
-  fillColor: string;
+type RecentBooking = {
+  id: string;
+  type: "Flight" | "Hotel";
+  reference: string;
+  status: string;
+  amount: string;
+  createdAt: string;
 };
-
-function Sparkline({ points, lineColor, fillColor }: SparklineProps) {
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const span = max - min || 1;
-
-  const normalized = points.map((point, i) => {
-    const x = (i / (points.length - 1 || 1)) * 100;
-    const y = 100 - ((point - min) / span) * 75 - 10;
-    return { x, y };
-  });
-
-  const linePath = normalized.map((p) => `${p.x},${p.y}`).join(" ");
-  const areaPath = `0,100 ${linePath} 100,100`;
-
-  return (
-    <svg
-      viewBox="0 0 100 100"
-      className="h-28 w-full"
-      preserveAspectRatio="none"
-    >
-      <polygon points={areaPath} fill={fillColor} />
-      <polyline
-        points={linePath}
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
 
 export default async function AdminPage() {
   const analytics = await getAnalyticsFromApi();
+  const recentBookings = await getRecentBookings();
 
-  const transactions = [
-    { name: "Cy Ganderton", date: "Feb 2nd", amount: "180 USD", trend: "up" },
-    { name: "Hart Hagerty", date: "Sep 2nd", amount: "250 USD", trend: "up" },
-    { name: "Jim Hagerty", date: "Sep 2nd", amount: "250 USD", trend: "up" },
-    { name: "Hart Hagerty", date: "Sep 2nd", amount: "250 USD", trend: "down" },
-    { name: "Hart Hagerty", date: "Sep 2nd", amount: "250 USD", trend: "down" },
-    { name: "Brice Swyre", date: "Jul 2nd", amount: "320 USD", trend: "up" },
-  ] as const;
-
-  const revenueBars = analytics.revenueBars;
+  const durationBars = analytics.durationBars;
 
   const sourceChart = analytics.sources;
 
@@ -105,31 +73,25 @@ export default async function AdminPage() {
           <p className="mt-3 text-3xl font-extrabold text-slate-900">
             {analytics.kpis.visitors.toLocaleString()}
           </p>
-          <p className="mt-2 text-xs font-medium text-blue-600">
-            +12.4% vs last 30 days
-          </p>
+          <p className="mt-2 text-xs font-medium text-blue-600">Last 30 days</p>
         </article>
         <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
-            Total Sales
+            Total Sessions
           </p>
           <p className="mt-3 text-3xl font-extrabold text-slate-900">
-            {analytics.kpis.sales}
+            {analytics.kpis.sessions.toLocaleString()}
           </p>
-          <p className="mt-2 text-xs font-medium text-blue-600">
-            +8.1% vs last 30 days
-          </p>
+          <p className="mt-2 text-xs font-medium text-blue-600">Last 30 days</p>
         </article>
         <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
-            Conversion Rate
+            Unique Visitors
           </p>
           <p className="mt-3 text-3xl font-extrabold text-slate-900">
-            {analytics.kpis.conversionRate}
+            {analytics.kpis.uniqueVisitors.toLocaleString()}
           </p>
-          <p className="mt-2 text-xs font-medium text-blue-600">
-            +0.5% points uplift
-          </p>
+          <p className="mt-2 text-xs font-medium text-blue-600">Last 30 days</p>
         </article>
         <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
@@ -138,60 +100,72 @@ export default async function AdminPage() {
           <p className="mt-3 text-3xl font-extrabold text-slate-900">
             {analytics.kpis.avgSessionTime}
           </p>
-          <p className="mt-2 text-xs font-medium text-blue-600">
-            +6.3% engagement growth
-          </p>
+          <p className="mt-2 text-xs font-medium text-blue-600">Last 30 days</p>
         </article>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">
-            Recent Transactions
+            Recent Bookings (Flights & Hotels)
           </h2>
           <div className="mt-5 overflow-hidden rounded-xl border border-slate-100">
-            {transactions.map((row, index) => (
-              <div
-                key={`${row.name}-${index}`}
-                className={`grid grid-cols-[1.1fr_0.8fr_0.9fr] items-center px-4 py-3 text-sm ${
-                  index % 2 === 0 ? "bg-slate-50" : "bg-slate-100/70"
-                }`}
-              >
-                <p className="font-medium text-slate-700">{row.name}</p>
-                <p className="text-slate-700">{row.date}</p>
-                <div className="flex items-center gap-1.5 text-slate-800">
-                  {row.trend === "up" ? (
-                    <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400" />
-                  ) : (
-                    <ArrowDownRight className="h-3.5 w-3.5 text-rose-300" />
-                  )}
-                  <span>{row.amount}</span>
+            {recentBookings.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-slate-500">
+                No recent bookings available yet.
+              </p>
+            ) : (
+              recentBookings.map((row, index) => (
+                <div
+                  key={row.id}
+                  className={`grid grid-cols-[1fr_0.7fr_0.7fr_0.7fr] items-center gap-2 px-4 py-3 text-sm ${
+                    index % 2 === 0 ? "bg-slate-50" : "bg-slate-100/70"
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold text-slate-800">
+                      {row.type} booking
+                    </p>
+                    <p className="text-xs text-slate-500">{row.reference}</p>
+                  </div>
+                  <p className="text-slate-700">{row.createdAt}</p>
+                  <p className="text-slate-700">{row.amount}</p>
+                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                    {row.status}
+                  </span>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </article>
 
         <article className="rounded-2xl bg-linear-to-br from-blue-600 to-indigo-600 p-6 text-white shadow-sm">
           <p className="text-xs uppercase tracking-[0.16em] text-blue-100">
-            Revenue Snapshot
+            Hourly Engagement
           </p>
-          <h3 className="mt-2 text-2xl font-semibold">21,500 USD</h3>
-          <p className="mt-1 text-xs text-blue-100">Revenue report -&gt;</p>
+          <h3 className="mt-2 text-2xl font-semibold">24-hour distribution</h3>
+          <p className="mt-1 text-xs text-blue-100">
+            Based on GA4 user engagement duration per hour
+          </p>
 
-          <div className="mt-5 grid h-44 grid-cols-20 items-end gap-1.5">
-            {revenueBars.map((value, i) => (
+          <div className="mt-5 grid h-44 grid-cols-24 items-end gap-1">
+            {durationBars.map((value, i) => (
               <div
                 key={i}
-                className="rounded-sm bg-white/65"
+                className="rounded-sm bg-white/70"
                 style={{ height: `${value}%` }}
+                title={`${i}:00`}
               />
             ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[11px] text-blue-100/80">
+            <span>00:00</span>
+            <span>23:00</span>
           </div>
         </article>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
+      <section className="grid gap-6 lg:grid-cols-2">
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <h3 className="text-xl font-semibold text-slate-900">
             Traffic Sources
@@ -219,43 +193,56 @@ export default async function AdminPage() {
             </div>
           </div>
         </article>
-
-        <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <p className="text-4xl font-extrabold text-slate-900">19,000</p>
-          <p className="mt-1 text-xl font-medium text-slate-700">
-            Resource Downloads
-          </p>
-          <div className="mt-3 overflow-hidden rounded-xl bg-teal-100/40">
-            <Sparkline
-              points={[
-                22, 20, 15, 30, 33, 38, 35, 35, 35, 37, 42, 39, 42, 37, 44, 39,
-                46, 43, 32, 35,
-              ]}
-              lineColor="#0fc5b0"
-              fillColor="#b7ddd9"
-            />
-          </div>
-        </article>
-
-        <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <p className="text-4xl font-extrabold text-slate-900">32,800</p>
-          <p className="mt-1 text-xl font-medium text-slate-700">
-            Unique Visitors
-          </p>
-          <div className="mt-3 overflow-hidden rounded-xl bg-violet-100/40">
-            <Sparkline
-              points={[
-                33, 30, 33, 20, 35, 40, 36, 29, 33, 31, 42, 44, 40, 42, 48, 36,
-                38, 34, 32, 36,
-              ]}
-              lineColor="#9334f2"
-              fillColor="#d2c0e6"
-            />
-          </div>
-        </article>
       </section>
     </main>
   );
+}
+
+async function getRecentBookings(): Promise<RecentBooking[]> {
+  if (shouldBypassDatabase()) {
+    return [];
+  }
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    });
+
+    return bookings.map(
+      (booking: {
+        id: string;
+        reference: string;
+        status: string;
+        totalAmount: unknown;
+        currency: string;
+        flightData: unknown;
+        hotelData: unknown;
+        createdAt: Date;
+      }) => {
+        const hasFlight = Boolean(booking.flightData);
+        const hasHotel = Boolean(booking.hotelData);
+        const type = hasFlight ? "Flight" : hasHotel ? "Hotel" : "Flight";
+        const totalAmount = booking.totalAmount?.toString() ?? "0";
+
+        return {
+          id: booking.id,
+          type,
+          reference: booking.reference,
+          status: booking.status,
+          amount: `${booking.currency} ${totalAmount}`,
+          createdAt: new Date(booking.createdAt).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+        };
+      },
+    );
+  } catch (err) {
+    markDatabaseUnavailable(err);
+    return [];
+  }
 }
 
 async function getAnalyticsFromApi(): Promise<AdminAnalyticsData> {
@@ -266,14 +253,13 @@ async function getAnalyticsFromApi(): Promise<AdminAnalyticsData> {
   const fallbackData: AdminAnalyticsData = {
     configured: false,
     source: "fallback",
-    revenueBars: [
-      52, 43, 52, 18, 57, 69, 61, 43, 52, 48, 73, 78, 69, 73, 86, 61, 65, 57,
-      52, 61,
-    ],
+    durationBars: Array.from({ length: 30 }, (_, i) =>
+      Math.max(12, 92 - i * 2),
+    ),
     kpis: {
       visitors: 43883,
-      sales: "PKR 9.8M",
-      conversionRate: "3.7%",
+      sessions: 61520,
+      uniqueVisitors: 36740,
       avgSessionTime: "04:12",
     },
     sources: [

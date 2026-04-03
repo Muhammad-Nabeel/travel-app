@@ -11,6 +11,7 @@ type Destination = {
   city: string;
   country: string;
   iataCode: string | null;
+  imageUrl: string | null;
   fare: string;
   notes: string | null;
   gradient: string;
@@ -48,6 +49,7 @@ const EMPTY_FORM = {
   city: "",
   country: "",
   iataCode: "",
+  imageUrl: "",
   fare: "",
   notes: "",
   gradient: "blue",
@@ -114,6 +116,7 @@ export default function AdminDestinationsPage() {
       city: d.city,
       country: d.country,
       iataCode: d.iataCode ?? "",
+      imageUrl: d.imageUrl ?? "",
       fare: d.fare,
       notes: d.notes ?? "",
       gradient: d.gradient,
@@ -192,6 +195,7 @@ export default function AdminDestinationsPage() {
         city: formData.city,
         country: formData.country,
         iataCode: formData.iataCode,
+        imageUrl: formData.imageUrl,
         fare: formData.fare,
         notes: formData.notes,
         gradient: formData.gradient,
@@ -420,6 +424,17 @@ export default function AdminDestinationsPage() {
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
               </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Image URL
+                </span>
+                <input
+                  {...field("imageUrl")}
+                  placeholder="/destinations/dubai.jpg or https://..."
+                  maxLength={500}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Sort Order
@@ -506,6 +521,7 @@ export default function AdminDestinationsPage() {
               <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">City</th>
+                  <th className="px-4 py-3">Image</th>
                   <th className="px-4 py-3">Country</th>
                   <th className="px-4 py-3">IATA</th>
                   <th className="px-4 py-3">Fare</th>
@@ -523,6 +539,18 @@ export default function AdminDestinationsPage() {
                   >
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {d.city}
+                    </td>
+                    <td className="px-4 py-3">
+                      {d.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={d.imageUrl}
+                          alt={`${d.city} preview`}
+                          className="h-10 w-14 rounded-md object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{d.country}</td>
                     <td className="px-4 py-3 font-mono text-slate-600">

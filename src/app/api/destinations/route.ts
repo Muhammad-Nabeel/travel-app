@@ -9,6 +9,7 @@ export type DestinationRow = {
     city: string;
     country: string;
     iataCode: string | null;
+    imageUrl: string | null;
     fare: string;
     notes: string | null;
     gradient: string;
@@ -17,18 +18,16 @@ export type DestinationRow = {
 };
 
 export const DUMMY_DESTINATIONS: DestinationRow[] = [
-    { id: "d01", city: "Dubai", country: "UAE", iataCode: "DXB", fare: "PKR 38,400", notes: "Round-trip from Karachi", gradient: "blue", sortOrder: 1, isActive: true },
-    { id: "d02", city: "Jeddah", country: "Saudi Arabia", iataCode: "JED", fare: "PKR 89,000", notes: "Umrah gateway", gradient: "teal", sortOrder: 2, isActive: true },
-    { id: "d03", city: "Madinah", country: "Saudi Arabia", iataCode: "MED", fare: "PKR 91,500", notes: "Ziyarat destination", gradient: "navy", sortOrder: 3, isActive: true },
-    { id: "d04", city: "Istanbul", country: "Turkey", iataCode: "IST", fare: "PKR 104,252", notes: "Europe gateway", gradient: "purple", sortOrder: 4, isActive: true },
-    { id: "d05", city: "Bangkok", country: "Thailand", iataCode: "BKK", fare: "PKR 127,837", notes: "Southeast Asia hub", gradient: "ocean", sortOrder: 5, isActive: true },
-    { id: "d06", city: "Kuwait City", country: "Kuwait", iataCode: "KWI", fare: "PKR 72,290", notes: "Gulf direct", gradient: "dark", sortOrder: 6, isActive: true },
-    { id: "d07", city: "London", country: "UK", iataCode: "LHR", fare: "PKR 189,000", notes: "Heathrow non-stop", gradient: "sunset", sortOrder: 7, isActive: true },
-    { id: "d08", city: "Kuala Lumpur", country: "Malaysia", iataCode: "KUL", fare: "PKR 134,500", notes: "Popular with families", gradient: "teal", sortOrder: 8, isActive: true },
-    { id: "d09", city: "Muscat", country: "Oman", iataCode: "MCT", fare: "PKR 54,200", notes: "Short-haul Gulf", gradient: "ocean", sortOrder: 9, isActive: true },
-    { id: "d10", city: "Toronto", country: "Canada", iataCode: "YYZ", fare: "PKR 241,000", notes: "Long-haul via Gulf", gradient: "navy", sortOrder: 10, isActive: true },
-    { id: "d11", city: "Riyadh", country: "Saudi Arabia", iataCode: "RUH", fare: "PKR 78,600", notes: "Business & Umrah", gradient: "blue", sortOrder: 11, isActive: true },
-    { id: "d12", city: "Doha", country: "Qatar", iataCode: "DOH", fare: "PKR 61,800", notes: "Qatar Airways hub", gradient: "dark", sortOrder: 12, isActive: true },
+    { id: "d01", city: "Dubai", country: "UAE", iataCode: "DXB", imageUrl: null, fare: "PKR 38,400", notes: "Round-trip from Karachi", gradient: "blue", sortOrder: 1, isActive: true },
+    { id: "d02", city: "Jeddah", country: "Saudi Arabia", iataCode: "JED", imageUrl: null, fare: "PKR 89,000", notes: "Umrah gateway", gradient: "teal", sortOrder: 2, isActive: true },
+    { id: "d03", city: "Madinah", country: "Saudi Arabia", iataCode: "MED", imageUrl: null, fare: "PKR 91,500", notes: "Ziyarat destination", gradient: "navy", sortOrder: 3, isActive: true },
+    { id: "d04", city: "Istanbul", country: "Turkey", iataCode: "IST", imageUrl: null, fare: "PKR 104,252", notes: "Europe gateway", gradient: "purple", sortOrder: 4, isActive: true },
+    { id: "d05", city: "London", country: "UK", iataCode: "LHR", imageUrl: null, fare: "PKR 189,000", notes: "Heathrow non-stop", gradient: "sunset", sortOrder: 5, isActive: true },
+    { id: "d06", city: "Kuala Lumpur", country: "Malaysia", iataCode: "KUL", imageUrl: null, fare: "PKR 134,500", notes: "Popular with families", gradient: "teal", sortOrder: 6, isActive: true },
+    { id: "d07", city: "Doha", country: "Qatar", iataCode: "DOH", imageUrl: null, fare: "PKR 61,800", notes: "Qatar Airways hub", gradient: "dark", sortOrder: 7, isActive: true },
+    { id: "d08", city: "Bangkok", country: "Thailand", iataCode: "BKK", imageUrl: null, fare: "PKR 127,837", notes: "Southeast Asia hub", gradient: "ocean", sortOrder: 8, isActive: true },
+    { id: "d09", city: "Riyadh", country: "Saudi Arabia", iataCode: "RUH", imageUrl: null, fare: "PKR 78,600", notes: "Business & Umrah", gradient: "blue", sortOrder: 9, isActive: true },
+    { id: "d10", city: "Muscat", country: "Oman", iataCode: "MCT", imageUrl: null, fare: "PKR 54,200", notes: "Short-haul Gulf", gradient: "ocean", sortOrder: 10, isActive: true },
 ];
 
 function jsonWithSource(data: DestinationRow[], source: "db" | "dummy") {
@@ -85,6 +84,7 @@ export async function POST(request: NextRequest) {
                 country: validatedData.country,
                 fare: validatedData.fare,
                 iataCode: validatedData.iataCode,
+                imageUrl: validatedData.imageUrl,
                 notes: validatedData.notes,
                 gradient: validatedData.gradient,
                 sortOrder: validatedData.sortOrder,

@@ -7,7 +7,6 @@ import {
   PackageSearchEngine,
   type TourType,
 } from "@/components/features/home/package-search/package-search";
-import { CustomerSupport } from "@/components/shared/customer-support";
 import { tourPackageResults } from "@/lib/mock-data";
 
 function StarRating({ rating }: { rating: number }) {
@@ -192,8 +191,6 @@ export default function TourPackagesPage() {
           </div>
         )}
       </section>
-
-      <CustomerSupport />
     </main>
   );
 }

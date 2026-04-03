@@ -8,6 +8,7 @@ type Destination = {
   city: string;
   country: string;
   iataCode: string | null;
+  imageUrl: string | null;
   fare: string;
   notes: string | null;
   gradient: string;
@@ -40,7 +41,7 @@ function DestinationsSkeleton() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-48 min-w-[220px] shrink-0 animate-pulse rounded-2xl bg-slate-200 sm:min-w-[260px]"
+            className="h-48 min-w-55 shrink-0 animate-pulse rounded-2xl bg-slate-200 sm:min-w-65"
           >
             <div className="m-3 h-5 w-10 rounded-md bg-white/40" />
           </div>
@@ -126,6 +127,15 @@ export function DestinationsSlider() {
             className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
             style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
           >
+            {d.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={d.imageUrl}
+                alt={d.city}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : null}
             <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
 
             <div className="relative flex items-start justify-between">

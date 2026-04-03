@@ -13,7 +13,12 @@ const EMPTY_PRICING_FORM = {
   serviceChargePercent: "0",
 };
 
-type SettingsPanel = "ga4" | "pricing" | null;
+const EMPTY_SUPPORT_FORM = {
+  mobileNumber: "",
+  landlineNumber: "",
+};
+
+type SettingsPanel = "ga4" | "pricing" | "support" | null;
 
 export default function AdminSettingsPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -29,14 +34,27 @@ export default function AdminSettingsPage() {
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingMessage, setPricingMessage] = useState("");
   const [pricingError, setPricingError] = useState("");
+  const [supportForm, setSupportForm] = useState(EMPTY_SUPPORT_FORM);
+  const [supportSaving, setSupportSaving] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportError, setSupportError] = useState("");
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
 
   useEffect(() => {
     async function loadSettings() {
       try {
-        const res = await fetch("/api/admin/settings/ga4", {
-          cache: "no-store",
-        });
+        const [res, pricingRes, supportRes] = await Promise.all([
+          fetch("/api/admin/settings/ga4", {
+            cache: "no-store",
+          }),
+          fetch("/api/admin/settings/site-pricing", {
+            cache: "no-store",
+          }),
+          fetch("/api/admin/settings/support-contact", {
+            cache: "no-store",
+          }),
+        ]);
+
         const json = (await res.json()) as {
           measurementId?: string;
           propertyId?: string;
@@ -52,15 +70,21 @@ export default function AdminSettingsPage() {
         });
         setHasStoredPrivateKey(Boolean(json.hasPrivateKey));
 
-        const pricingRes = await fetch("/api/admin/settings/site-pricing", {
-          cache: "no-store",
-        });
         const pricingJson = (await pricingRes.json()) as {
           serviceChargePercent?: number;
         };
 
+        const supportJson = (await supportRes.json()) as {
+          mobileNumber?: string;
+          landlineNumber?: string;
+        };
+
         setPricingForm({
           serviceChargePercent: String(pricingJson.serviceChargePercent ?? 0),
+        });
+        setSupportForm({
+          mobileNumber: supportJson.mobileNumber ?? "",
+          landlineNumber: supportJson.landlineNumber ?? "",
         });
       } catch {
         setError("Unable to load settings.");
@@ -157,6 +181,42 @@ export default function AdminSettingsPage() {
     }
   }
 
+  async function handleSupportSave() {
+    setSupportSaving(true);
+    setSupportMessage("");
+    setSupportError("");
+
+    try {
+      const res = await fetch("/api/admin/settings/support-contact", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(supportForm),
+      });
+
+      if (!res.ok) {
+        const json = (await res.json()) as { error?: string };
+        throw new Error(json.error ?? "Failed to save support settings");
+      }
+
+      const saved = (await res.json()) as {
+        mobileNumber?: string;
+        landlineNumber?: string;
+      };
+
+      setSupportForm({
+        mobileNumber: saved.mobileNumber ?? "",
+        landlineNumber: saved.landlineNumber ?? "",
+      });
+      setSupportMessage("Support contact settings saved successfully.");
+    } catch (err) {
+      setSupportError(
+        err instanceof Error ? err.message : "Failed to save support settings",
+      );
+    } finally {
+      setSupportSaving(false);
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6">
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
@@ -199,6 +259,17 @@ export default function AdminSettingsPage() {
               }`}
             >
               Pricing
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("support")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "support"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Support
             </button>
           </div>
         </aside>
@@ -336,7 +407,7 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : activePanel === "pricing" ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
                 Pricing
@@ -390,6 +461,77 @@ export default function AdminSettingsPage() {
                   className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
                 >
                   {pricingSaving ? "Saving..." : "Save Site Pricing"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                Support
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+                Customer Support Contacts
+              </h2>
+              <p className="mt-1 text-sm text-blue-800/80">
+                Configure the single mobile and landline numbers shown in the
+                live support panel across the site.
+              </p>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Mobile Number
+                  </span>
+                  <input
+                    value={supportForm.mobileNumber}
+                    onChange={(e) =>
+                      setSupportForm((prev) => ({
+                        ...prev,
+                        mobileNumber: e.target.value,
+                      }))
+                    }
+                    placeholder="+44 7933 837137"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Landline Number
+                  </span>
+                  <input
+                    value={supportForm.landlineNumber}
+                    onChange={(e) =>
+                      setSupportForm((prev) => ({
+                        ...prev,
+                        landlineNumber: e.target.value,
+                      }))
+                    }
+                    placeholder="+92 42 12345678"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                </label>
+              </div>
+
+              {supportMessage && (
+                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {supportMessage}
+                </p>
+              )}
+              {supportError && (
+                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {supportError}
+                </p>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleSupportSave()}
+                  disabled={supportSaving}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                >
+                  {supportSaving ? "Saving..." : "Save Support Contacts"}
                 </button>
               </div>
             </div>

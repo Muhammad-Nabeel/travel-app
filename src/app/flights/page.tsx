@@ -3,7 +3,6 @@ import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
-import { CustomerSupport } from "@/components/shared/customer-support";
 import { getAirportDisplay } from "@/lib/aviation-reference";
 import { searchFlights } from "@/lib/flights/search-service";
 
@@ -11,7 +10,6 @@ function HomeLayout() {
   return (
     <main className="flex-1">
       <FlightSearchEngine />
-      <CustomerSupport />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />

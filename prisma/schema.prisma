@@ -119,6 +119,7 @@ model Destination {
   city        String
   country     String
   iataCode    String?
+  imageUrl    String?  @db.Text
   fare        String
   notes       String?
   gradient    String   @default("blue")
