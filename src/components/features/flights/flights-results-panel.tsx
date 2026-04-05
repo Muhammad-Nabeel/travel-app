@@ -7,7 +7,11 @@ import { ArrowRight, CalendarDays, Clock3, Plane } from "lucide-react";
 
 import { FlightFiltersPanel } from "@/components/features/flights/flight-filters-panel";
 import { FlightResultCard } from "@/components/features/flights/flight-result-card";
-import type { FlightOffer, FlightSearchQuery } from "@/lib/flights/types";
+import type {
+  FlightOffer,
+  FlightSearchQuery,
+  TripType,
+} from "@/lib/flights/types";
 import {
   getAirlineCode,
   getAirlineLogoSrc,
@@ -29,13 +33,148 @@ type AirportLookupEntry = {
   airportName: string;
 };
 
+type StickyLegData = {
+  legIndex?: number;
+  origin: string;
+  destination: string;
+  departure: string;
+  arrival: string;
+  durationMinutes?: number;
+  stops: number;
+  segments: Array<{ airline?: string }>;
+};
+
+const PAGE_SIZE = 10;
+
+function getLegLabelForTripType(
+  tripType: TripType,
+  index: number,
+  totalLegs: number,
+) {
+  if (tripType === "round-trip" && totalLegs === 2) {
+    return index === 0 ? "Outbound Flight" : "Return Flight";
+  }
+
+  if (tripType === "multi-city" && totalLegs > 1) {
+    return `Leg ${index + 1}`;
+  }
+
+  return "Flight";
+}
+
+function getPriceLabelForTripType(tripType: TripType) {
+  if (tripType === "multi-city") return "Multi-city total";
+  if (tripType === "round-trip") return "Round-trip total";
+  return "Per person";
+}
+
+function getOfferDuration(offer: FlightOffer) {
+  if (offer.legs && offer.legs.length > 0) {
+    return offer.legs.reduce(
+      (total, leg) => total + (leg.durationMinutes ?? 0),
+      0,
+    );
+  }
+
+  return offer.durationMinutes ?? Number.MAX_SAFE_INTEGER;
+}
+
+function formatQuickPrice(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatMoney(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatTime(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(parsed);
+}
+
+function formatDuration(minutes?: number) {
+  if (!minutes) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function resolveSelectedOfferLegs(offer: FlightOffer | null): StickyLegData[] {
+  if (!offer) return [];
+
+  if (offer.legs && offer.legs.length > 0) {
+    return offer.legs;
+  }
+
+  return [
+    {
+      origin: offer.origin,
+      destination: offer.destination,
+      departure: offer.departure,
+      arrival: offer.arrival,
+      durationMinutes: offer.durationMinutes,
+      stops: offer.stops,
+      segments: [],
+    },
+  ];
+}
+
+function filterAndSortOffers(params: {
+  offers: FlightOffer[];
+  priceCap: number;
+  stopsFilter: "all" | "direct" | "one-plus";
+  selectedAirlines: string[];
+  sortBy: SortBy;
+}) {
+  const { offers, priceCap, stopsFilter, selectedAirlines, sortBy } = params;
+
+  const narrowed = offers.filter((offer) => {
+    if (offer.price > priceCap) return false;
+    if (stopsFilter === "direct" && offer.stops > 0) return false;
+    if (stopsFilter === "one-plus" && offer.stops === 0) return false;
+    if (
+      selectedAirlines.length > 0 &&
+      !selectedAirlines.includes(offer.airline)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const sorted = [...narrowed].sort((a, b) => a.price - b.price);
+
+  if (sortBy === "shortest-duration") {
+    sorted.sort((a, b) => getOfferDuration(a) - getOfferDuration(b));
+  }
+
+  if (sortBy === "earliest") {
+    sorted.sort(
+      (a, b) =>
+        new Date(a.departure).getTime() - new Date(b.departure).getTime(),
+    );
+  }
+
+  return sorted;
+}
+
 export function FlightsResultsPanel({
   offers,
   query,
   warnings,
 }: FlightsResultsPanelProps) {
-  const PAGE_SIZE = 10;
-  const isRoundTrip = query.tripType === "round-trip";
   const router = useRouter();
 
   function buildBookingUrl(offerId: string) {
@@ -52,6 +191,9 @@ export function FlightsResultsPanel({
       directOnly: String(query.directOnly),
     });
     if (query.returnDate) p.set("returnDate", query.returnDate);
+    if (query.tripType === "multi-city" && (query.legs?.length ?? 0) > 0) {
+      p.set("legs", JSON.stringify(query.legs));
+    }
     return `/flights/booking?${p.toString()}`;
   }
 
@@ -86,58 +228,14 @@ export function FlightsResultsPanel({
     [offers],
   );
 
-  function getOfferDuration(offer: FlightOffer) {
-    if (offer.legs && offer.legs.length > 0) {
-      return offer.legs.reduce(
-        (total, leg) => total + (leg.durationMinutes ?? 0),
-        0,
-      );
-    }
-
-    return offer.durationMinutes ?? Number.MAX_SAFE_INTEGER;
-  }
-
   const filteredOffers = useMemo(() => {
-    const narrowed = offers.filter((offer) => {
-      if (offer.price > effectivePriceCap) {
-        return false;
-      }
-
-      if (stopsFilter === "direct" && offer.stops > 0) {
-        return false;
-      }
-
-      if (stopsFilter === "one-plus" && offer.stops === 0) {
-        return false;
-      }
-
-      if (
-        selectedAirlines.length > 0 &&
-        !selectedAirlines.includes(offer.airline)
-      ) {
-        return false;
-      }
-
-      return true;
+    return filterAndSortOffers({
+      offers,
+      priceCap: effectivePriceCap,
+      stopsFilter,
+      selectedAirlines,
+      sortBy,
     });
-
-    const sorted = [...narrowed].sort((a, b) => a.price - b.price);
-    if (sortBy === "lowest-price") {
-      // already sorted above — lowest price is the default
-    }
-
-    if (sortBy === "shortest-duration") {
-      sorted.sort((a, b) => getOfferDuration(a) - getOfferDuration(b));
-    }
-
-    if (sortBy === "earliest") {
-      sorted.sort(
-        (a, b) =>
-          new Date(a.departure).getTime() - new Date(b.departure).getTime(),
-      );
-    }
-
-    return sorted;
   }, [effectivePriceCap, offers, selectedAirlines, sortBy, stopsFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOffers.length / PAGE_SIZE));
@@ -221,6 +319,7 @@ export function FlightsResultsPanel({
     null;
 
   const currency = offers[0]?.currency ?? "PKR";
+  const selectedOfferLegs = resolveSelectedOfferLegs(selectedOffer);
 
   const quickSortMeta = useMemo(() => {
     if (filteredOffers.length === 0) return null;
@@ -234,39 +333,6 @@ export function FlightsResultsPanel({
     )[0];
     return { cheapest, fastest, earliest };
   }, [filteredOffers]);
-
-  function formatQuickPrice(value: number) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(value);
-  }
-
-  function formatMoney(value: number, curr: string) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: curr,
-      maximumFractionDigits: 0,
-    }).format(value);
-  }
-
-  function formatTime(value: string) {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return new Intl.DateTimeFormat("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(parsed);
-  }
-
-  function formatDuration(minutes?: number) {
-    if (!minutes) return "";
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  }
 
   return (
     <section className="section-shell mt-6 pb-40">
@@ -370,7 +436,7 @@ export function FlightsResultsPanel({
                       {tab.label}
                     </span>
                     <span className="text-xs font-medium opacity-70">
-                      {formatQuickPrice(tab.price)}
+                      {formatQuickPrice(tab.price, currency)}
                     </span>
                   </button>
                 ))}
@@ -393,6 +459,7 @@ export function FlightsResultsPanel({
                 <FlightResultCard
                   key={offer.id}
                   offer={offer}
+                  tripType={query.tripType}
                   highlighted={resolvedSelectedOfferId === offer.id}
                   onSelect={() => setSelectedOfferId(offer.id)}
                   airportLookup={airportLookup}
@@ -447,47 +514,32 @@ export function FlightsResultsPanel({
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-base-300 bg-base-100/97 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
           <div className="mx-auto w-full max-w-295 px-4 py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-4">
-              {/* ── Outbound leg pill ── */}
-              <StickyLegPill
-                label="Outbound Flight"
-                leg={
-                  selectedOffer.legs?.[0] ?? {
-                    legIndex: 0,
-                    origin: selectedOffer.origin,
-                    destination: selectedOffer.destination,
-                    departure: selectedOffer.departure,
-                    arrival: selectedOffer.arrival,
-                    durationMinutes: selectedOffer.durationMinutes,
-                    stops: selectedOffer.stops,
-                    segments: [],
-                  }
-                }
-                airline={selectedOffer.airline}
-                airlineLookup={airlineLookup}
-                formatTime={formatTime}
-                formatDuration={formatDuration}
-              />
-
-              {/* ── Return leg pill ── */}
-              {isRoundTrip && selectedOffer.legs?.[1] && (
-                <>
-                  <div className="hidden w-px self-stretch bg-base-300 sm:block" />
+              {selectedOfferLegs.map((leg, index) => (
+                <div
+                  key={`${selectedOffer.id}-sticky-leg-${leg.legIndex}-${index}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  {index > 0 ? (
+                    <div className="hidden w-px self-stretch bg-base-300 sm:block" />
+                  ) : null}
                   <StickyLegPill
-                    label="Return Flight"
-                    leg={selectedOffer.legs[1]}
+                    label={getLegLabelForTripType(
+                      query.tripType,
+                      index,
+                      selectedOfferLegs.length,
+                    )}
+                    leg={leg}
                     airline={selectedOffer.airline}
                     airlineLookup={airlineLookup}
-                    formatTime={formatTime}
-                    formatDuration={formatDuration}
                   />
-                </>
-              )}
+                </div>
+              ))}
 
               {/* ── Price + Book CTA ── */}
               <div className="flex shrink-0 items-center gap-3 border-t border-base-300 pt-3 sm:ml-auto sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
                 <div className="text-right">
                   <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
-                    {isRoundTrip ? "Round-trip total" : "Per person"}
+                    {getPriceLabelForTripType(query.tripType)}
                   </p>
                   <p className="mt-0.5 text-xl font-bold text-foreground sm:text-2xl">
                     {formatMoney(selectedOffer.price, selectedOffer.currency)}
@@ -498,7 +550,7 @@ export function FlightsResultsPanel({
                 </div>
                 <button
                   type="button"
-                  className="btn btn-primary min-w-[96px] rounded-xl shadow-sm"
+                  className="btn btn-primary min-w-24 rounded-xl shadow-sm"
                   onClick={() => router.push(buildBookingUrl(selectedOffer.id))}
                 >
                   Book now
@@ -516,19 +568,9 @@ export function FlightsResultsPanel({
 
 type StickyLegPillProps = {
   label: string;
-  leg: {
-    origin: string;
-    destination: string;
-    departure: string;
-    arrival: string;
-    durationMinutes?: number;
-    stops: number;
-    segments: Array<{ airline?: string }>;
-  };
+  leg: StickyLegData;
   airline: string;
   airlineLookup: Record<string, string>;
-  formatTime: (v: string) => string;
-  formatDuration: (minutes?: number) => string;
 };
 
 function formatShortDate(value: string) {
@@ -545,8 +587,6 @@ function StickyLegPill({
   leg,
   airline,
   airlineLookup,
-  formatTime,
-  formatDuration,
 }: StickyLegPillProps) {
   // Pick the marketing airline from first segment if available
   const marketingAirlineCode =
@@ -561,6 +601,7 @@ function StickyLegPill({
     leg.stops === 0 ? "Direct" : `${leg.stops} stop${leg.stops > 1 ? "s" : ""}`;
 
   const isMultiStop = leg.stops > 0;
+  const isReturnLabel = label.toLowerCase().includes("return");
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -589,7 +630,7 @@ function StickyLegPill({
         {/* Label row */}
         <div className="mb-1 flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-base-200/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
-            {label === "Outbound Flight" ? (
+            {!isReturnLabel ? (
               <Plane className="size-2.5 rotate-0" />
             ) : (
               <Plane className="size-2.5 -scale-x-100" />

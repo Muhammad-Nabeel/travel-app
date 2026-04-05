@@ -3,6 +3,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 export type Ga4Settings = {
+    provider: "ga4" | "gtm";
+    gtmContainerId: string;
     measurementId: string;
     propertyId: string;
     serviceAccountEmail: string;
@@ -27,6 +29,8 @@ function normalizePrivateKey(raw: string): string {
 
 function emptySettings(): Ga4Settings {
     return {
+        provider: "ga4",
+        gtmContainerId: "",
         measurementId: "",
         propertyId: "",
         serviceAccountEmail: "",
@@ -106,8 +110,11 @@ export async function getStoredGa4Settings(): Promise<Ga4Settings> {
 
         const decrypted = decryptString(row.value);
         const parsed = JSON.parse(decrypted) as StoredGa4Settings;
+        const provider = sanitize(parsed.provider).toLowerCase();
 
         return {
+            provider: provider === "gtm" ? "gtm" : "ga4",
+            gtmContainerId: sanitize(parsed.gtmContainerId),
             measurementId: sanitize(parsed.measurementId),
             propertyId: sanitize(parsed.propertyId),
             serviceAccountEmail: sanitize(parsed.serviceAccountEmail),
@@ -127,6 +134,8 @@ export async function saveStoredGa4Settings(input: Ga4Settings): Promise<void> {
     }
 
     const payload: Ga4Settings = {
+        provider: input.provider === "gtm" ? "gtm" : "ga4",
+        gtmContainerId: sanitize(input.gtmContainerId),
         measurementId: sanitize(input.measurementId),
         propertyId: sanitize(input.propertyId),
         serviceAccountEmail: sanitize(input.serviceAccountEmail),

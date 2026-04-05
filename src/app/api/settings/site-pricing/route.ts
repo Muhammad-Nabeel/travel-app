@@ -8,7 +8,16 @@ export async function GET() {
         return NextResponse.json(settings, { status: 200 });
     } catch {
         return NextResponse.json(
-            { serviceChargePercent: 0 },
+            {
+                serviceChargePercent: 0,
+                enableWise: true,
+                enableStripe: true,
+                enablePaypal: true,
+                enableSumup: true,
+                enablePaymob: true,
+                enableCashOnDelivery: true,
+                enablePayAtBranch: true,
+            },
             { status: 200 },
         );
     }

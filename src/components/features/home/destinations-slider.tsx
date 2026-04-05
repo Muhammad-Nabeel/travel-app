@@ -2,11 +2,14 @@
 
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Destination = {
   id: string;
+  slug: string | null;
   city: string;
   country: string;
+  scope: "DOMESTIC" | "INTERNATIONAL";
   iataCode: string | null;
   imageUrl: string | null;
   fare: string;
@@ -54,9 +57,6 @@ function DestinationsSkeleton() {
 export function DestinationsSlider() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/destinations")
@@ -67,6 +67,48 @@ export function DestinationsSlider() {
   }, []);
 
   if (loading) return <DestinationsSkeleton />;
+
+  if (destinations.length === 0) return null;
+
+  const domestic = destinations.filter((d) => d.scope === "DOMESTIC");
+  const international = destinations.filter((d) => d.scope === "INTERNATIONAL");
+
+  if (domestic.length === 0 && international.length === 0) return null;
+
+  return (
+    <>
+      {domestic.length > 0 ? (
+        <DestinationCarousel
+          items={domestic}
+          title="Domestic Destinations"
+          subtitle="Top routes within Pakistan"
+        />
+      ) : null}
+      {international.length > 0 ? (
+        <DestinationCarousel
+          items={international}
+          title="International Destinations"
+          subtitle="Popular routes beyond Pakistan"
+        />
+      ) : null}
+    </>
+  );
+}
+
+type DestinationCarouselProps = {
+  items: Destination[];
+  title: string;
+  subtitle: string;
+};
+
+function DestinationCarousel({
+  items,
+  title,
+  subtitle,
+}: DestinationCarouselProps) {
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const updateArrows = () => {
     const el = scrollRef.current;
@@ -82,18 +124,14 @@ export function DestinationsSlider() {
     });
   };
 
-  if (destinations.length === 0) return null;
-
   return (
-    <section className="section-shell py-10" aria-label="Popular destinations">
+    <section className="section-shell py-10" aria-label={title}>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Popular Destinations
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Top flight routes — updated fares from Pakistan
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
         <div className="flex shrink-0 gap-2">
           <button
@@ -121,49 +159,55 @@ export function DestinationsSlider() {
         className="flex gap-4 overflow-x-auto pb-3"
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
       >
-        {destinations.map((d) => (
-          <article
+        {items.map((d) => (
+          <Link
             key={d.id}
-            className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
-            style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
+            href={`/destinations/${d.slug ?? d.id}`}
+            className="block focus-visible:outline-none"
+            aria-label={`View details for ${d.city}`}
           >
-            {d.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={d.imageUrl}
-                alt={d.city}
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
-              />
-            ) : null}
-            <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
+            <article
+              className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
+              style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
+            >
+              {d.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={d.imageUrl}
+                  alt={d.city}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
 
-            <div className="relative flex items-start justify-between">
-              {d.iataCode ? (
-                <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm">
-                  {d.iataCode}
-                </span>
-              ) : (
-                <span />
-              )}
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3 w-3 shrink-0 text-white/70" />
-                <p className="text-xs text-white/80">{d.country}</p>
+              <div className="relative flex items-start justify-between">
+                {d.iataCode ? (
+                  <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm">
+                    {d.iataCode}
+                  </span>
+                ) : (
+                  <span />
+                )}
               </div>
-              <h3 className="mt-0.5 text-xl font-bold leading-tight">
-                {d.city}
-              </h3>
-              {d.notes && (
-                <p className="mt-1 text-xs text-white/70">{d.notes}</p>
-              )}
-              <p className="mt-1.5 text-sm font-semibold text-white">
-                {d.fare}
-              </p>
-            </div>
-          </article>
+
+              <div className="relative">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 shrink-0 text-white/70" />
+                  <p className="text-xs text-white/80">{d.country}</p>
+                </div>
+                <h3 className="mt-0.5 text-xl font-bold leading-tight">
+                  {d.city}
+                </h3>
+                {d.notes && (
+                  <p className="mt-1 text-xs text-white/70">{d.notes}</p>
+                )}
+                <p className="mt-1.5 text-sm font-semibold text-white">
+                  {d.fare}
+                </p>
+              </div>
+            </article>
+          </Link>
         ))}
       </div>
     </section>

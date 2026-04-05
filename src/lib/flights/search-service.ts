@@ -11,6 +11,37 @@ import type {
 
 type SearchInput = URLSearchParams | Record<string, string | undefined>;
 
+function parseMockPrice(value: string | number) {
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    const normalized = value.replace(/,/g, "").trim();
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseLegsPayload(raw: string | undefined) {
+    if (!raw) return undefined;
+
+    try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (!Array.isArray(parsed)) return undefined;
+
+        return parsed
+            .filter((item): item is { origin?: string; destination?: string; departureDate?: string } =>
+                Boolean(item && typeof item === "object"),
+            )
+            .map((item) => ({
+                origin: String(item.origin ?? ""),
+                destination: String(item.destination ?? ""),
+                departureDate: String(item.departureDate ?? ""),
+            }));
+    } catch {
+        return undefined;
+    }
+}
+
 function getTodayDateISO() {
     return new Date().toISOString().slice(0, 10);
 }
@@ -23,6 +54,7 @@ function normalizeSearchInput(input: SearchInput) {
             destination: input.get("destination") ?? undefined,
             departureDate: input.get("departureDate") ?? undefined,
             returnDate: input.get("returnDate") ?? undefined,
+            legs: parseLegsPayload(input.get("legs") ?? undefined),
             adults: input.get("adults") ?? undefined,
             children: input.get("children") ?? undefined,
             infants: input.get("infants") ?? undefined,
@@ -37,6 +69,7 @@ function normalizeSearchInput(input: SearchInput) {
         destination: input.destination,
         departureDate: input.departureDate,
         returnDate: input.returnDate,
+        legs: parseLegsPayload(input.legs),
         adults: input.adults,
         children: input.children,
         infants: input.infants,
@@ -85,6 +118,53 @@ function createMockLeg(params: {
 }
 
 function mapMockDataToOffers(query?: FlightSearchQuery): FlightOffer[] {
+    if (query?.tripType === "multi-city" && (query.legs?.length ?? 0) > 0) {
+        const legsInput = query.legs ?? [];
+
+        return flightResults.map((flight, index) => {
+            const multiLegs = legsInput.map((leg, legIndex) => {
+                const departure = new Date(`${leg.departureDate}T08:00:00.000Z`);
+                const arrival = new Date(
+                    departure.getTime() + (3 + (legIndex % 3)) * 60 * 60 * 1000,
+                );
+
+                return createMockLeg({
+                    legIndex,
+                    airline: flight.airline,
+                    flightNumber: `${flight.airline.slice(0, 2).toUpperCase()}${410 + legIndex}`,
+                    origin: leg.origin,
+                    destination: leg.destination,
+                    departure,
+                    arrival,
+                });
+            });
+
+            const firstLeg = multiLegs[0];
+            const lastLeg = multiLegs[multiLegs.length - 1];
+
+            return {
+                id: `mock-multicity-${index + 1}`,
+                provider: "Mock",
+                airline: flight.airline,
+                origin: firstLeg.origin,
+                destination: lastLeg.destination,
+                departure: firstLeg.departure,
+                arrival: lastLeg.arrival,
+                durationMinutes: multiLegs.reduce(
+                    (acc, leg) => acc + (leg.durationMinutes ?? 0),
+                    0,
+                ),
+                // In multi-city, each leg is a separate journey; do not count legs as stopovers.
+                stops: multiLegs.reduce((acc, leg) => acc + (leg.stops ?? 0), 0),
+                cabin: "Economy",
+                price: parseMockPrice(flight.price) * multiLegs.length,
+                currency: flight.currency,
+                flightNumber: multiLegs[0]?.segments[0]?.flightNumber,
+                legs: multiLegs,
+            } satisfies FlightOffer;
+        });
+    }
+
     return flightResults.map((flight, index) => {
         const departureDate = new Date(flight.departure);
         const arrivalDate = new Date(flight.arrival);
@@ -98,7 +178,7 @@ function mapMockDataToOffers(query?: FlightSearchQuery): FlightOffer[] {
             departure: departureDate,
             arrival: arrivalDate,
         });
-        const outboundPrice = Number(flight.price);
+        const outboundPrice = parseMockPrice(flight.price);
 
         if (query?.tripType === "round-trip") {
             const baseReturnDate = query.returnDate
@@ -162,6 +242,16 @@ function mapMockDataToOffers(query?: FlightSearchQuery): FlightOffer[] {
 }
 
 function applyQueryFilters(offers: FlightOffer[], query: FlightSearchQuery) {
+    if (query.tripType === "multi-city") {
+        return offers.filter((offer) => {
+            if (query.directOnly && offer.stops > 0) {
+                return false;
+            }
+
+            return true;
+        });
+    }
+
     return offers.filter((offer) => {
         if (query.directOnly && offer.stops > 0) {
             return false;
@@ -187,6 +277,7 @@ export function parseFlightSearchQuery(input: SearchInput) {
         destination: normalized.destination,
         departureDate: normalized.departureDate ?? getTodayDateISO(),
         returnDate: normalized.returnDate,
+        legs: normalized.legs,
         adults: normalized.adults ?? "1",
         children: normalized.children ?? "0",
         infants: normalized.infants ?? "0",
@@ -238,14 +329,38 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
         }
 
         warnings.push(
-            "Sabre returned no matching fares for the selected route. Showing seeded fares while integrations warm up.",
+            "Live provider returned no matching fares for the selected route. Showing seeded fares while integrations warm up.",
         );
+
+        if (query.tripType === "multi-city") {
+            return {
+                ok: true,
+                query,
+                results: [],
+                source: "sabre",
+                warnings: [
+                    "No live multi-city fares were returned for these legs. Please adjust dates/routes and try again.",
+                ],
+            };
+        }
     } catch (error) {
         warnings.push(
             error instanceof Error
-                ? `Sabre search unavailable: ${error.message}`
-                : "Sabre search unavailable right now.",
+                ? `Live flight search unavailable: ${error.message}`
+                : "Live flight search unavailable right now.",
         );
+
+        if (query.tripType === "multi-city") {
+            return {
+                ok: true,
+                query,
+                results: [],
+                source: "sabre",
+                warnings: [
+                    "Live multi-city search is temporarily unavailable. Please try again shortly.",
+                ],
+            };
+        }
     }
 
     const mockResults = applyQueryFilters(mapMockDataToOffers(query), query);

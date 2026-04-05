@@ -31,6 +31,11 @@ enum SearchProvider {
   INTERNAL
 }
 
+enum DestinationScope {
+  DOMESTIC
+  INTERNATIONAL
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String
@@ -116,8 +121,19 @@ model Booking {
 
 model Destination {
   id          String   @id @default(cuid())
+  slug        String?  @unique
   city        String
   country     String
+  scope       DestinationScope @default(INTERNATIONAL)
+  tagline     String?
+  overview    String?  @db.Text
+  highlights  Json?
+  travelTips  Json?
+  bestTimeToVisit String?
+  idealStay   String?
+  currency    String?
+  timezone    String?
+  language    String?
   iataCode    String?
   imageUrl    String?  @db.Text
   fare        String
@@ -226,4 +242,30 @@ model CustomerReview {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model PaymentSetting {
+  id                   String   @id @default(cuid())
+  serviceChargePercent Decimal  @default(0) @db.Decimal(5, 2)
+  enableWise           Boolean  @default(true)
+  enableStripe         Boolean  @default(true)
+  enablePaypal         Boolean  @default(true)
+  enableSumup          Boolean  @default(true)
+  enablePaymob         Boolean  @default(true)
+  enableCashOnDelivery Boolean  @default(true)
+  enablePayAtBranch    Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Branch {
+  id         String   @id @default(cuid())
+  name       String
+  city       String
+  address    String   @db.Text
+  phone      String?
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

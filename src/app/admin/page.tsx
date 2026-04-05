@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 
+import { Ga4HealthStatus } from "@/components/admin/ga4-health-status";
 import type { AdminAnalyticsData } from "@/lib/analytics/ga4";
 import {
   markDatabaseUnavailable,
@@ -37,19 +39,10 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6">
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
             Administration
           </p>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              analytics.configured
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            {analytics.configured ? "GA4 Connected" : "Fallback Data"}
-          </span>
         </div>
         <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
           Performance Dashboard
@@ -106,9 +99,17 @@ export default async function AdminPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">
-            Recent Bookings (Flights & Hotels)
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Recent Bookings (Flights & Hotels)
+            </h2>
+            <Link
+              href="/admin/bookings"
+              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+            >
+              View All
+            </Link>
+          </div>
           <div className="mt-5 overflow-hidden rounded-xl border border-slate-100">
             {recentBookings.length === 0 ? (
               <p className="px-4 py-6 text-sm text-slate-500">
@@ -191,6 +192,22 @@ export default async function AdminPage() {
             >
               <div className="h-14 w-14 rounded-full bg-white" />
             </div>
+          </div>
+        </article>
+
+        <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+          <h3 className="text-xl font-semibold text-slate-900">GA4 Status</h3>
+          <div className="mt-4 flex flex-col items-start gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                analytics.configured
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {analytics.configured ? "Analytics Enabled" : "Fallback Data"}
+            </span>
+            <Ga4HealthStatus />
           </div>
         </article>
       </section>

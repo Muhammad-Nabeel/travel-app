@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BookingFlightSummary } from "@/components/features/booking/booking-flight-summary";
 import { ContactDetailsForm } from "@/components/features/booking/contact-details-form";
 import { PassengerForm } from "@/components/features/booking/passenger-form";
+import { trackGa4Event } from "@/lib/analytics/ga4-events";
 import type {
   BookingFormState,
   BookingPayload,
@@ -56,7 +57,6 @@ export type BookingFormClientProps = {
 
 export function BookingFormClient({ offer, query }: BookingFormClientProps) {
   const router = useRouter();
-  const isRoundTrip = query.tripType === "round-trip";
 
   const [form, setForm] = useState<BookingFormState>({
     contact: buildInitialContact(),
@@ -85,6 +85,17 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
       passengers: form.passengers,
       createdAt: new Date().toISOString(),
     };
+
+    trackGa4Event("proceed_to_payment", {
+      trip_type: query.tripType,
+      origin: query.origin,
+      destination: query.destination,
+      departure_date: query.departureDate,
+      return_date: query.returnDate ?? "",
+      passenger_count: form.passengers.length,
+      amount: offer.price,
+      currency: offer.currency,
+    });
 
     sessionStorage.setItem("booking_payload", JSON.stringify(payload));
     router.push("/flights/payment");
@@ -134,7 +145,7 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
 
         {/* ── Right column: flight summary + confirm ── */}
         <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-          <BookingFlightSummary offer={offer} isRoundTrip={isRoundTrip} />
+          <BookingFlightSummary offer={offer} tripType={query.tripType} />
 
           {/* Confirm CTA */}
           <button

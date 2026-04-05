@@ -14,7 +14,7 @@ import {
   ShieldX,
 } from "lucide-react";
 
-import type { FlightLeg, FlightOffer } from "@/lib/flights/types";
+import type { FlightLeg, FlightOffer, TripType } from "@/lib/flights/types";
 import {
   getAirlineCode,
   getAirlineLogoSrc,
@@ -30,6 +30,7 @@ type AirportLookupEntry = {
 
 type FlightResultCardProps = {
   offer: FlightOffer;
+  tripType: TripType;
   defaultOpen?: boolean;
   highlighted?: boolean;
   onSelect?: () => void;
@@ -181,6 +182,7 @@ function getStopoverInfosForLeg(leg?: FlightLeg): StopoverInfo[] {
 
 export function FlightResultCard({
   offer,
+  tripType,
   defaultOpen = false,
   highlighted = false,
   onSelect,
@@ -213,7 +215,9 @@ export function FlightResultCard({
             segments: [],
           },
         ];
-  const isRoundTripOffer = summaryLegs.length > 1;
+  const isRoundTripOffer =
+    tripType === "round-trip" && summaryLegs.length === 2;
+  const isMultiCityOffer = tripType === "multi-city" && summaryLegs.length > 1;
 
   const PAX_LABEL: Record<string, string> = {
     ADT: "Adult",
@@ -221,12 +225,25 @@ export function FlightResultCard({
     INF: "Infant",
   };
 
+  function getLegLabel(index: number, totalLegs: number) {
+    if (tripType === "round-trip" && totalLegs === 2) {
+      return index === 0 ? "Outbound Flight" : "Return Flight";
+    }
+
+    if (tripType === "multi-city" && totalLegs > 1) {
+      return `Leg ${index + 1}`;
+    }
+
+    return "";
+  }
+
   function renderLegSummary(leg: FlightLeg, index: number) {
     const stopoverInfos = getStopoverInfosForLeg(leg);
     const dayOffset = getDayOffsetLabel(leg.departure, leg.arrival);
     const legOriginRef = airportLookup?.[normalizeAirportCode(leg.origin)];
     const legDestinationRef =
       airportLookup?.[normalizeAirportCode(leg.destination)];
+    const legLabel = getLegLabel(index, summaryLegs.length);
 
     return (
       <div
@@ -235,9 +252,9 @@ export function FlightResultCard({
           index > 0 ? "border-t border-dashed border-base-300 pt-4" : ""
         }
       >
-        {isRoundTripOffer ? (
+        {legLabel ? (
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            {leg.legIndex === 0 ? "Outbound Flight" : "Return Flight"}
+            {legLabel}
           </p>
         ) : null}
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
@@ -418,7 +435,11 @@ export function FlightResultCard({
             {formatMoney(offer.price, offer.currency)}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {isRoundTripOffer ? "Round-trip total" : "Per person"}
+            {isMultiCityOffer
+              ? "Multi-city total"
+              : isRoundTripOffer
+                ? "Round-trip total"
+                : "Per person"}
           </p>
         </div>
       </div>
@@ -460,11 +481,11 @@ export function FlightResultCard({
                     </span>
                   )}
                 </p>
-                {offer.legs!.map((leg) => (
+                {offer.legs!.map((leg, legIndex) => (
                   <div key={leg.legIndex} className="space-y-2">
-                    {offer.legs!.length > 1 && (
+                    {getLegLabel(legIndex, offer.legs!.length) && (
                       <p className="text-xs font-medium text-muted">
-                        {leg.legIndex === 0 ? "Outbound" : "Return"} ·{" "}
+                        {getLegLabel(legIndex, offer.legs!.length)} ·{" "}
                         {leg.origin} → {leg.destination}
                       </p>
                     )}

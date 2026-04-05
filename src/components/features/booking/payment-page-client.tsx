@@ -9,6 +9,7 @@ import {
   PaymentGatewayCard,
   type Gateway,
 } from "@/components/features/booking/payment-gateway-card";
+import { trackGa4Event } from "@/lib/analytics/ga4-events";
 import type { BookingPayload } from "@/lib/flights/booking-types";
 import { calculateBookingPricing } from "@/lib/pricing/booking-pricing";
 
@@ -16,6 +17,22 @@ import { calculateBookingPricing } from "@/lib/pricing/booking-pricing";
 // To add a new gateway: append an entry here. No other files need changing.
 
 const GATEWAYS: Gateway[] = [
+  {
+    id: "cash_on_delivery",
+    name: "Cash on Delivery",
+    tagline: "Pay in cash when documents are delivered.",
+    badgeColor: "bg-[#065F46]",
+    badgeLabel: "COD",
+    badgeTextColor: "text-white",
+  },
+  {
+    id: "pay_at_branch",
+    name: "Pay at Branch",
+    tagline: "Reserve now and pay at your nearest branch office.",
+    badgeColor: "bg-[#1D4ED8]",
+    badgeLabel: "Branch",
+    badgeTextColor: "text-white",
+  },
   {
     id: "wise",
     name: "Wise",
@@ -60,6 +77,48 @@ const GATEWAYS: Gateway[] = [
   },
 ];
 
+type SitePricingResponse = {
+  serviceChargePercent?: number;
+  enableWise?: boolean;
+  enableStripe?: boolean;
+  enablePaypal?: boolean;
+  enableSumup?: boolean;
+  enablePaymob?: boolean;
+  enableCashOnDelivery?: boolean;
+  enablePayAtBranch?: boolean;
+};
+
+type BranchOption = {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  phone?: string | null;
+};
+
+const DEFAULT_PAYMENT_SWITCHES = {
+  enableWise: true,
+  enableStripe: true,
+  enablePaypal: true,
+  enableSumup: true,
+  enablePaymob: true,
+  enableCashOnDelivery: true,
+  enablePayAtBranch: true,
+};
+
+const GATEWAY_TOGGLE_KEY: Record<
+  string,
+  keyof typeof DEFAULT_PAYMENT_SWITCHES
+> = {
+  wise: "enableWise",
+  stripe: "enableStripe",
+  paypal: "enablePaypal",
+  sumup: "enableSumup",
+  paymob: "enablePaymob",
+  cash_on_delivery: "enableCashOnDelivery",
+  pay_at_branch: "enablePayAtBranch",
+};
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function formatMoney(value: number, currency: string) {
@@ -99,6 +158,13 @@ export function PaymentPageClient() {
   });
   const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
   const [serviceChargePercent, setServiceChargePercent] = useState(0);
+  const [paymentSwitches, setPaymentSwitches] = useState(
+    DEFAULT_PAYMENT_SWITCHES,
+  );
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     if (!payload) {
@@ -107,22 +173,75 @@ export function PaymentPageClient() {
   }, [payload, router]);
 
   useEffect(() => {
+    if (!payload) return;
+
+    trackGa4Event("payment_page_viewed", {
+      trip_type: payload.query.tripType,
+      origin: payload.query.origin,
+      destination: payload.query.destination,
+      departure_date: payload.query.departureDate,
+      return_date: payload.query.returnDate ?? "",
+      passenger_count: payload.passengers.length,
+      amount: payload.offer.price,
+      currency: payload.offer.currency,
+    });
+  }, [payload]);
+
+  useEffect(() => {
     async function loadPricingSettings() {
       try {
         const res = await fetch("/api/settings/site-pricing", {
           cache: "no-store",
         });
-        const json = (await res.json()) as {
-          serviceChargePercent?: number;
-        };
+        const json = (await res.json()) as SitePricingResponse;
         setServiceChargePercent(Number(json.serviceChargePercent ?? 0));
+        setPaymentSwitches({
+          enableWise: json.enableWise ?? true,
+          enableStripe: json.enableStripe ?? true,
+          enablePaypal: json.enablePaypal ?? true,
+          enableSumup: json.enableSumup ?? true,
+          enablePaymob: json.enablePaymob ?? true,
+          enableCashOnDelivery: json.enableCashOnDelivery ?? true,
+          enablePayAtBranch: json.enablePayAtBranch ?? true,
+        });
       } catch {
         setServiceChargePercent(0);
+        setPaymentSwitches(DEFAULT_PAYMENT_SWITCHES);
       }
     }
 
     void loadPricingSettings();
   }, []);
+
+  useEffect(() => {
+    async function loadBranches() {
+      try {
+        const res = await fetch("/api/settings/branches", {
+          cache: "no-store",
+        });
+        const json = (await res.json()) as { branches?: BranchOption[] };
+        setBranches(Array.isArray(json.branches) ? json.branches : []);
+      } catch {
+        setBranches([]);
+      }
+    }
+
+    void loadBranches();
+  }, []);
+
+  const availableGateways = GATEWAYS.filter((gateway) => {
+    const toggleKey = GATEWAY_TOGGLE_KEY[gateway.id];
+    return toggleKey ? paymentSwitches[toggleKey] : true;
+  });
+
+  useEffect(() => {
+    if (
+      selectedGateway &&
+      !availableGateways.some((g) => g.id === selectedGateway)
+    ) {
+      setSelectedGateway(null);
+    }
+  }, [availableGateways, selectedGateway]);
 
   if (!payload) {
     return (
@@ -132,14 +251,96 @@ export function PaymentPageClient() {
     );
   }
 
-  const isRoundTrip = payload.query.tripType === "round-trip";
   const totalPassengers = payload.passengers.length;
+
   const selected = GATEWAYS.find((g) => g.id === selectedGateway);
   const pricing = calculateBookingPricing(payload.offer.price, {
     serviceChargePercent,
   });
 
-  function handlePayNow() {
+  async function handlePayNow() {
+    if (!payload) {
+      setPaymentError("Session expired. Please start your booking again.");
+      router.replace("/flights");
+      return;
+    }
+
+    if (!selectedGateway) {
+      setPaymentError("Please select a payment method.");
+      return;
+    }
+
+    if (selectedGateway === "pay_at_branch" && !selectedBranchId) {
+      setPaymentError("Please select a branch for Pay at Branch.");
+      return;
+    }
+
+    setPaymentError("");
+
+    trackGa4Event("payment_submitted", {
+      payment_method: selectedGateway,
+      trip_type: payload.query.tripType,
+      passenger_count: payload.passengers.length,
+      amount: pricing.grandTotal,
+      currency: payload.offer.currency,
+    });
+
+    if (
+      selectedGateway === "cash_on_delivery" ||
+      selectedGateway === "pay_at_branch"
+    ) {
+      setSubmittingPayment(true);
+
+      try {
+        const res = await fetch("/api/bookings/flight-request", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentMethod: selectedGateway,
+            selectedBranchId:
+              selectedGateway === "pay_at_branch"
+                ? selectedBranchId
+                : undefined,
+            payload,
+            pricing: {
+              serviceChargePercent,
+              serviceChargeAmount: pricing.serviceChargeAmount,
+              grandTotal: pricing.grandTotal,
+            },
+          }),
+        });
+
+        const json = (await res.json()) as {
+          ok?: boolean;
+          reference?: string;
+          error?: string;
+        };
+
+        if (!res.ok || !json.ok) {
+          throw new Error(json.error ?? "Unable to create booking request.");
+        }
+
+        sessionStorage.removeItem("booking_payload");
+        alert(
+          `Booking request submitted successfully.\nReference: ${json.reference ?? "N/A"}`,
+        );
+        router.push("/flights");
+        return;
+      } catch (error) {
+        setPaymentError(
+          error instanceof Error
+            ? error.message
+            : "Unable to create booking request.",
+        );
+      } finally {
+        setSubmittingPayment(false);
+      }
+
+      return;
+    }
+
     // TODO: integrate each gateway's SDK / redirect
     // The full `payload` object is available here and is database-ready.
     alert(
@@ -212,7 +413,7 @@ export function PaymentPageClient() {
             role="radiogroup"
             aria-label="Payment method"
           >
-            {GATEWAYS.map((gw) => (
+            {availableGateways.map((gw) => (
               <PaymentGatewayCard
                 key={gw.id}
                 gateway={gw}
@@ -220,7 +421,62 @@ export function PaymentPageClient() {
                 onSelect={() => setSelectedGateway(gw.id)}
               />
             ))}
+            {availableGateways.length === 0 && (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                No payment methods are currently enabled. Please contact
+                support.
+              </p>
+            )}
           </div>
+
+          {selectedGateway === "pay_at_branch" && (
+            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-700">
+                Select Branch
+              </p>
+              <div className="mt-3 grid gap-2">
+                {branches.length === 0 ? (
+                  <p className="text-sm text-blue-800/80">
+                    No active branches are available right now.
+                  </p>
+                ) : (
+                  branches.map((branch) => (
+                    <label
+                      key={branch.id}
+                      className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition ${
+                        selectedBranchId === branch.id
+                          ? "border-blue-300 bg-white"
+                          : "border-blue-100 bg-white/70 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="radio"
+                          name="branch"
+                          checked={selectedBranchId === branch.id}
+                          onChange={() => setSelectedBranchId(branch.id)}
+                          className="mt-0.5 h-4 w-4 border-slate-300 text-blue-600"
+                        />
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {branch.name} ({branch.city})
+                          </p>
+                          <p className="text-xs text-slate-600">
+                            {branch.address}
+                          </p>
+                          {branch.phone ? (
+                            <p className="text-xs text-slate-500">
+                              {branch.phone}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Security note */}
@@ -239,7 +495,7 @@ export function PaymentPageClient() {
         {/* Flight summary card */}
         <BookingFlightSummary
           offer={payload.offer}
-          isRoundTrip={isRoundTrip}
+          tripType={payload.query.tripType}
           overrideTotalPrice={pricing.grandTotal}
         />
 
@@ -297,16 +553,25 @@ export function PaymentPageClient() {
           {/* CTA */}
           <button
             type="button"
-            disabled={!selectedGateway}
-            onClick={handlePayNow}
+            disabled={!selectedGateway || submittingPayment}
+            onClick={() => void handlePayNow()}
             className="btn btn-primary mt-5 w-full rounded-xl py-3 text-base shadow disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {selected ? `Pay with ${selected.name}` : "Select a payment method"}
+            {submittingPayment
+              ? "Submitting request..."
+              : selected
+                ? `Pay with ${selected.name}`
+                : "Select a payment method"}
           </button>
 
           {!selectedGateway && (
             <p className="mt-2 text-center text-[11px] text-muted">
               Please choose a payment gateway above to continue.
+            </p>
+          )}
+          {paymentError && (
+            <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-center text-xs text-rose-700">
+              {paymentError}
             </p>
           )}
         </div>

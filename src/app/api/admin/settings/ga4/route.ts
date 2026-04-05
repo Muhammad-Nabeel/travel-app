@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
 
         const settings = await getStoredGa4Settings();
         return NextResponse.json({
+            provider: settings.provider,
+            gtmContainerId: settings.gtmContainerId,
             measurementId: settings.measurementId,
             propertyId: settings.propertyId,
             serviceAccountEmail: settings.serviceAccountEmail,
@@ -31,6 +33,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     try {
         const body = (await request.json()) as {
+            provider?: "ga4" | "gtm";
+            gtmContainerId?: string;
             measurementId?: string;
             propertyId?: string;
             serviceAccountEmail?: string;
@@ -40,6 +44,8 @@ export async function PUT(request: NextRequest) {
         const existing = await getStoredGa4Settings();
 
         await saveStoredGa4Settings({
+            provider: body.provider === "gtm" ? "gtm" : "ga4",
+            gtmContainerId: body.gtmContainerId?.trim() ?? "",
             measurementId: body.measurementId?.trim() ?? "",
             propertyId: body.propertyId?.trim() ?? "",
             serviceAccountEmail: body.serviceAccountEmail?.trim() ?? "",
@@ -65,11 +71,23 @@ export async function POST(request: NextRequest) {
         }
 
         const body = (await request.json()) as {
+            provider?: "ga4" | "gtm";
+            gtmContainerId?: string;
             measurementId?: string;
             propertyId?: string;
             serviceAccountEmail?: string;
             serviceAccountPrivateKey?: string;
         };
+
+        if (body.provider === "gtm") {
+            return NextResponse.json(
+                {
+                    ok: true,
+                    message: "Google Tag Manager selected. No GA4 API credential test required.",
+                },
+                { status: 200 },
+            );
+        }
 
         const existing = await getStoredGa4Settings();
 

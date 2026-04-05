@@ -1,3 +1,5 @@
+require("dotenv/config");
+
 const { PrismaClient } = require("@prisma/client");
 const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
 
@@ -327,6 +329,105 @@ const DUMMY_BLOG_POSTS = [
   },
 ];
 
+const DESTINATIONS_SEED = [
+  {
+    city: "Lahore",
+    country: "Pakistan",
+    scope: "DOMESTIC",
+    iataCode: "LHE",
+    imageUrl: null,
+    fare: "PKR 18,400",
+    notes: "Daily departures",
+    gradient: "blue",
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    city: "Karachi",
+    country: "Pakistan",
+    scope: "DOMESTIC",
+    iataCode: "KHI",
+    imageUrl: null,
+    fare: "PKR 16,200",
+    notes: "Non-stop flights",
+    gradient: "teal",
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    city: "Islamabad",
+    country: "Pakistan",
+    scope: "DOMESTIC",
+    iataCode: "ISB",
+    imageUrl: null,
+    fare: "PKR 15,100",
+    notes: "Flexible fares",
+    gradient: "navy",
+    sortOrder: 3,
+    isActive: true,
+  },
+  {
+    city: "Dubai",
+    country: "UAE",
+    scope: "INTERNATIONAL",
+    iataCode: "DXB",
+    imageUrl: null,
+    fare: "PKR 38,400",
+    notes: "Round-trip from Karachi",
+    gradient: "blue",
+    sortOrder: 4,
+    isActive: true,
+  },
+  {
+    city: "Jeddah",
+    country: "Saudi Arabia",
+    scope: "INTERNATIONAL",
+    iataCode: "JED",
+    imageUrl: null,
+    fare: "PKR 89,000",
+    notes: "Umrah gateway",
+    gradient: "teal",
+    sortOrder: 5,
+    isActive: true,
+  },
+  {
+    city: "Istanbul",
+    country: "Turkey",
+    scope: "INTERNATIONAL",
+    iataCode: "IST",
+    imageUrl: null,
+    fare: "PKR 104,252",
+    notes: "Europe gateway",
+    gradient: "purple",
+    sortOrder: 6,
+    isActive: true,
+  },
+  {
+    city: "London",
+    country: "UK",
+    scope: "INTERNATIONAL",
+    iataCode: "LHR",
+    imageUrl: null,
+    fare: "PKR 189,000",
+    notes: "Heathrow non-stop",
+    gradient: "sunset",
+    sortOrder: 7,
+    isActive: true,
+  },
+  {
+    city: "Kuala Lumpur",
+    country: "Malaysia",
+    scope: "INTERNATIONAL",
+    iataCode: "KUL",
+    imageUrl: null,
+    fare: "PKR 134,500",
+    notes: "Popular with families",
+    gradient: "teal",
+    sortOrder: 8,
+    isActive: true,
+  },
+];
+
 async function main() {
   console.log("🌱 Starting database seed...");
 
@@ -340,6 +441,12 @@ async function main() {
       await prisma.blogPost.create({
         data: post,
       });
+    }
+
+    const destinationCount = await prisma.destination.count();
+    if (destinationCount === 0) {
+      await prisma.destination.createMany({ data: DESTINATIONS_SEED });
+      console.log("🧭 Seeded destinations");
     }
 
     console.log("✅ Database seeded successfully!");

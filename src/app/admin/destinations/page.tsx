@@ -10,6 +10,16 @@ type Destination = {
   id: string;
   city: string;
   country: string;
+  scope: "DOMESTIC" | "INTERNATIONAL";
+  tagline: string | null;
+  overview: string | null;
+  highlights: string[];
+  travelTips: string[];
+  bestTimeToVisit: string | null;
+  idealStay: string | null;
+  currency: string | null;
+  timezone: string | null;
+  language: string | null;
   iataCode: string | null;
   imageUrl: string | null;
   fare: string;
@@ -48,6 +58,16 @@ const GRADIENT_PREVIEW: Record<string, string> = {
 const EMPTY_FORM = {
   city: "",
   country: "",
+  scope: "INTERNATIONAL",
+  tagline: "",
+  overview: "",
+  highlightsInput: "",
+  travelTipsInput: "",
+  bestTimeToVisit: "",
+  idealStay: "",
+  currency: "",
+  timezone: "",
+  language: "",
   iataCode: "",
   imageUrl: "",
   fare: "",
@@ -70,6 +90,12 @@ export default function AdminDestinationsPage() {
   const [cityLookupLoading, setCityLookupLoading] = useState(false);
   const cityFieldRef = useRef<HTMLLabelElement>(null);
   const citySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const parseCsvList = (value: string) =>
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
   const fetchDestinations = async () => {
     try {
@@ -115,6 +141,16 @@ export default function AdminDestinationsPage() {
     setFormData({
       city: d.city,
       country: d.country,
+      scope: d.scope,
+      tagline: d.tagline ?? "",
+      overview: d.overview ?? "",
+      highlightsInput: (d.highlights ?? []).join(", "),
+      travelTipsInput: (d.travelTips ?? []).join(", "),
+      bestTimeToVisit: d.bestTimeToVisit ?? "",
+      idealStay: d.idealStay ?? "",
+      currency: d.currency ?? "",
+      timezone: d.timezone ?? "",
+      language: d.language ?? "",
       iataCode: d.iataCode ?? "",
       imageUrl: d.imageUrl ?? "",
       fare: d.fare,
@@ -194,6 +230,16 @@ export default function AdminDestinationsPage() {
       const validatedData = destinationSchema.parse({
         city: formData.city,
         country: formData.country,
+        scope: formData.scope,
+        tagline: formData.tagline,
+        overview: formData.overview,
+        highlights: parseCsvList(formData.highlightsInput),
+        travelTips: parseCsvList(formData.travelTipsInput),
+        bestTimeToVisit: formData.bestTimeToVisit,
+        idealStay: formData.idealStay,
+        currency: formData.currency,
+        timezone: formData.timezone,
+        language: formData.language,
         iataCode: formData.iataCode,
         imageUrl: formData.imageUrl,
         fare: formData.fare,
@@ -393,6 +439,29 @@ export default function AdminDestinationsPage() {
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
+                  Scope *
+                </span>
+                <select
+                  {...field("scope")}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                >
+                  <option value="DOMESTIC">Domestic</option>
+                  <option value="INTERNATIONAL">International</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Tagline
+                </span>
+                <input
+                  {...field("tagline")}
+                  placeholder="e.g. Skyline luxury and desert adventure"
+                  maxLength={120}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
                   IATA Code
                 </span>
                 <input
@@ -421,6 +490,93 @@ export default function AdminDestinationsPage() {
                   {...field("notes")}
                   placeholder="e.g. Round-trip flights"
                   maxLength={120}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-3">
+                <span className="text-xs font-semibold text-slate-600">
+                  Overview
+                </span>
+                <textarea
+                  {...field("overview")}
+                  rows={4}
+                  maxLength={5000}
+                  placeholder="Rich summary for the destination details page"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Highlights (comma separated)
+                </span>
+                <input
+                  {...field("highlightsInput")}
+                  placeholder="Burj Khalifa, Desert Safari, Dubai Mall"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Travel Tips (comma separated)
+                </span>
+                <input
+                  {...field("travelTipsInput")}
+                  placeholder="Carry passport copy, Use metro card"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Best Time To Visit
+                </span>
+                <input
+                  {...field("bestTimeToVisit")}
+                  placeholder="November to March"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Ideal Stay
+                </span>
+                <input
+                  {...field("idealStay")}
+                  placeholder="4-5 days"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Currency
+                </span>
+                <input
+                  {...field("currency")}
+                  placeholder="AED"
+                  maxLength={40}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Timezone
+                </span>
+                <input
+                  {...field("timezone")}
+                  placeholder="GST (UTC+4)"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Language
+                </span>
+                <input
+                  {...field("language")}
+                  placeholder="Arabic, English"
+                  maxLength={80}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
               </label>
@@ -523,6 +679,7 @@ export default function AdminDestinationsPage() {
                   <th className="px-4 py-3">City</th>
                   <th className="px-4 py-3">Image</th>
                   <th className="px-4 py-3">Country</th>
+                  <th className="px-4 py-3">Scope</th>
                   <th className="px-4 py-3">IATA</th>
                   <th className="px-4 py-3">Fare</th>
                   <th className="px-4 py-3">Gradient</th>
@@ -553,6 +710,9 @@ export default function AdminDestinationsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{d.country}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {d.scope === "DOMESTIC" ? "Domestic" : "International"}
+                    </td>
                     <td className="px-4 py-3 font-mono text-slate-600">
                       {d.iataCode ?? "—"}
                     </td>

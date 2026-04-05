@@ -12,6 +12,7 @@ import type {
 
 const SABRE_AUTH_PATH = "/v2/auth/token";
 const DEFAULT_SHOP_PATH = "/v5/offers/shop";
+const DEFAULT_FARE_CALENDAR_PATH = "/v6.1.0/shop/altdates/flights?mode=live";
 const TOKEN_BUFFER_MS = 20_000;
 const DEFAULT_VENDOR_CODES = [
     "AZ",
@@ -187,45 +188,57 @@ function buildSabreSearchCorePayload(
         (code) => ({ Code: code }),
     );
 
-    const originDestinationInformation = [
-        {
-            DepartureDateTime: `${query.departureDate}T00:00:00`,
-            DepartureWindow: "00002359",
-            DestinationLocation: { LocationCode: query.destination },
-            OriginLocation: { LocationCode: query.origin },
-            RPH: "1",
-            TPA_Extensions: {
-                CabinPref: {
-                    Cabin: mapCabinClass(query.cabinClass),
-                    PreferLevel: "Only",
-                },
-                SegmentType: {
-                    Code: "O",
-                },
-                IncludeVendorPref: includeVendorPref,
+    const buildOriginDestinationSegment = (params: {
+        origin: string;
+        destination: string;
+        departureDate: string;
+        rph: string;
+    }) => ({
+        DepartureDateTime: `${params.departureDate}T00:00:00`,
+        DepartureWindow: "00002359",
+        DestinationLocation: { LocationCode: params.destination },
+        OriginLocation: { LocationCode: params.origin },
+        RPH: params.rph,
+        TPA_Extensions: {
+            CabinPref: {
+                Cabin: mapCabinClass(query.cabinClass),
+                PreferLevel: "Only",
             },
+            SegmentType: {
+                Code: "O",
+            },
+            IncludeVendorPref: includeVendorPref,
         },
-    ];
+    });
 
-    if (query.tripType === "round-trip" && query.returnDate) {
-        originDestinationInformation.push({
-            DepartureDateTime: `${query.returnDate}T00:00:00`,
-            DepartureWindow: "00002359",
-            DestinationLocation: { LocationCode: query.origin },
-            OriginLocation: { LocationCode: query.destination },
-            RPH: "2",
-            TPA_Extensions: {
-                CabinPref: {
-                    Cabin: mapCabinClass(query.cabinClass),
-                    PreferLevel: "Only",
-                },
-                SegmentType: {
-                    Code: "O",
-                },
-                IncludeVendorPref: includeVendorPref,
-            },
-        });
-    }
+    const originDestinationInformation =
+        query.tripType === "multi-city" && (query.legs?.length ?? 0) > 0
+            ? (query.legs ?? []).slice(0, 6).map((leg, index) =>
+                buildOriginDestinationSegment({
+                    origin: leg.origin,
+                    destination: leg.destination,
+                    departureDate: leg.departureDate,
+                    rph: String(index + 1),
+                }),
+            )
+            : [
+                buildOriginDestinationSegment({
+                    origin: query.origin,
+                    destination: query.destination,
+                    departureDate: query.departureDate,
+                    rph: "1",
+                }),
+                ...(query.tripType === "round-trip" && query.returnDate
+                    ? [
+                        buildOriginDestinationSegment({
+                            origin: query.destination,
+                            destination: query.origin,
+                            departureDate: query.returnDate,
+                            rph: "2",
+                        }),
+                    ]
+                    : []),
+            ];
 
     return {
         AvailableFlightsOnly: true,
@@ -287,7 +300,10 @@ function buildSabreSearchCorePayload(
                     Ind: false,
                 },
                 TripType: {
-                    Value: query.tripType === "round-trip" ? "Return" : "OneWay",
+                    Value:
+                        query.tripType === "round-trip"
+                            ? "Return"
+                            : "OneWay",
                 },
             },
         },
@@ -652,4 +668,252 @@ export async function searchSabreFlights(
 
     const responsePayload = (await response.json()) as unknown;
     return mapSabreResponseToOffers(responsePayload);
+}
+
+export type FareCalendarEntry = {
+    date: string;
+    amount: number;
+    currency: string;
+};
+
+function toIsoDate(value: string | undefined) {
+    if (!value) return "";
+    const match = value.match(/\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : "";
+}
+
+function addDaysToIsoDate(isoDate: string, days: number) {
+    const parsed = Date.parse(`${isoDate}T00:00:00.000Z`);
+    if (!Number.isFinite(parsed)) {
+        return isoDate;
+    }
+    const result = new Date(parsed);
+    result.setUTCDate(result.getUTCDate() + days);
+    return result.toISOString().slice(0, 10);
+}
+
+function toNumber(value: unknown) {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
+}
+
+function mapSabreFareCalendarResponse(payload: unknown): FareCalendarEntry[] {
+    if (!payload || typeof payload !== "object") {
+        return [];
+    }
+
+    const root = payload as {
+        groupedItineraryResponse?: {
+            itineraryGroups?: Array<{
+                groupDescription?: {
+                    legDescriptions?: Array<{
+                        departureDate?: string;
+                        departureDateTime?: string;
+                    }>;
+                };
+                itineraries?: Array<{
+                    pricingInformation?: Array<{
+                        fare?: {
+                            totalFare?: {
+                                totalPrice?: number | string;
+                                currency?: string;
+                            };
+                        };
+                    }>;
+                }>;
+            }>;
+        };
+    };
+
+    const itineraryGroups = root.groupedItineraryResponse?.itineraryGroups ?? [];
+
+    const reduced = new Map<string, FareCalendarEntry>();
+
+    for (const group of itineraryGroups) {
+        const leg0 = group.groupDescription?.legDescriptions?.[0];
+        const date = toIsoDate(leg0?.departureDate ?? leg0?.departureDateTime);
+        if (!date) {
+            continue;
+        }
+
+        let amount = Number.POSITIVE_INFINITY;
+        let currency = "PKR";
+
+        for (const itinerary of group.itineraries ?? []) {
+            for (const pricingInfo of itinerary.pricingInformation ?? []) {
+                const rawAmount = pricingInfo.fare?.totalFare?.totalPrice;
+                const parsedAmount = toNumber(rawAmount);
+                if (Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount < amount) {
+                    amount = parsedAmount;
+                    currency = pricingInfo.fare?.totalFare?.currency ?? currency;
+                }
+            }
+        }
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            continue;
+        }
+
+        const existing = reduced.get(date);
+        if (!existing || amount < existing.amount) {
+            reduced.set(date, {
+                date,
+                amount,
+                currency,
+            });
+        }
+    }
+
+    return Array.from(reduced.values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
+    );
+}
+
+export async function searchSabreFareCalendar(params: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+    lengthOfStay?: number;
+    cabinClass?: FlightSearchQuery["cabinClass"];
+    tripType?: FlightSearchQuery["tripType"];
+}): Promise<FareCalendarEntry[]> {
+    const env = getSabreEnv();
+    if (!env) {
+        return [];
+    }
+
+    const token = await getSabreAccessToken();
+    const endpointPath =
+        process.env.SABRE_FARE_CALENDAR_PATH?.trim() || DEFAULT_FARE_CALENDAR_PATH;
+
+    const departureDateTime = `${params.departureDate}T00:00:00`;
+    const stayDays = Math.max(1, params.lengthOfStay ?? 7);
+    const isRoundTrip = params.tripType === "round-trip";
+    const returnDepartureDate = addDaysToIsoDate(params.departureDate, stayDays);
+
+    const payload = {
+        OTA_AirLowFareSearchRQ: {
+            OriginDestinationInformation: [
+                {
+                    DepartureDateTime: departureDateTime,
+                    OriginLocation: {
+                        LocationCode: params.origin,
+                    },
+                    DestinationLocation: {
+                        LocationCode: params.destination,
+                    },
+                    RPH: "0",
+                    ...(params.cabinClass
+                        ? {
+                            TPA_Extensions: {
+                                CabinPref: {
+                                    Cabin: mapCabinClass(params.cabinClass),
+                                    PreferLevel: "Only",
+                                },
+                            },
+                        }
+                        : {}),
+                },
+                ...(isRoundTrip
+                    ? [
+                        {
+                            DepartureDateTime: `${returnDepartureDate}T00:00:00`,
+                            OriginLocation: {
+                                LocationCode: params.destination,
+                            },
+                            DestinationLocation: {
+                                LocationCode: params.origin,
+                            },
+                            RPH: "1",
+                            ...(params.cabinClass
+                                ? {
+                                    TPA_Extensions: {
+                                        CabinPref: {
+                                            Cabin: mapCabinClass(params.cabinClass),
+                                            PreferLevel: "Only",
+                                        },
+                                    },
+                                }
+                                : {}),
+                        },
+                    ]
+                    : []),
+            ],
+            POS: {
+                Source: [
+                    {
+                        PseudoCityCode: env.pseudoCityCode,
+                        RequestorID: {
+                            CompanyName: {
+                                Code: env.requestorCompanyCode,
+                            },
+                            ID: "1",
+                            Type: "1",
+                        },
+                    },
+                ],
+            },
+            TPA_Extensions: {
+                IntelliSellTransaction: {
+                    RequestType: {
+                        Name: "AD7",
+                    },
+                },
+            },
+            TravelPreferences: {
+                TPA_Extensions: {
+                    DataSources: {
+                        ATPCO: "Enable",
+                        LCC: "Enable",
+                        NDC: "Disable",
+                    },
+                    NumTrips: {},
+                },
+            },
+            TravelerInfoSummary: {
+                AirTravelerAvail: [
+                    {
+                        PassengerTypeQuantity: [
+                            {
+                                Code: "ADT",
+                                Quantity: 1,
+                            },
+                        ],
+                    },
+                ],
+                SeatsRequested: [1],
+            },
+            Version: "1",
+        },
+    };
+
+    const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+    };
+
+    if (env.cpaId) {
+        headers["X-CPAID"] = env.cpaId;
+    }
+
+    const response = await requestWithTimeout(`${env.baseUrl}${endpointPath}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const failureText = await response.text();
+        throw new Error(
+            `Sabre fare calendar failed (${response.status}): ${failureText.slice(0, 220)}`,
+        );
+    }
+
+    const responsePayload = (await response.json()) as unknown;
+    return mapSabreFareCalendarResponse(responsePayload);
 }

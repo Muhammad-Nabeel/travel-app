@@ -5,7 +5,7 @@ import {
   getAirlineCode,
   getAirlineLogoSrc,
 } from "@/lib/flights/airline-branding";
-import type { FlightLeg, FlightOffer } from "@/lib/flights/types";
+import type { FlightLeg, FlightOffer, TripType } from "@/lib/flights/types";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,6 +46,24 @@ function formatMoney(value: number, currency: string) {
   }).format(value);
 }
 
+function getLegLabel(tripType: TripType, index: number, totalLegs: number) {
+  if (tripType === "round-trip" && totalLegs === 2) {
+    return index === 0 ? "Outbound" : "Return";
+  }
+
+  if (tripType === "multi-city" && totalLegs > 1) {
+    return `Leg ${index + 1}`;
+  }
+
+  return "Flight";
+}
+
+function getTotalLabel(tripType: TripType) {
+  if (tripType === "round-trip") return "Round-trip total";
+  if (tripType === "multi-city") return "Multi-city total";
+  return "One-way total";
+}
+
 // ── sub-component: single leg row ────────────────────────────────────────────
 
 type LegRowProps = {
@@ -63,6 +81,7 @@ function LegRow({ leg, label, airline }: LegRowProps) {
   const stopsLabel =
     leg.stops === 0 ? "Direct" : `${leg.stops} stop${leg.stops > 1 ? "s" : ""}`;
   const isMultiStop = leg.stops > 0;
+  const isReturnLabel = label.toLowerCase().includes("return");
 
   return (
     <div className="flex items-start gap-4">
@@ -91,7 +110,7 @@ function LegRow({ leg, label, airline }: LegRowProps) {
         {/* Label + direction icon */}
         <div className="mb-1.5 flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-base-200/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
-            {label === "Outbound" ? (
+            {!isReturnLabel ? (
               <Plane className="size-3" />
             ) : (
               <Plane className="size-3 -scale-x-100" />
@@ -156,16 +175,16 @@ function LegRow({ leg, label, airline }: LegRowProps) {
 
 type BookingFlightSummaryProps = {
   offer: FlightOffer;
-  isRoundTrip: boolean;
+  tripType: TripType;
   overrideTotalPrice?: number;
 };
 
 export function BookingFlightSummary({
   offer,
-  isRoundTrip,
+  tripType,
   overrideTotalPrice,
 }: BookingFlightSummaryProps) {
-  const outboundLeg: FlightLeg = offer.legs?.[0] ?? {
+  const fallbackLeg: FlightLeg = {
     legIndex: 0,
     origin: offer.origin,
     destination: offer.destination,
@@ -175,7 +194,8 @@ export function BookingFlightSummary({
     stops: offer.stops,
     segments: [],
   };
-  const returnLeg = isRoundTrip ? offer.legs?.[1] : undefined;
+  const summaryLegs =
+    offer.legs && offer.legs.length > 0 ? offer.legs : [fallbackLeg];
 
   return (
     <div className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
@@ -191,22 +211,24 @@ export function BookingFlightSummary({
 
       {/* Legs */}
       <div className="divide-y divide-base-200">
-        <div className="px-5 py-5">
-          <LegRow leg={outboundLeg} label="Outbound" airline={offer.airline} />
-        </div>
-        {returnLeg && (
-          <div className="px-5 py-5">
-            <LegRow leg={returnLeg} label="Return" airline={offer.airline} />
+        {summaryLegs.map((leg, index) => (
+          <div
+            key={`${leg.legIndex}-${leg.origin}-${leg.destination}-${leg.departure}-${index}`}
+            className="px-5 py-5"
+          >
+            <LegRow
+              leg={leg}
+              label={getLegLabel(tripType, index, summaryLegs.length)}
+              airline={offer.airline}
+            />
           </div>
-        )}
+        ))}
       </div>
 
       {/* Price footer */}
       <div className="flex items-center justify-between rounded-b-2xl border-t border-base-200 bg-base-200/40 px-5 py-4">
         <div>
-          <p className="text-xs text-muted">
-            {isRoundTrip ? "Round-trip total" : "One-way total"}
-          </p>
+          <p className="text-xs text-muted">{getTotalLabel(tripType)}</p>
           <p className="text-2xl font-bold text-foreground">
             {formatMoney(overrideTotalPrice ?? offer.price, offer.currency)}
           </p>

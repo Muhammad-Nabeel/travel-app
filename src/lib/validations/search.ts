@@ -8,31 +8,30 @@ const CABIN_CLASSES = [
     "First",
 ] as const;
 
+const airportCodeSchema = z
+    .string()
+    .min(1)
+    .trim()
+    .transform((value) => {
+        const upper = value.toUpperCase();
+        const match = upper.match(/[A-Z]{3}/);
+        return match ? match[0] : upper;
+    })
+    .refine((val) => /^[A-Z]{3}$/.test(val), "Must be a valid 3-letter airport code");
+
+const dateSchema = z.string().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, "Date must be in YYYY-MM-DD format");
+
+const multiCityLegSchema = z.object({
+    origin: airportCodeSchema,
+    destination: airportCodeSchema,
+    departureDate: dateSchema,
+});
+
 export const flightSearchSchema = z.object({
     tripType: z.enum(TRIP_TYPES).default("one-way"),
-    origin: z
-        .string()
-        .min(1, "Origin is required")
-        .trim()
-        .transform((value) => {
-            const upper = value.toUpperCase();
-            // Try to extract 3-letter code from patterns like "Code" or "City (CODE)"
-            const match = upper.match(/[A-Z]{3}/);
-            return match ? match[0] : upper;
-        })
-        .refine((val) => /^[A-Z]{3}$/.test(val), "Origin must be a valid 3-letter airport code"),
-    destination: z
-        .string()
-        .min(1, "Destination is required")
-        .trim()
-        .transform((value) => {
-            const upper = value.toUpperCase();
-            // Try to extract 3-letter code from patterns like "Code" or "City (CODE)"
-            const match = upper.match(/[A-Z]{3}/);
-            return match ? match[0] : upper;
-        })
-        .refine((val) => /^[A-Z]{3}$/.test(val), "Destination must be a valid 3-letter airport code"),
-    departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Departure date must be in YYYY-MM-DD format"),
+    origin: airportCodeSchema,
+    destination: airportCodeSchema,
+    departureDate: dateSchema,
     returnDate: z
         .string()
         .refine(
@@ -40,6 +39,7 @@ export const flightSearchSchema = z.object({
             "Return date must be in YYYY-MM-DD format or empty"
         )
         .optional(),
+    legs: z.array(multiCityLegSchema).min(2).max(6).optional(),
     adults: z.coerce.number().int().min(1).max(9).default(1),
     children: z.coerce.number().int().min(0).max(9).default(0),
     infants: z.coerce.number().int().min(0).max(9).default(0),
@@ -52,6 +52,40 @@ export const flightSearchSchema = z.object({
         })
         .default(false),
 }).superRefine((value, ctx) => {
+    if (value.tripType === "multi-city") {
+        if (!value.legs || value.legs.length < 2) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["legs"],
+                message: "At least two legs are required for multi-city search.",
+            });
+        }
+
+        for (let i = 0; i < (value.legs?.length ?? 0); i += 1) {
+            const leg = value.legs?.[i];
+            if (!leg) continue;
+
+            if (leg.origin === leg.destination) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["legs", i, "destination"],
+                    message: "Destination must be different from origin.",
+                });
+            }
+
+            if (i > 0) {
+                const previous = value.legs?.[i - 1];
+                if (previous && leg.departureDate < previous.departureDate) {
+                    ctx.addIssue({
+                        code: "custom",
+                        path: ["legs", i, "departureDate"],
+                        message: "Each next leg date must be the same day or later than previous leg.",
+                    });
+                }
+            }
+        }
+    }
+
     if (value.tripType === "round-trip" && !value.returnDate) {
         ctx.addIssue({
             code: "custom",
@@ -65,6 +99,14 @@ export const flightSearchSchema = z.object({
             code: "custom",
             path: ["returnDate"],
             message: "Return date must be on or after departure date.",
+        });
+    }
+
+    if (value.origin === value.destination && value.tripType !== "multi-city") {
+        ctx.addIssue({
+            code: "custom",
+            path: ["destination"],
+            message: "Destination must be different from origin.",
         });
     }
 

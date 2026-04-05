@@ -11,6 +11,9 @@
   --brand-strong: #3451fa;
   --accent: #67cba0; /* corporate accent */
   --ring: rgba(75, 107, 251, 0.22);
+  --scroll-track: #e9eefb;
+  --scroll-thumb: #93a8e9;
+  --scroll-thumb-hover: #708de3;
 }
 
 /* ── Dark theme tokens (business) ──────────────────────── */
@@ -24,6 +27,9 @@
     --brand-strong: #1a4270;
     --accent: #67cba0;
     --ring: rgba(28, 79, 130, 0.3);
+    --scroll-track: #2a3440;
+    --scroll-thumb: #45658a;
+    --scroll-thumb-hover: #5d7ea6;
   }
 }
 
@@ -45,6 +51,7 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -67,6 +74,40 @@ body {
       rgba(248, 249, 255, 0.97) 0%,
       rgba(235, 238, 255, 1) 100%
     );
+}
+
+/* Professional, subtle scrollbar styling across pages and panels */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--scroll-thumb), var(--brand));
+  border-radius: 999px;
+  border: 2px solid var(--scroll-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--scroll-thumb-hover),
+    var(--brand-strong)
+  );
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 [data-theme="business"] body,
