@@ -2,12 +2,16 @@
 
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Destination = {
   id: string;
+  slug: string | null;
   city: string;
   country: string;
+  scope: "DOMESTIC" | "INTERNATIONAL";
   iataCode: string | null;
+  imageUrl: string | null;
   fare: string;
   notes: string | null;
   gradient: string;
@@ -23,18 +27,88 @@ const GRADIENTS: Record<string, string> = {
   navy: "linear-gradient(130deg, #14213d 0%, #3a506b 45%, #5bc0be 100%)",
 };
 
+function DestinationsSkeleton() {
+  return (
+    <section className="section-shell py-10">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <div className="h-7 w-52 animate-pulse rounded-lg bg-slate-200" />
+          <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+        </div>
+      </div>
+      <div className="flex gap-4 overflow-hidden pb-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-48 min-w-55 shrink-0 animate-pulse rounded-2xl bg-slate-200 sm:min-w-65"
+          >
+            <div className="m-3 h-5 w-10 rounded-md bg-white/40" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function DestinationsSlider() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/destinations")
       .then((r) => r.json())
       .then((data) => setDestinations(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) return <DestinationsSkeleton />;
+
+  if (destinations.length === 0) return null;
+
+  const domestic = destinations.filter((d) => d.scope === "DOMESTIC");
+  const international = destinations.filter((d) => d.scope === "INTERNATIONAL");
+
+  if (domestic.length === 0 && international.length === 0) return null;
+
+  return (
+    <>
+      {domestic.length > 0 ? (
+        <DestinationCarousel
+          items={domestic}
+          title="Domestic Destinations"
+          subtitle="Top routes within Pakistan"
+        />
+      ) : null}
+      {international.length > 0 ? (
+        <DestinationCarousel
+          items={international}
+          title="International Destinations"
+          subtitle="Popular routes beyond Pakistan"
+        />
+      ) : null}
+    </>
+  );
+}
+
+type DestinationCarouselProps = {
+  items: Destination[];
+  title: string;
+  subtitle: string;
+};
+
+function DestinationCarousel({
+  items,
+  title,
+  subtitle,
+}: DestinationCarouselProps) {
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const updateArrows = () => {
     const el = scrollRef.current;
@@ -50,18 +124,14 @@ export function DestinationsSlider() {
     });
   };
 
-  if (destinations.length === 0) return null;
-
   return (
-    <section className="section-shell py-10" aria-label="Popular destinations">
+    <section className="section-shell py-10" aria-label={title}>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Popular Destinations
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Top flight routes — updated fares from Pakistan
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
         <div className="flex shrink-0 gap-2">
           <button
@@ -89,40 +159,55 @@ export function DestinationsSlider() {
         className="flex gap-4 overflow-x-auto pb-3"
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
       >
-        {destinations.map((d) => (
-          <article
+        {items.map((d) => (
+          <Link
             key={d.id}
-            className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
-            style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
+            href={`/destinations/${d.slug?.trim() ? d.slug : d.id}`}
+            className="block focus-visible:outline-none"
+            aria-label={`View details for ${d.city}`}
           >
-            <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
+            <article
+              className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
+              style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
+            >
+              {d.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={d.imageUrl}
+                  alt={d.city}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
 
-            <div className="relative flex items-start justify-between">
-              {d.iataCode ? (
-                <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm">
-                  {d.iataCode}
-                </span>
-              ) : (
-                <span />
-              )}
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3 w-3 shrink-0 text-white/70" />
-                <p className="text-xs text-white/80">{d.country}</p>
+              <div className="relative flex items-start justify-between">
+                {d.iataCode ? (
+                  <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm">
+                    {d.iataCode}
+                  </span>
+                ) : (
+                  <span />
+                )}
               </div>
-              <h3 className="mt-0.5 text-xl font-bold leading-tight">
-                {d.city}
-              </h3>
-              {d.notes && (
-                <p className="mt-1 text-xs text-white/70">{d.notes}</p>
-              )}
-              <p className="mt-1.5 text-sm font-semibold text-white">
-                {d.fare}
-              </p>
-            </div>
-          </article>
+
+              <div className="relative">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 shrink-0 text-white/70" />
+                  <p className="text-xs text-white/80">{d.country}</p>
+                </div>
+                <h3 className="mt-0.5 text-xl font-bold leading-tight">
+                  {d.city}
+                </h3>
+                {d.notes && (
+                  <p className="mt-1 text-xs text-white/70">{d.notes}</p>
+                )}
+                <p className="mt-1.5 text-sm font-semibold text-white">
+                  {d.fare}
+                </p>
+              </div>
+            </article>
+          </Link>
         ))}
       </div>
     </section>

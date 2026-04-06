@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import {
   Armchair,
@@ -13,7 +14,11 @@ import {
   ShieldX,
 } from "lucide-react";
 
-import type { FlightOffer } from "@/lib/flights/types";
+import type { FlightLeg, FlightOffer, TripType } from "@/lib/flights/types";
+import {
+  getAirlineCode,
+  getAirlineLogoSrc,
+} from "../../../lib/flights/airline-branding";
 import { FlightInfoTooltip } from "@/components/features/flights/flight-info-tooltip";
 
 type AirportLookupEntry = {
@@ -25,12 +30,63 @@ type AirportLookupEntry = {
 
 type FlightResultCardProps = {
   offer: FlightOffer;
+  tripType: TripType;
   defaultOpen?: boolean;
   highlighted?: boolean;
   onSelect?: () => void;
   airportLookup?: Record<string, AirportLookupEntry>;
   airlineLookup?: Record<string, string>;
 };
+
+export function FlightResultCardSkeleton() {
+  return (
+    <article className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <div className="grid gap-4 p-4 md:grid-cols-[180px_minmax(0,1fr)_190px] md:items-center">
+        <div className="flex items-center gap-4">
+          <div className="skeleton h-16 w-16 shrink-0 rounded-full" />
+          <div className="flex flex-col gap-4">
+            <div className="skeleton h-4 w-20" />
+            <div className="skeleton h-4 w-28" />
+          </div>
+        </div>
+
+        <div className="px-1 md:px-4">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
+            <div className="space-y-3">
+              <div className="skeleton h-8 w-20" />
+              <div className="skeleton h-4 w-12" />
+              <div className="skeleton h-3 w-24" />
+            </div>
+
+            <div className="space-y-3">
+              <div className="mx-auto skeleton h-4 w-24" />
+              <div className="skeleton h-2 w-full" />
+              <div className="mx-auto skeleton h-3 w-32" />
+            </div>
+
+            <div className="space-y-3 text-right">
+              <div className="ml-auto skeleton h-8 w-20" />
+              <div className="ml-auto skeleton h-4 w-12" />
+              <div className="ml-auto skeleton h-3 w-24" />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-base-300 pt-3 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+          <div className="flex flex-col gap-3 md:items-end">
+            <div className="skeleton h-4 w-28" />
+            <div className="skeleton h-8 w-24" />
+            <div className="skeleton h-4 w-20" />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-base-200 px-4 py-3 text-right">
+        <div className="ml-auto skeleton h-4 w-24" />
+      </div>
+    </article>
+  );
+}
 
 function normalizeAirportCode(value: string) {
   return value.trim().toUpperCase().slice(0, 3);
@@ -103,12 +159,11 @@ type StopoverInfo = {
   isOvernight: boolean;
 };
 
-function getStopoverInfos(offer: FlightOffer): StopoverInfo[] {
-  const firstLeg = offer.legs?.[0];
-  if (!firstLeg || firstLeg.segments.length <= 1) return [];
+function getStopoverInfosForLeg(leg?: FlightLeg): StopoverInfo[] {
+  if (!leg || leg.segments.length <= 1) return [];
 
-  return firstLeg.segments.slice(0, -1).map((seg, i) => {
-    const nextSeg = firstLeg.segments[i + 1];
+  return leg.segments.slice(0, -1).map((seg, i) => {
+    const nextSeg = leg.segments[i + 1];
     const arrTime = new Date(seg.arrival).getTime();
     const depTime = new Date(nextSeg.departure).getTime();
     const durationMinutes = Math.max(
@@ -127,6 +182,7 @@ function getStopoverInfos(offer: FlightOffer): StopoverInfo[] {
 
 export function FlightResultCard({
   offer,
+  tripType,
   defaultOpen = false,
   highlighted = false,
   onSelect,
@@ -134,25 +190,201 @@ export function FlightResultCard({
   airlineLookup,
 }: FlightResultCardProps) {
   const [open, setOpen] = useState(defaultOpen);
-  const stopoverInfos = getStopoverInfos(offer);
-  const dayOffset = getDayOffsetLabel(offer.departure, offer.arrival);
-  const originRef = airportLookup?.[normalizeAirportCode(offer.origin)];
-  const destinationRef =
-    airportLookup?.[normalizeAirportCode(offer.destination)];
+  const airlineCode = getAirlineCode(offer.airline);
   const airlineName =
     airlineLookup?.[normalizeAirlineCode(offer.airline)] ?? offer.airline;
+  const airlineLogoSrc = getAirlineLogoSrc(offer.airline, airlineName);
 
   const hasLegs = (offer.legs?.length ?? 0) > 0;
   const hasMultiSegment =
     offer.legs?.some((l) => l.segments.length > 1) ?? false;
   const hasFares = (offer.passengerFares?.length ?? 0) > 0;
   const firstBaggage = offer.passengerFares?.[0]?.baggage;
+  const summaryLegs: FlightLeg[] =
+    offer.legs && offer.legs.length > 0
+      ? offer.legs
+      : [
+          {
+            legIndex: 0,
+            origin: offer.origin,
+            destination: offer.destination,
+            departure: offer.departure,
+            arrival: offer.arrival,
+            durationMinutes: offer.durationMinutes,
+            stops: offer.stops,
+            segments: [],
+          },
+        ];
+  const isRoundTripOffer =
+    tripType === "round-trip" && summaryLegs.length === 2;
+  const isMultiCityOffer = tripType === "multi-city" && summaryLegs.length > 1;
 
   const PAX_LABEL: Record<string, string> = {
     ADT: "Adult",
     CNN: "Child",
     INF: "Infant",
   };
+
+  function getLegLabel(index: number, totalLegs: number) {
+    if (tripType === "round-trip" && totalLegs === 2) {
+      return index === 0 ? "Outbound Flight" : "Return Flight";
+    }
+
+    if (tripType === "multi-city" && totalLegs > 1) {
+      return `Leg ${index + 1}`;
+    }
+
+    return "";
+  }
+
+  function renderLegSummary(leg: FlightLeg, index: number) {
+    const stopoverInfos = getStopoverInfosForLeg(leg);
+    const dayOffset = getDayOffsetLabel(leg.departure, leg.arrival);
+    const legOriginRef = airportLookup?.[normalizeAirportCode(leg.origin)];
+    const legDestinationRef =
+      airportLookup?.[normalizeAirportCode(leg.destination)];
+    const legLabel = getLegLabel(index, summaryLegs.length);
+
+    return (
+      <div
+        key={`${offer.id}-summary-leg-${leg.legIndex}`}
+        className={
+          index > 0 ? "border-t border-dashed border-base-300 pt-4" : ""
+        }
+      >
+        {legLabel ? (
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+            {legLabel}
+          </p>
+        ) : null}
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <div>
+            <p className="text-3xl font-semibold leading-none text-foreground">
+              {formatClockTime(leg.departure)}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-lime-600">
+              {leg.origin}
+            </p>
+            <p className="mt-1 text-[11px] leading-tight text-muted">
+              {legOriginRef?.city ?? leg.origin}
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
+              <Clock3 className="size-3.5" />
+              {formatDuration(leg.durationMinutes)}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full border-2 border-base-300 bg-base-100" />
+              <span className="relative h-1 flex-1 rounded-full bg-base-300">
+                {stopoverInfos.slice(0, 2).map((stopover, stopIndex) => (
+                  <span
+                    key={`${offer.id}-stop-${leg.legIndex}-${stopover.airport}-${stopIndex}`}
+                    className="group absolute top-1/2 h-3 w-3 -translate-y-1/2 cursor-default rounded-full border-2 border-primary bg-base-100"
+                    style={{
+                      left: `${((stopIndex + 1) * 100) / (stopoverInfos.length + 1)}%`,
+                    }}
+                  >
+                    <FlightInfoTooltip className="bottom-full left-1/2 mb-2 -translate-x-1/2">
+                      <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                        {stopover.isOvernight ? (
+                          <Moon className="size-3 text-indigo-500" />
+                        ) : null}
+                        {stopover.airport
+                          ? `Stopover · ${stopover.airport}`
+                          : "Stopover"}
+                      </span>
+                      {stopover.durationMinutes > 0 ? (
+                        <span className="mt-0.5 block text-muted">
+                          {formatDuration(stopover.durationMinutes)}
+                          {stopover.isOvernight ? " · Overnight stay" : ""}
+                        </span>
+                      ) : null}
+                    </FlightInfoTooltip>
+                  </span>
+                ))}
+              </span>
+              <span className="h-3 w-3 rounded-full border-2 border-base-300 bg-base-100" />
+            </div>
+            <div className="mt-2 flex justify-center">
+              {leg.stops === 0 ? (
+                <span className="text-xs text-muted-foreground">Direct</span>
+              ) : stopoverInfos.length > 0 ? (
+                <span className="group relative inline-flex cursor-default">
+                  <span className="text-xs text-muted-foreground underline decoration-dotted underline-offset-2">
+                    {leg.stops} stop{leg.stops > 1 ? "s" : ""}
+                    {` · ${stopoverInfos
+                      .map((stop) => stop.airport)
+                      .filter(Boolean)
+                      .join(" • ")}`}
+                  </span>
+                  <FlightInfoTooltip className="bottom-full left-1/2 mb-2 -translate-x-1/2">
+                    {stopoverInfos.map((stopover, stopIndex) => (
+                      <span
+                        key={`${offer.id}-stopover-detail-${leg.legIndex}-${stopIndex}`}
+                        className={`block ${stopIndex > 0 ? "mt-2 border-t border-base-200 pt-2" : ""}`}
+                      >
+                        <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                          {stopover.isOvernight ? (
+                            <Moon className="size-3 text-indigo-500" />
+                          ) : null}
+                          {stopover.airport
+                            ? `Stopover · ${stopover.airport}`
+                            : "Stopover"}
+                        </span>
+                        {stopover.durationMinutes > 0 ? (
+                          <span className="mt-0.5 block text-muted">
+                            {formatDuration(stopover.durationMinutes)}
+                            {stopover.isOvernight ? " · Overnight stay" : ""}
+                          </span>
+                        ) : null}
+                      </span>
+                    ))}
+                  </FlightInfoTooltip>
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {leg.stops} stop{leg.stops > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p className="text-3xl font-semibold leading-none text-foreground">
+              {formatClockTime(leg.arrival)}
+            </p>
+            <div className="mt-2 inline-flex items-center justify-end gap-1 text-sm font-semibold">
+              <span className="text-lime-600">{leg.destination}</span>
+              {dayOffset ? (
+                <span className="group relative inline-flex cursor-default items-center gap-0.5 text-muted-foreground">
+                  <span className="text-xs">{dayOffset}</span>
+                  <Moon className="size-3.5" />
+                  <FlightInfoTooltip className="bottom-full right-0 mb-2">
+                    <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                      <Moon className="size-3 text-indigo-500" />
+                      Overnight Flight
+                    </span>
+                    <span className="mt-0.5 block text-muted">
+                      Arrives{" "}
+                      {parseInt(dayOffset, 10) > 1
+                        ? `${dayOffset} days`
+                        : "next day"}{" "}
+                      after departure
+                    </span>
+                  </FlightInfoTooltip>
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-[11px] leading-tight text-muted">
+              {legDestinationRef?.city ?? leg.destination}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <article
@@ -163,11 +395,24 @@ export function FlightResultCard({
       }`}
       onClick={onSelect}
     >
-      <div className="grid gap-4 p-4 md:grid-cols-[180px_minmax(0,1fr)_190px] md:items-center">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold lowercase tracking-wide text-emerald-600">
-            {offer.airline.slice(0, 6)}
-          </div>
+      <div className="grid gap-4 p-4 md:grid-cols-[180px_minmax(0,1fr)_190px] md:items-start">
+        <div className="flex items-center gap-3 md:pt-2">
+          {airlineLogoSrc ? (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-base-200 bg-white p-2 shadow-sm">
+              <Image
+                src={airlineLogoSrc}
+                alt={`${airlineName} logo`}
+                className="h-full w-full object-contain"
+                width={48}
+                height={48}
+                unoptimized
+              />
+            </div>
+          ) : (
+            <div className="rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold lowercase tracking-wide text-emerald-600">
+              {airlineCode}
+            </div>
+          )}
           <div>
             <p className="text-base font-medium text-foreground">
               {airlineName}
@@ -178,130 +423,8 @@ export function FlightResultCard({
           </div>
         </div>
 
-        <div className="px-1 md:px-4">
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
-            <div>
-              <p className="text-3xl font-semibold leading-none text-foreground">
-                {formatClockTime(offer.departure)}
-              </p>
-              <p className="mt-2 text-sm font-semibold text-lime-600">
-                {offer.origin}
-              </p>
-              <p className="mt-1 text-[11px] leading-tight text-muted">
-                {originRef?.city ?? offer.origin}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                <Clock3 className="size-3.5" />
-                {formatDuration(offer.durationMinutes)}
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full border-2 border-base-300 bg-base-100" />
-                <span className="relative h-1 flex-1 rounded-full bg-base-300">
-                  {stopoverInfos.slice(0, 2).map((stopover, index) => (
-                    <span
-                      key={`${offer.id}-stop-${stopover.airport}-${index}`}
-                      className="group absolute top-1/2 h-3 w-3 -translate-y-1/2 cursor-default rounded-full border-2 border-primary bg-base-100"
-                      style={{
-                        left: `${((index + 1) * 100) / (stopoverInfos.length + 1)}%`,
-                      }}
-                    >
-                      <FlightInfoTooltip className="bottom-full left-1/2 mb-2 -translate-x-1/2">
-                        <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                          {stopover.isOvernight && (
-                            <Moon className="size-3 text-indigo-500" />
-                          )}
-                          {stopover.airport
-                            ? `Stopover · ${stopover.airport}`
-                            : "Stopover"}
-                        </span>
-                        {stopover.durationMinutes > 0 && (
-                          <span className="mt-0.5 block text-muted">
-                            {formatDuration(stopover.durationMinutes)}
-                            {stopover.isOvernight ? " · Overnight stay" : ""}
-                          </span>
-                        )}
-                      </FlightInfoTooltip>
-                    </span>
-                  ))}
-                </span>
-                <span className="h-3 w-3 rounded-full border-2 border-base-300 bg-base-100" />
-              </div>
-              <div className="mt-2 flex justify-center">
-                {offer.stops === 0 ? (
-                  <span className="text-xs text-muted-foreground">Direct</span>
-                ) : stopoverInfos.length > 0 ? (
-                  <span className="group relative inline-flex cursor-default">
-                    <span className="text-xs text-muted-foreground underline decoration-dotted underline-offset-2">
-                      {offer.stops} stop{offer.stops > 1 ? "s" : ""}
-                      {` · ${stopoverInfos
-                        .map((s) => s.airport)
-                        .filter(Boolean)
-                        .join(" • ")}`}
-                    </span>
-                    <FlightInfoTooltip className="bottom-full left-1/2 mb-2 -translate-x-1/2">
-                      {stopoverInfos.map((s, i) => (
-                        <span
-                          key={`${s.airport}-${i}`}
-                          className={`block ${i > 0 ? "mt-2 border-t border-base-200 pt-2" : ""}`}
-                        >
-                          <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                            {s.isOvernight && (
-                              <Moon className="size-3 text-indigo-500" />
-                            )}
-                            {s.airport ? `Stopover · ${s.airport}` : "Stopover"}
-                          </span>
-                          {s.durationMinutes > 0 && (
-                            <span className="mt-0.5 block text-muted">
-                              {formatDuration(s.durationMinutes)}
-                              {s.isOvernight ? " · Overnight stay" : ""}
-                            </span>
-                          )}
-                        </span>
-                      ))}
-                    </FlightInfoTooltip>
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    {offer.stops} stop{offer.stops > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="text-right">
-              <p className="text-3xl font-semibold leading-none text-foreground">
-                {formatClockTime(offer.arrival)}
-              </p>
-              <div className="mt-2 inline-flex items-center justify-end gap-1 text-sm font-semibold">
-                <span className="text-lime-600">{offer.destination}</span>
-                {dayOffset ? (
-                  <span className="group relative inline-flex cursor-default items-center gap-0.5 text-muted-foreground">
-                    <span className="text-xs">{dayOffset}</span>
-                    <Moon className="size-3.5" />
-                    <FlightInfoTooltip className="bottom-full right-0 mb-2">
-                      <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                        <Moon className="size-3 text-indigo-500" />
-                        Overnight Flight
-                      </span>
-                      <span className="mt-0.5 block text-muted">
-                        Arrives{" "}
-                        {parseInt(dayOffset) > 1
-                          ? `${dayOffset} days`
-                          : "next day"}{" "}
-                        after departure
-                      </span>
-                    </FlightInfoTooltip>
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 text-[11px] leading-tight text-muted">
-                {destinationRef?.city ?? offer.destination}
-              </p>
-            </div>
-          </div>
+        <div className="space-y-4 px-1 md:px-4">
+          {summaryLegs.map((leg, index) => renderLegSummary(leg, index))}
         </div>
 
         <div className="border-t border-dashed border-base-300 pt-3 text-left md:border-l md:border-t-0 md:pt-0 md:pl-6 md:text-right">
@@ -311,7 +434,13 @@ export function FlightResultCard({
           <p className="mt-1 text-2xl font-semibold leading-none text-foreground">
             {formatMoney(offer.price, offer.currency)}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">Per person</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isMultiCityOffer
+              ? "Multi-city total"
+              : isRoundTripOffer
+                ? "Round-trip total"
+                : "Per person"}
+          </p>
         </div>
       </div>
 
@@ -352,11 +481,11 @@ export function FlightResultCard({
                     </span>
                   )}
                 </p>
-                {offer.legs!.map((leg) => (
+                {offer.legs!.map((leg, legIndex) => (
                   <div key={leg.legIndex} className="space-y-2">
-                    {offer.legs!.length > 1 && (
+                    {getLegLabel(legIndex, offer.legs!.length) && (
                       <p className="text-xs font-medium text-muted">
-                        {leg.legIndex === 0 ? "Outbound" : "Return"} ·{" "}
+                        {getLegLabel(legIndex, offer.legs!.length)} ·{" "}
                         {leg.origin} → {leg.destination}
                       </p>
                     )}

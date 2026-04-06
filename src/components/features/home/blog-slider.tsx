@@ -45,9 +45,52 @@ function formatDate(dateStr: string | null) {
   });
 }
 
+function BlogSkeleton() {
+  return (
+    <section className="section-shell py-10">
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <div className="h-8 w-44 animate-pulse rounded-lg bg-slate-200" />
+          <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+        </div>
+      </div>
+      <div className="flex gap-6 overflow-hidden pb-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex w-72 shrink-0 flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm sm:w-80"
+          >
+            <div className="relative h-44 animate-pulse bg-slate-200">
+              <div className="absolute left-3 top-3 h-5 w-16 animate-pulse rounded-full bg-slate-300" />
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-5">
+              <div className="h-5 w-full animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+              <div className="mt-1 flex gap-1">
+                <div className="h-4 w-12 animate-pulse rounded-full bg-slate-100" />
+                <div className="h-4 w-14 animate-pulse rounded-full bg-slate-100" />
+              </div>
+              <div className="mt-auto flex items-center justify-between pt-3">
+                <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-16 animate-pulse rounded bg-slate-100" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function BlogSlider() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isDummy, setIsDummy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +100,8 @@ export function BlogSlider() {
         return r.json();
       })
       .then((data: BlogPost[]) => setPosts(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const scroll = (dir: "left" | "right") => {
@@ -71,6 +115,7 @@ export function BlogSlider() {
     });
   };
 
+  if (loading) return <BlogSkeleton />;
   if (!posts.length) return null;
 
   return (

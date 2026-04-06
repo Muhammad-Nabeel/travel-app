@@ -221,13 +221,13 @@ export default function AdminBlogPage() {
               Admin hub
             </Link>
             <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Admin
+              Administration
             </p>
-            <h1 className="display-font mt-1 text-4xl text-brand-strong">
-              Blog posts
+            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+              Blog Management
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Manage articles shown in the homepage blog slider.
+              Manage editorial content displayed in the homepage blog section.
               {isDummy && (
                 <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                   Showing sample data · add your first post below
@@ -255,7 +255,7 @@ export default function AdminBlogPage() {
           <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-800">
-                {editingId ? "Edit post" : "New post"}
+                {editingId ? "Edit Post" : "Create Post"}
               </h2>
               <button
                 onClick={closeForm}

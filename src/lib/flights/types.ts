@@ -6,12 +6,19 @@ export type CabinClass =
     | "Business"
     | "First";
 
+export type MultiCityLeg = {
+    origin: string;
+    destination: string;
+    departureDate: string;
+};
+
 export type FlightSearchQuery = {
     tripType: TripType;
     origin: string;
     destination: string;
     departureDate: string;
     returnDate?: string;
+    legs?: MultiCityLeg[];
     adults: number;
     children: number;
     infants: number;

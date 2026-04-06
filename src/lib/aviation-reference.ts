@@ -14,6 +14,18 @@ type AirlineRef = {
     name: string;
 };
 
+export type AirlineOption = {
+    code: string;
+    name: string;
+};
+
+export type AirportOption = {
+    iata: string;
+    city: string;
+    country: string;
+    airportName: string;
+};
+
 type AirportSearchResult = {
     iata: string;
     city: string;
@@ -21,7 +33,31 @@ type AirportSearchResult = {
     name: string;
 };
 
+export type CitySearchResult = {
+    city: string;
+    country: string;
+    iata: string;
+};
+
 const airports = data.airports;
+
+const cityReferenceMap = new Map<string, CitySearchResult>();
+
+for (const airport of airports) {
+    const city = airport.city.trim();
+    const country = airport.country.trim();
+    const iata = airport.iata.trim().toUpperCase();
+    if (!city || !country || !iata) {
+        continue;
+    }
+
+    const key = `${city.toUpperCase()}|${country.toUpperCase()}`;
+    if (!cityReferenceMap.has(key)) {
+        cityReferenceMap.set(key, { city, country, iata });
+    }
+}
+
+const cityReferences = Array.from(cityReferenceMap.values());
 
 const airportByCode = new Map<string, AirportRef>(
     airports.map((a) => [a.iata.trim().toUpperCase(), a]),
@@ -56,6 +92,36 @@ export function getAirlineName(codeOrName?: string) {
         return airlineByCode.get(cleaned)!.name;
     }
     return null;
+}
+
+export function listAirlineOptions(limit = 300): AirlineOption[] {
+    return data.airlines
+        .map((airline) => ({
+            code: airline.code.trim().toUpperCase(),
+            name: airline.name.trim(),
+        }))
+        .filter((airline) => airline.code.length >= 2 && airline.name.length > 0)
+        .sort((left, right) => left.name.localeCompare(right.name))
+        .slice(0, limit);
+}
+
+export function listAirportOptions(limit = 300): AirportOption[] {
+    return airports
+        .map((airport) => ({
+            iata: airport.iata.trim().toUpperCase(),
+            city: airport.city.trim(),
+            country: airport.country.trim(),
+            airportName: airport.airportName.trim(),
+        }))
+        .filter((airport) => airport.iata.length === 3)
+        .sort((left, right) => {
+            const cityCompare = left.city.localeCompare(right.city);
+            if (cityCompare !== 0) {
+                return cityCompare;
+            }
+            return left.iata.localeCompare(right.iata);
+        })
+        .slice(0, limit);
 }
 
 function normalizeAirportSearchValue(value?: string) {
@@ -123,6 +189,61 @@ export function searchAirports(query?: string, limit = 8): AirportSearchResult[]
             }
 
             return left.result.iata.localeCompare(right.result.iata);
+        })
+        .slice(0, limit)
+        .map((entry) => entry.result);
+}
+
+function normalizeCitySearchValue(value?: string) {
+    return value?.trim().toUpperCase() ?? "";
+}
+
+export function searchCities(query?: string, limit = 10): CitySearchResult[] {
+    const normalized = normalizeCitySearchValue(query);
+
+    if (normalized.length < 2) {
+        return [];
+    }
+
+    return cityReferences
+        .map((entry) => {
+            const normalizedCity = entry.city.toUpperCase();
+            const normalizedCountry = entry.country.toUpperCase();
+
+            let score = -1;
+
+            if (normalizedCity === normalized) {
+                score = 500;
+            } else if (normalizedCountry === normalized) {
+                score = 400;
+            } else if (normalizedCity.startsWith(normalized)) {
+                score = 300;
+            } else if (normalizedCountry.startsWith(normalized)) {
+                score = 250;
+            } else if (
+                normalizedCity.includes(normalized) ||
+                normalizedCountry.includes(normalized)
+            ) {
+                score = 100;
+            }
+
+            return {
+                score,
+                result: entry,
+            };
+        })
+        .filter((entry) => entry.score >= 0)
+        .sort((left, right) => {
+            if (right.score !== left.score) {
+                return right.score - left.score;
+            }
+
+            const cityCompare = left.result.city.localeCompare(right.result.city);
+            if (cityCompare !== 0) {
+                return cityCompare;
+            }
+
+            return left.result.country.localeCompare(right.result.country);
         })
         .slice(0, limit)
         .map((entry) => entry.result);

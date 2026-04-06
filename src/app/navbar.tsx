@@ -3,17 +3,30 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { PlaneTakeoff } from "lucide-react";
+import {
+  BedDouble,
+  FileCheck2,
+  LogIn,
+  Moon,
+  Package,
+  Plane,
+  PlaneTakeoff,
+  Sun,
+  UserPlus,
+} from "lucide-react";
 
 const links = [
-  { href: "/flights", label: "Flights" },
-  { href: "/hotels", label: "Hotels" },
-  { href: "/umrah-packages", label: "Packages" },
+  { href: "/flights", label: "Flights", icon: Plane },
+  { href: "/hotels", label: "Hotels", icon: BedDouble },
+  { href: "/umrah-packages", label: "Umrah Packages", icon: Package },
+  { href: "/tour-packages", label: "Tour Packages", icon: Package },
+  { href: "/visa", label: "Visa", icon: FileCheck2 },
 ];
 
 const NavBar = () => {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -21,6 +34,13 @@ const NavBar = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      dark ? "business" : "corporate",
+    );
+  }, [dark]);
 
   return (
     <header className="sticky top-0 z-50">
@@ -40,42 +60,54 @@ const NavBar = () => {
           <span className="rounded-full bg-sky-400 p-2 text-white shadow-sm">
             <PlaneTakeoff className="size-4" />
           </span>
-          <span className="display-font text-2xl leading-none">
-            Safar
-          </span>
+          <span className="display-font text-2xl leading-none">Safar</span>
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
-          {links.map((item) => {
-            const active = pathname === item.href;
+          {links.map(({ href, label, icon: Icon }) => {
+            const active =
+              pathname === href || (href === "/flights" && pathname === "/");
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={href}
+                href={href}
                 className={
                   active
-                    ? "rounded-full bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/90 hover:text-white!"
-                    : "rounded-full px-4 py-2 text-sm font-medium text-black/80 transition hover:bg-black/10 hover:text-black"
+                    ? "flex items-center gap-1.5 rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                    : "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-black/10 hover:text-black"
                 }
               >
-                {item.label}
+                <Icon className="size-3.5" />
+                {label}
               </Link>
             );
           })}
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin"
-            className="rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
+          {/* Dark / light toggle */}
+          <button
+            type="button"
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setDark((d) => !d)}
+            className="rounded-full border border-black/20 p-2 text-black transition hover:bg-black/5"
           >
-            Admin
+            {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
+
+          <Link
+            href="/signin"
+            className="flex items-center gap-1.5 rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
+          >
+            <LogIn className="size-4" />
+            Sign In
           </Link>
           <Link
-            href="/admin"
-            className="rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
+            href="/signup"
+            className="flex items-center gap-1.5 rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
           >
-            Login / Signup
+            <UserPlus className="size-4" />
+            Sign Up
           </Link>
         </div>
       </nav>

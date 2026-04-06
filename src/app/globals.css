@@ -1,15 +1,36 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* ── Light theme tokens (corporate) ────────────────────── */
 :root {
-  --background: #f6efe4;
-  --foreground: #1d2b24;
-  --card: #fffaf2;
-  --muted: #56675f;
-  --brand: #0f766e;
-  --brand-strong: #134e4a;
-  --accent: #d97706;
-  --ring: rgba(15, 118, 110, 0.2);
+  --background: #f8f9ff; /* near-white with blue tint */
+  --foreground: #1d1d1d; /* corporate base-content */
+  --card: #ffffff;
+  --muted: #6b7280;
+  --brand: #4b6bfb; /* corporate primary */
+  --brand-strong: #3451fa;
+  --accent: #67cba0; /* corporate accent */
+  --ring: rgba(75, 107, 251, 0.22);
+  --scroll-track: #e9eefb;
+  --scroll-thumb: #93a8e9;
+  --scroll-thumb-hover: #708de3;
+}
+
+/* ── Dark theme tokens (business) ──────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1d232a; /* business base-100 */
+    --foreground: #a6adbb; /* business base-content */
+    --card: #191e24;
+    --muted: #6b7280;
+    --brand: #1c4f82; /* business primary */
+    --brand-strong: #1a4270;
+    --accent: #67cba0;
+    --ring: rgba(28, 79, 130, 0.3);
+    --scroll-track: #2a3440;
+    --scroll-thumb: #45658a;
+    --scroll-thumb-hover: #5d7ea6;
+  }
 }
 
 @theme inline {
@@ -24,35 +45,13 @@
   --font-display: var(--font-cormorant-garamond);
 }
 
-@plugin "daisyui/theme" {
-  name: "safar";
-  default: true;
-  prefersdark: false;
-  color-scheme: light;
-  --color-base-100: #fffaf2;
-  --color-base-200: #f6efe4;
-  --color-base-300: #ece1d0;
-  --color-base-content: #1d2b24;
-  --color-primary: #0f766e;
-  --color-primary-content: #effcf9;
-  --color-secondary: #d97706;
-  --color-secondary-content: #fff7ed;
-  --color-accent: #134e4a;
-  --color-accent-content: #ecfdf5;
-  --color-neutral: #21332b;
-  --color-neutral-content: #f8fafc;
-  --color-info: #2563eb;
-  --color-success: #15803d;
-  --color-warning: #ca8a04;
-  --color-error: #dc2626;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -62,19 +61,69 @@ body {
   background-image:
     radial-gradient(
       circle at top left,
-      rgba(217, 119, 6, 0.12),
+      rgba(75, 107, 251, 0.08),
+      /* corporate primary tint */ transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(103, 203, 160, 0.1),
+      /* corporate accent tint */ transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(248, 249, 255, 0.97) 0%,
+      rgba(235, 238, 255, 1) 100%
+    );
+}
+
+/* Professional, subtle scrollbar styling across pages and panels */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--scroll-thumb), var(--brand));
+  border-radius: 999px;
+  border: 2px solid var(--scroll-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--scroll-thumb-hover),
+    var(--brand-strong)
+  );
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-theme="business"] body,
+[data-theme="business"] {
+  background-image:
+    radial-gradient(
+      circle at top left,
+      rgba(28, 79, 130, 0.15),
       transparent 28%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(15, 118, 110, 0.18),
+      rgba(103, 203, 160, 0.08),
       transparent 32%
     ),
-    linear-gradient(
-      180deg,
-      rgba(255, 250, 242, 0.96) 0%,
-      rgba(246, 239, 228, 1) 100%
-    );
+    linear-gradient(180deg, rgba(29, 35, 42, 0.99) 0%, rgba(25, 30, 36, 1) 100%);
 }
 
 a {
@@ -89,8 +138,8 @@ a {
 .surface {
   background: linear-gradient(
     180deg,
-    rgba(255, 250, 242, 0.92) 0%,
-    rgba(255, 255, 255, 0.78) 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(240, 249, 255, 0.8) 100%
   );
   backdrop-filter: blur(12px);
 }
@@ -102,15 +151,15 @@ a {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(19, 78, 74, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(19, 78, 74, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(75, 107, 251, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 107, 251, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
 .ring-soft {
   box-shadow:
-    0 0 0 1px rgba(29, 43, 36, 0.06),
-    0 18px 45px rgba(24, 39, 75, 0.08);
+    0 0 0 1px rgba(75, 107, 251, 0.08),
+    0 18px 45px rgba(75, 107, 251, 0.1);
 }
 
 .destination-tile {
@@ -147,4 +196,22 @@ select:focus,
 textarea:focus {
   outline: none;
   box-shadow: 0 0 0 4px var(--ring);
+}
+
+@keyframes airline-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.airline-marquee {
+  animation: airline-marquee 28s linear infinite;
+}
+
+.airline-marquee:hover {
+  animation-play-state: paused;
 }

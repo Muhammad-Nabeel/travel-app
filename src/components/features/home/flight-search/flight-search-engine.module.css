@@ -1,7 +1,8 @@
 .homeHero {
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 40;
   background-image:
     linear-gradient(
       180deg,
@@ -28,6 +29,8 @@
 .embeddedSearch {
   position: relative;
   width: 100%;
+  overflow: visible;
+  z-index: 40;
 }
 
 .heroOrb {
@@ -60,6 +63,8 @@
 }
 
 .searchCard {
+  position: relative;
+  z-index: 80;
   background: #ffffff;
   border-radius: 14px;
   box-shadow:
@@ -372,6 +377,194 @@
   background: transparent;
 }
 
+.fareCalendarWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.fareCalendarTrigger {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fareCalendarTriggerDisabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.fareCalendarPanel {
+  position: relative;
+  width: min(720px, 92vw);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border: 1px solid #dbe1ea;
+  border-radius: 12px;
+  background: #f8fafc;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  padding: 10px 12px;
+}
+
+.fareCalendarOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.fareCalendarTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 8px;
+}
+
+.fareNavBtn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  color: #111827;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+}
+
+.fareNavBtn:hover {
+  background: #e2e8f0;
+}
+
+.fareMonthsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fareMonth {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.fareMonthTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.fareWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.fareWeekdays span {
+  text-align: center;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.fareGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.fareCell,
+.fareCellEmpty {
+  min-height: 54px;
+  border-radius: 8px;
+}
+
+.fareCellEmpty {
+  background: transparent;
+}
+
+.fareCell {
+  border: 1px solid transparent;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.fareCell:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.fareCell:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fareCellSelected {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.fareCellInRange {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.fareCellRangeStart,
+.fareCellRangeEnd {
+  border-color: #1d4ed8;
+  background: #2563eb;
+}
+
+.fareCellRangeStart .fareDayNumber,
+.fareCellRangeEnd .fareDayNumber,
+.fareCellRangeStart .fareAmount,
+.fareCellRangeEnd .fareAmount {
+  color: #ffffff;
+}
+
+.fareDayNumber {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.fareAmount {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #2563eb;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fareCalendarFooter {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #475569;
+  min-height: 16px;
+}
+
+.fareCalendarError {
+  color: #b91c1c;
+}
+
 .trendingRow {
   margin-top: 10px;
   padding-top: 10px;
@@ -432,6 +625,83 @@
   transform: translateY(0);
 }
 
+.multiCityPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+}
+
+.multiCityRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(
+      0,
+      1fr
+    ) auto;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.multiCityIndex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.multiCityActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+}
+
+.multiCityAddBtn,
+.multiCityRemoveBtn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.multiCityAddBtn:hover,
+.multiCityRemoveBtn:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.multiCityAddBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.multiCityFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.multiCityHint {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
 @media (max-width: 1100px) {
   .fieldsRow {
     grid-template-columns:
@@ -450,9 +720,30 @@
     grid-template-columns: 1fr auto 1fr;
   }
 
+  .fareCalendarPanel {
+    width: min(640px, 95vw);
+  }
+
+  .fareMonthsRow {
+    grid-template-columns: 1fr;
+  }
+
   .searchBtn {
     grid-column: 1 / -1;
     min-height: 44px;
+  }
+
+  .multiCityRow {
+    grid-template-columns: 1fr;
+  }
+
+  .multiCityIndex,
+  .multiCityActions {
+    justify-content: flex-start;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
   }
 }
 

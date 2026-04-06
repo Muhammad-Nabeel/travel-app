@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ZodError } from "zod";
 import { activitySchema } from "@/lib/validations/activity";
 
 type Activity = {
@@ -151,10 +152,10 @@ export default function AdminActivitiesPage() {
         cancelEdit();
         await fetchActivities();
       }
-    } catch (err: any) {
-      if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+      if (err instanceof ZodError) {
         const message = err.issues
-          .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
           .join(", ");
         setError(message);
       } else if (err instanceof Error) {
@@ -214,13 +215,14 @@ export default function AdminActivitiesPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Admin
+              Administration
             </p>
-            <h1 className="display-font mt-1 text-4xl text-brand-strong">
-              Trending Activities
+            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+              Activity Management
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Manage activities and experiences shown on the homepage.
+              Manage the activities and experiences published across the
+              customer-facing storefront.
             </p>
           </div>
           {editingId === null && (

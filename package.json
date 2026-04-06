@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.5.0",
@@ -17,9 +18,11 @@
     "clsx": "^2.1.1",
     "daisyui": "^5.5.19",
     "dotenv": "^17.3.1",
+    "googleapis": "^171.4.0",
     "lucide-react": "^1.7.0",
     "mariadb": "^3.5.2",
     "next": "16.2.1",
+    "next-auth": "^4.24.13",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.3.6"

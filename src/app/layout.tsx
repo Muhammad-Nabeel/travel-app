@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import NavBar from "./navbar";
 import { Suspense } from "react";
 import Loading from "./loading";
-import { SiteFooter } from "@/components/shared/site-footer";
+import { ConditionalFooter } from "@/components/layout/conditional-footer";
+import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
+import { Ga4Loader } from "@/components/analytics/ga4-loader";
+import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -31,14 +33,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-theme="corporate"
       className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NavBar />
+        <Ga4Loader />
+        <ConditionalNavbar />
         <main className="w-full flex-1">
           <Suspense fallback={<Loading />}>{children}</Suspense>
         </main>
-        <SiteFooter />
+        <FloatingReviewWidget />
+        <ConditionalFooter />
       </body>
     </html>
   );

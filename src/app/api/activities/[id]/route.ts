@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 import { prisma } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
@@ -28,10 +29,10 @@ export async function PUT(
             },
         });
         return NextResponse.json(activity, { status: 200 });
-    } catch (err: any) {
-        if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+        if (err instanceof ZodError) {
             const message = err.issues
-                .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+                .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
                 .join("; ");
             return NextResponse.json(
                 { ok: false, error: `Validation: ${message}` },

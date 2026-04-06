@@ -1,20 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ZodError } from "zod";
 import { destinationSchema } from "@/lib/validations/destination";
 
 type Destination = {
   id: string;
   city: string;
   country: string;
+  scope: "DOMESTIC" | "INTERNATIONAL";
+  tagline: string | null;
+  overview: string | null;
+  highlights: string[];
+  travelTips: string[];
+  bestTimeToVisit: string | null;
+  idealStay: string | null;
+  currency: string | null;
+  timezone: string | null;
+  language: string | null;
   iataCode: string | null;
+  imageUrl: string | null;
   fare: string;
   notes: string | null;
   gradient: string;
   sortOrder: number;
   isActive: boolean;
+};
+
+type CitySuggestion = {
+  city: string;
+  country: string;
+  iata: string;
 };
 
 const GRADIENT_OPTIONS = [
@@ -40,7 +58,18 @@ const GRADIENT_PREVIEW: Record<string, string> = {
 const EMPTY_FORM = {
   city: "",
   country: "",
+  scope: "INTERNATIONAL",
+  tagline: "",
+  overview: "",
+  highlightsInput: "",
+  travelTipsInput: "",
+  bestTimeToVisit: "",
+  idealStay: "",
+  currency: "",
+  timezone: "",
+  language: "",
   iataCode: "",
+  imageUrl: "",
   fare: "",
   notes: "",
   gradient: "blue",
@@ -56,6 +85,17 @@ export default function AdminDestinationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [cityLookupLoading, setCityLookupLoading] = useState(false);
+  const cityFieldRef = useRef<HTMLLabelElement>(null);
+  const citySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const parseCsvList = (value: string) =>
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
   const fetchDestinations = async () => {
     try {
@@ -74,25 +114,111 @@ export default function AdminDestinationsPage() {
     fetchDestinations();
   }, []);
 
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (
+        cityFieldRef.current &&
+        !cityFieldRef.current.contains(e.target as Node)
+      ) {
+        setShowCitySuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (citySearchTimerRef.current) {
+        clearTimeout(citySearchTimerRef.current);
+      }
+    };
+  }, []);
+
   const startEdit = (d: Destination) => {
     setEditingId(d.id);
     setFormData({
       city: d.city,
       country: d.country,
+      scope: d.scope,
+      tagline: d.tagline ?? "",
+      overview: d.overview ?? "",
+      highlightsInput: (d.highlights ?? []).join(", "),
+      travelTipsInput: (d.travelTips ?? []).join(", "),
+      bestTimeToVisit: d.bestTimeToVisit ?? "",
+      idealStay: d.idealStay ?? "",
+      currency: d.currency ?? "",
+      timezone: d.timezone ?? "",
+      language: d.language ?? "",
       iataCode: d.iataCode ?? "",
+      imageUrl: d.imageUrl ?? "",
       fare: d.fare,
       notes: d.notes ?? "",
       gradient: d.gradient,
       sortOrder: String(d.sortOrder),
       isActive: d.isActive,
     });
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setFormData(EMPTY_FORM);
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
     setError("");
+  };
+
+  const handleCityInputChange = (raw: string) => {
+    setFormData((prev) => ({ ...prev, city: raw }));
+
+    if (citySearchTimerRef.current) {
+      clearTimeout(citySearchTimerRef.current);
+    }
+
+    const trimmed = raw.trim();
+
+    if (trimmed.length < 2) {
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
+      setCityLookupLoading(false);
+      return;
+    }
+
+    setCityLookupLoading(true);
+    setShowCitySuggestions(true);
+
+    citySearchTimerRef.current = setTimeout(() => {
+      void fetch(`/api/places/cities?query=${encodeURIComponent(trimmed)}`)
+        .then((res) => res.json())
+        .then((json: { results?: CitySuggestion[] }) => {
+          setCitySuggestions(json.results ?? []);
+          setShowCitySuggestions((json.results?.length ?? 0) > 0);
+          setCityLookupLoading(false);
+        })
+        .catch(() => {
+          setCitySuggestions([]);
+          setShowCitySuggestions(false);
+          setCityLookupLoading(false);
+        });
+    }, 260);
+  };
+
+  const handleCitySuggestionSelect = (item: CitySuggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      city: item.city,
+      country: item.country,
+      iataCode: item.iata,
+    }));
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+    setCityLookupLoading(false);
   };
 
   const handleSave = async () => {
@@ -104,7 +230,18 @@ export default function AdminDestinationsPage() {
       const validatedData = destinationSchema.parse({
         city: formData.city,
         country: formData.country,
+        scope: formData.scope,
+        tagline: formData.tagline,
+        overview: formData.overview,
+        highlights: parseCsvList(formData.highlightsInput),
+        travelTips: parseCsvList(formData.travelTipsInput),
+        bestTimeToVisit: formData.bestTimeToVisit,
+        idealStay: formData.idealStay,
+        currency: formData.currency,
+        timezone: formData.timezone,
+        language: formData.language,
         iataCode: formData.iataCode,
+        imageUrl: formData.imageUrl,
         fare: formData.fare,
         notes: formData.notes,
         gradient: formData.gradient,
@@ -135,11 +272,11 @@ export default function AdminDestinationsPage() {
         cancelEdit();
         await fetchDestinations();
       }
-    } catch (err: any) {
-      if (err?.issues && Array.isArray(err.issues)) {
+    } catch (err: unknown) {
+      if (err instanceof ZodError) {
         // Zod validation error on client
         const message = err.issues
-          .map((issue: any) => `${issue.path.join(".")}: ${issue.message}`)
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
           .join(", ");
         setError(message);
       } else if (err instanceof Error) {
@@ -196,13 +333,14 @@ export default function AdminDestinationsPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Admin
+              Administration
             </p>
-            <h1 className="display-font mt-1 text-4xl text-brand-strong">
-              Popular Destinations
+            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+              Destination Management
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Manage destination cards shown in the homepage slider.
+              Manage the destination content featured throughout the public
+              experience.
             </p>
           </div>
           {editingId === null && (
@@ -210,6 +348,9 @@ export default function AdminDestinationsPage() {
               onClick={() => {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
+                setCitySuggestions([]);
+                setShowCitySuggestions(false);
+                setCityLookupLoading(false);
               }}
               className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
@@ -238,17 +379,53 @@ export default function AdminDestinationsPage() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   City *
                 </span>
-                <input
-                  {...field("city")}
-                  placeholder="e.g. Dubai"
-                  maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
+                <label className="relative" ref={cityFieldRef}>
+                  <input
+                    value={formData.city}
+                    onFocus={() => {
+                      if (citySuggestions.length > 0) {
+                        setShowCitySuggestions(true);
+                      }
+                    }}
+                    onChange={(e) => handleCityInputChange(e.target.value)}
+                    placeholder="e.g. Dubai"
+                    maxLength={80}
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+
+                  {showCitySuggestions &&
+                    (cityLookupLoading || citySuggestions.length > 0) && (
+                      <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {cityLookupLoading ? (
+                          <p className="px-2 py-2 text-xs text-slate-500">
+                            Searching cities...
+                          </p>
+                        ) : (
+                          citySuggestions.map((item) => (
+                            <button
+                              key={`${item.city}-${item.country}-${item.iata}`}
+                              type="button"
+                              onClick={() => handleCitySuggestionSelect(item)}
+                              className="w-full rounded-md px-2 py-1.5 text-left hover:bg-slate-50"
+                            >
+                              <p className="text-sm font-semibold text-slate-800">
+                                {item.city}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {item.country} - {item.iata}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                </label>
+              </div>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Country *
@@ -257,6 +434,29 @@ export default function AdminDestinationsPage() {
                   {...field("country")}
                   placeholder="e.g. UAE"
                   maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Scope *
+                </span>
+                <select
+                  {...field("scope")}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                >
+                  <option value="DOMESTIC">Domestic</option>
+                  <option value="INTERNATIONAL">International</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Tagline
+                </span>
+                <input
+                  {...field("tagline")}
+                  placeholder="e.g. Skyline luxury and desert adventure"
+                  maxLength={120}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
               </label>
@@ -290,6 +490,104 @@ export default function AdminDestinationsPage() {
                   {...field("notes")}
                   placeholder="e.g. Round-trip flights"
                   maxLength={120}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-3">
+                <span className="text-xs font-semibold text-slate-600">
+                  Overview
+                </span>
+                <textarea
+                  {...field("overview")}
+                  rows={4}
+                  maxLength={5000}
+                  placeholder="Rich summary for the destination details page"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Highlights (comma separated)
+                </span>
+                <input
+                  {...field("highlightsInput")}
+                  placeholder="Burj Khalifa, Desert Safari, Dubai Mall"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Travel Tips (comma separated)
+                </span>
+                <input
+                  {...field("travelTipsInput")}
+                  placeholder="Carry passport copy, Use metro card"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Best Time To Visit
+                </span>
+                <input
+                  {...field("bestTimeToVisit")}
+                  placeholder="November to March"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Ideal Stay
+                </span>
+                <input
+                  {...field("idealStay")}
+                  placeholder="4-5 days"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Currency
+                </span>
+                <input
+                  {...field("currency")}
+                  placeholder="AED"
+                  maxLength={40}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Timezone
+                </span>
+                <input
+                  {...field("timezone")}
+                  placeholder="GST (UTC+4)"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-slate-600">
+                  Language
+                </span>
+                <input
+                  {...field("language")}
+                  placeholder="Arabic, English"
+                  maxLength={80}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 lg:col-span-2">
+                <span className="text-xs font-semibold text-slate-600">
+                  Image URL
+                </span>
+                <input
+                  {...field("imageUrl")}
+                  placeholder="/destinations/dubai.jpg or https://..."
+                  maxLength={500}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
               </label>
@@ -379,7 +677,9 @@ export default function AdminDestinationsPage() {
               <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">City</th>
+                  <th className="px-4 py-3">Image</th>
                   <th className="px-4 py-3">Country</th>
+                  <th className="px-4 py-3">Scope</th>
                   <th className="px-4 py-3">IATA</th>
                   <th className="px-4 py-3">Fare</th>
                   <th className="px-4 py-3">Gradient</th>
@@ -397,7 +697,22 @@ export default function AdminDestinationsPage() {
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {d.city}
                     </td>
+                    <td className="px-4 py-3">
+                      {d.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={d.imageUrl}
+                          alt={`${d.city} preview`}
+                          className="h-10 w-14 rounded-md object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{d.country}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {d.scope === "DOMESTIC" ? "Domestic" : "International"}
+                    </td>
                     <td className="px-4 py-3 font-mono text-slate-600">
                       {d.iataCode ?? "—"}
                     </td>

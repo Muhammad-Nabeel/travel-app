@@ -4,6 +4,8 @@ import styles from "./trending-searches.module.css";
 type TrendingRoute = {
   origin: string;
   destination: string;
+  originIata: string;
+  destinationIata: string;
 };
 
 type TrendingSearchesProps = {
@@ -21,7 +23,7 @@ export function TrendingSearches({ routes, onSelect }: TrendingSearchesProps) {
       <div className={styles.trendingList}>
         {routes.map((route) => (
           <button
-            key={`${route.origin}-${route.destination}`}
+            key={`${route.originIata}-${route.destinationIata}`}
             type="button"
             className={styles.trendingChip}
             onClick={() => onSelect(route)}
