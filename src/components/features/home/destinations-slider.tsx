@@ -162,7 +162,7 @@ function DestinationCarousel({
         {items.map((d) => (
           <Link
             key={d.id}
-            href={`/destinations/${d.slug ?? d.id}`}
+            href={`/destinations/${d.slug?.trim() ? d.slug : d.id}`}
             className="block focus-visible:outline-none"
             aria-label={`View details for ${d.city}`}
           >

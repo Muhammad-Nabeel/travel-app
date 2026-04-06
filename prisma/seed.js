@@ -428,6 +428,113 @@ const DESTINATIONS_SEED = [
   },
 ];
 
+const ACTIVITIES_SEED = [
+  {
+    destinationCity: "Dubai",
+    title: "Desert Safari Adventure",
+    category: "adventure",
+    description: "Dune bashing, sunset views, and a traditional camp dinner.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&auto=format&fit=crop",
+    cost: "PKR 8,500",
+    reviews: 4.8,
+    reviewCount: 342,
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    destinationCity: "Dubai",
+    title: "Burj Khalifa Observation Deck",
+    category: "tourist-attraction",
+    description: "Skip-the-line access to the world's tallest tower.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1518684029980-cf91ee70ee25?w=800&auto=format&fit=crop",
+    cost: "PKR 4,200",
+    reviews: 4.6,
+    reviewCount: 1205,
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    destinationCity: "Jeddah",
+    title: "Corniche Sunset Walk",
+    category: "seaside",
+    description: "A relaxed coastal promenade with dining and sea views.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&auto=format&fit=crop",
+    cost: "Free",
+    reviews: 4.4,
+    reviewCount: 289,
+    sortOrder: 3,
+    isActive: true,
+  },
+  {
+    destinationCity: "Istanbul",
+    title: "Historic Old City Tour",
+    category: "cultural",
+    description: "Hagia Sophia, Blue Mosque, and Grand Bazaar highlights.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?w=800&auto=format&fit=crop",
+    cost: "PKR 5,800",
+    reviews: 4.7,
+    reviewCount: 891,
+    sortOrder: 4,
+    isActive: true,
+  },
+  {
+    destinationCity: "London",
+    title: "London Eye Experience",
+    category: "tourist-attraction",
+    description: "Panoramic skyline views from the Thames.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&auto=format&fit=crop",
+    cost: "PKR 6,500",
+    reviews: 4.7,
+    reviewCount: 3421,
+    sortOrder: 5,
+    isActive: true,
+  },
+  {
+    destinationCity: "Kuala Lumpur",
+    title: "Petronas Towers Skybridge",
+    category: "tourist-attraction",
+    description: "Iconic skyline views and tower exhibits.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1526481280695-3c687fd643ed?w=800&auto=format&fit=crop",
+    cost: "PKR 3,900",
+    reviews: 4.5,
+    reviewCount: 654,
+    sortOrder: 6,
+    isActive: true,
+  },
+  {
+    destinationCity: "Lahore",
+    title: "Walled City Food Walk",
+    category: "food",
+    description: "Explore Lahore's iconic street food and heritage lanes.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop",
+    cost: "PKR 2,200",
+    reviews: 4.6,
+    reviewCount: 418,
+    sortOrder: 7,
+    isActive: true,
+  },
+  {
+    destinationCity: "Karachi",
+    title: "Clifton Beach Evening",
+    category: "seaside",
+    description: "Sunset, camel rides, and coastal snacks.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop",
+    cost: "Free",
+    reviews: 4.3,
+    reviewCount: 512,
+    sortOrder: 8,
+    isActive: true,
+  },
+];
+
 async function main() {
   console.log("🌱 Starting database seed...");
 
@@ -447,6 +554,38 @@ async function main() {
     if (destinationCount === 0) {
       await prisma.destination.createMany({ data: DESTINATIONS_SEED });
       console.log("🧭 Seeded destinations");
+    }
+
+    const activityCount = await prisma.activity.count();
+    if (activityCount === 0) {
+      const destinationRows = await prisma.destination.findMany({
+        select: { id: true, city: true },
+      });
+      const destinationMap = new Map(
+        destinationRows.map((dest) => [dest.city, dest.id]),
+      );
+
+      const activitiesToCreate = ACTIVITIES_SEED.map((activity) => {
+        const destinationId = destinationMap.get(activity.destinationCity);
+        if (!destinationId) return null;
+        return {
+          destinationId,
+          title: activity.title,
+          category: activity.category,
+          description: activity.description,
+          imageUrl: activity.imageUrl,
+          cost: activity.cost,
+          reviews: activity.reviews,
+          reviewCount: activity.reviewCount,
+          sortOrder: activity.sortOrder,
+          isActive: activity.isActive,
+        };
+      }).filter(Boolean);
+
+      if (activitiesToCreate.length > 0) {
+        await prisma.activity.createMany({ data: activitiesToCreate });
+        console.log("🎯 Seeded activities");
+      }
     }
 
     console.log("✅ Database seeded successfully!");

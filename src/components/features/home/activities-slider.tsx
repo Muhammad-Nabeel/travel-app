@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -140,80 +141,78 @@ export function ActivitiesSlider() {
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
       >
         {activities.map((activity) => (
-          <article
+          <Link
             key={activity.id}
-            className="relative flex min-w-72 shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg hover:-translate-y-0.5 sm:min-w-80"
+            href={`/activities/${activity.id}`}
+            className="block focus-visible:outline-none"
+            aria-label={`View details for ${activity.title}`}
           >
-            {/* Image */}
-            <div className="relative h-48 overflow-hidden bg-slate-200">
-              <Image
-                src={activity.imageUrl}
-                alt={activity.title}
-                className="h-full w-full object-cover"
-                width={512}
-                height={320}
-                unoptimized
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/20 to-transparent" />
+            <article className="relative flex min-w-72 shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg hover:-translate-y-0.5 sm:min-w-80">
+              <div className="relative h-48 overflow-hidden bg-slate-200">
+                <Image
+                  src={activity.imageUrl}
+                  alt={activity.title}
+                  className="h-full w-full object-cover"
+                  width={512}
+                  height={320}
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/20 to-transparent" />
 
-              {/* Category badge */}
-              <div className="absolute right-3 top-3">
-                <span
-                  className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-                    CATEGORY_COLORS[activity.category] ||
-                    CATEGORY_COLORS["tourist-attraction"]
-                  }`}
-                >
-                  {activity.category.replace("-", " ")}
-                </span>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex flex-1 flex-col gap-3 p-4">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 line-clamp-2">
-                  {activity.title}
-                </h3>
-                {activity.description && (
-                  <p className="mt-1 text-sm text-slate-600 line-clamp-2">
-                    {activity.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Reviews */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-3.5 w-3.5 ${
-                        i < Math.round(activity.reviews)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-slate-300"
-                      }`}
-                    />
-                  ))}
+                <div className="absolute right-3 top-3">
+                  <span
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                      CATEGORY_COLORS[activity.category] ||
+                      CATEGORY_COLORS["tourist-attraction"]
+                    }`}
+                  >
+                    {activity.category.replace("-", " ")}
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-slate-700">
-                  {activity.reviews.toFixed(1)}
-                </span>
-                <span className="text-xs text-slate-500">
-                  ({activity.reviewCount.toLocaleString()} reviews)
-                </span>
               </div>
 
-              {/* Cost */}
-              <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-3">
-                <span className="text-sm font-semibold text-slate-700">
-                  {activity.cost}
-                </span>
-                <span className="text-xs text-slate-500">per person</span>
+              <div className="flex flex-1 flex-col gap-3 p-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 line-clamp-2">
+                    {activity.title}
+                  </h3>
+                  {activity.description && (
+                    <p className="mt-1 text-sm text-slate-600 line-clamp-2">
+                      {activity.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3.5 w-3.5 ${
+                          i < Math.round(activity.reviews)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-slate-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700">
+                    {activity.reviews.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    ({activity.reviewCount.toLocaleString()} reviews)
+                  </span>
+                </div>
+
+                <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-3">
+                  <span className="text-sm font-semibold text-slate-700">
+                    {activity.cost}
+                  </span>
+                  <span className="text-xs text-slate-500">per person</span>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
+          </Link>
         ))}
       </div>
     </section>

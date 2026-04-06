@@ -25,6 +25,7 @@ type BookingListItem = {
   customerName: string;
   customerEmail: string;
   paymentMethod: string;
+  isChatbotRequest: boolean;
   createdDate: string;
   createdTime: string;
 };
@@ -36,6 +37,7 @@ type BookingFilters = {
   provider: string;
   paymentMethod: string;
   type: string;
+  chatbot: string;
   createdFrom: string;
   createdTo: string;
 };
@@ -293,6 +295,21 @@ export default async function AdminBookingsPage({
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Chatbot Requests
+            </span>
+            <select
+              name="chatbot"
+              defaultValue={filters.chatbot}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+            >
+              <option value="">All</option>
+              <option value="yes">Chatbot only</option>
+              <option value="no">Exclude chatbot</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Created From
             </span>
             <input
@@ -375,6 +392,11 @@ export default async function AdminBookingsPage({
                       <p className="font-semibold text-slate-800">
                         {booking.reference}
                       </p>
+                      {booking.isChatbotRequest ? (
+                        <span className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          Chatbot
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       <span
@@ -446,6 +468,7 @@ function parseBookingFilters(
       .trim()
       .toLowerCase(),
     type: parseFilterValue(searchParams.type).trim().toLowerCase(),
+    chatbot: parseFilterValue(searchParams.chatbot).trim().toLowerCase(),
     createdFrom: parseFilterValue(searchParams.createdFrom).trim(),
     createdTo: parseFilterValue(searchParams.createdTo).trim(),
   };
@@ -480,6 +503,14 @@ async function getBookings(
           { email: { contains: filters.customer } },
         ],
       };
+    }
+
+    if (filters.chatbot === "yes") {
+      where.isChatbotRequest = true;
+    }
+
+    if (filters.chatbot === "no") {
+      where.isChatbotRequest = false;
     }
 
     if (filters.createdFrom || filters.createdTo) {
@@ -520,6 +551,7 @@ async function getBookings(
       flightData: unknown;
       hotelData: unknown;
       paymentData: unknown;
+      isChatbotRequest: boolean;
       createdAt: Date;
       user: {
         name: string;
@@ -552,6 +584,7 @@ async function getBookings(
         customerName: booking.user.name,
         customerEmail: booking.user.email,
         paymentMethod: formatStatus(paymentMethod),
+        isChatbotRequest: booking.isChatbotRequest,
         createdDate: createdAtParts.date,
         createdTime: createdAtParts.time,
       };

@@ -21,6 +21,22 @@ export function FloatingReviewWidget() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [chatStep, setChatStep] = useState<"request" | "contact" | "done">(
+    "request",
+  );
+  const [chatError, setChatError] = useState("");
+  const [chatSubmitting, setChatSubmitting] = useState(false);
+  const [chatReference, setChatReference] = useState("");
+  const [chatForm, setChatForm] = useState({
+    departureCity: "",
+    destination: "",
+    travelDates: "",
+    passengers: "",
+    travelClass: "",
+    fullName: "",
+    phone: "",
+    email: "",
+  });
   const [form, setForm] = useState({
     customerName: "",
     location: "",
@@ -90,6 +106,87 @@ export function FloatingReviewWidget() {
     }
   }
 
+  function resetChat() {
+    setChatStep("request");
+    setChatError("");
+    setChatSubmitting(false);
+    setChatReference("");
+    setChatForm({
+      departureCity: "",
+      destination: "",
+      travelDates: "",
+      passengers: "",
+      travelClass: "",
+      fullName: "",
+      phone: "",
+      email: "",
+    });
+  }
+
+  function handleChatRequestSubmit(e: FormEvent) {
+    e.preventDefault();
+    setChatError("");
+
+    if (
+      !chatForm.departureCity.trim() ||
+      !chatForm.destination.trim() ||
+      !chatForm.travelDates.trim() ||
+      !chatForm.passengers.trim() ||
+      !chatForm.travelClass.trim()
+    ) {
+      setChatError("Please provide all flight search details.");
+      return;
+    }
+
+    setChatStep("contact");
+  }
+
+  async function handleChatContactSubmit(e: FormEvent) {
+    e.preventDefault();
+    setChatError("");
+
+    if (
+      !chatForm.fullName.trim() ||
+      !chatForm.phone.trim() ||
+      !chatForm.email.trim()
+    ) {
+      setChatError("Please provide your name, phone, and email.");
+      return;
+    }
+
+    setChatSubmitting(true);
+    try {
+      const res = await fetch("/api/bookings/chatbot-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          departureCity: chatForm.departureCity.trim(),
+          destination: chatForm.destination.trim(),
+          travelDates: chatForm.travelDates.trim(),
+          passengers: chatForm.passengers.trim(),
+          travelClass: chatForm.travelClass.trim(),
+          fullName: chatForm.fullName.trim(),
+          phone: chatForm.phone.trim(),
+          email: chatForm.email.trim(),
+        }),
+      });
+
+      const data = (await res.json()) as { error?: string; reference?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Unable to submit request.");
+      }
+
+      setChatReference(data.reference ?? "");
+      setChatStep("done");
+    } catch (err) {
+      setChatError(
+        err instanceof Error ? err.message : "Unable to submit request.",
+      );
+    } finally {
+      setChatSubmitting(false);
+    }
+  }
+
   return (
     <>
       <div className="fixed bottom-6 right-4 z-40 flex flex-col items-end gap-3">
@@ -135,11 +232,14 @@ export function FloatingReviewWidget() {
         <div className="fixed bottom-24 right-4 z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">
-              Safar Assistant
+              Safar Travel Assistant
             </p>
             <button
               type="button"
-              onClick={() => setIsChatOpen(false)}
+              onClick={() => {
+                setIsChatOpen(false);
+                resetChat();
+              }}
               className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
               aria-label="Close chatbot"
             >
@@ -147,16 +247,232 @@ export function FloatingReviewWidget() {
             </button>
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            Hi, how can we help you today? For instant support, start a WhatsApp
-            chat with our travel team.
+            Tell us your flight needs and we will search the best options.
           </p>
+
+          {chatStep === "request" && (
+            <form
+              onSubmit={handleChatRequestSubmit}
+              className="mt-4 grid gap-3"
+            >
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Departure city *
+                </span>
+                <input
+                  value={chatForm.departureCity}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      departureCity: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Destination *
+                </span>
+                <input
+                  value={chatForm.destination}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      destination: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Travel dates *
+                </span>
+                <input
+                  value={chatForm.travelDates}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      travelDates: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. 2026-05-10 to 2026-05-18"
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Passengers *
+                </span>
+                <input
+                  value={chatForm.passengers}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      passengers: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. 2 adults, 1 child"
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Travel class *
+                </span>
+                <select
+                  value={chatForm.travelClass}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      travelClass: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                >
+                  <option value="">Select</option>
+                  <option value="Economy">Economy</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business</option>
+                  <option value="First">First</option>
+                </select>
+              </label>
+
+              {chatError ? (
+                <p className="text-xs text-red-600">{chatError}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Search flights
+              </button>
+            </form>
+          )}
+
+          {chatStep === "contact" && (
+            <form
+              onSubmit={handleChatContactSubmit}
+              className="mt-4 grid gap-3"
+            >
+              <p className="text-xs text-slate-500">
+                Great. Please share your contact details so we can send the best
+                options.
+              </p>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Full name *
+                </span>
+                <input
+                  value={chatForm.fullName}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      fullName: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Phone *
+                </span>
+                <input
+                  value={chatForm.phone}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-600">
+                  Email *
+                </span>
+                <input
+                  type="email"
+                  value={chatForm.email}
+                  onChange={(e) =>
+                    setChatForm((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              {chatError ? (
+                <p className="text-xs text-red-600">{chatError}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={chatSubmitting}
+              >
+                {chatSubmitting ? "Submitting..." : "Submit request"}
+              </button>
+            </form>
+          )}
+
+          {chatStep === "done" && (
+            <div className="mt-4 space-y-3 text-sm text-slate-600">
+              <p>
+                Thanks! We will search for the best flights and share options by
+                email.
+              </p>
+              {chatReference ? (
+                <p className="text-xs text-slate-500">
+                  Reference:{" "}
+                  <span className="font-semibold">{chatReference}</span>
+                </p>
+              ) : null}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+                <p className="font-semibold text-slate-800">Admin handoff</p>
+                <pre className="mt-2 whitespace-pre-wrap">
+                  {`{
+  "customer_name": "${chatForm.fullName.trim()}",
+  "contact": "${chatForm.phone.trim()}",
+  "email": "${chatForm.email.trim()}",
+  "route": "${chatForm.departureCity.trim()} -> ${chatForm.destination.trim()}",
+  "travel_date": "${chatForm.travelDates.trim()}",
+  "selected_flight": "",
+  "price": ""
+}`}
+                </pre>
+              </div>
+              <p className="text-xs text-slate-500">
+                We will monitor your booking for delays, cancellations, and
+                schedule changes once confirmed.
+              </p>
+              <button
+                type="button"
+                onClick={resetChat}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Start new request
+              </button>
+            </div>
+          )}
+
           <a
             href="https://wa.me/447933837137"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center rounded-lg bg-[#25D366] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1daa56]"
+            className="mt-4 inline-flex items-center rounded-lg bg-[#25D366] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1daa56]"
           >
-            Start WhatsApp Chat
+            Continue on WhatsApp
           </a>
         </div>
       )}

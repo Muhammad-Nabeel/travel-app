@@ -762,7 +762,7 @@ export function FlightSearchEngine({
       aria-label="Flight search engine"
     >
       {isHero ? (
-        <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-80">
           <div className={`${styles.heroOrb} ${styles.heroOrbLeft}`} />
           <div className={`${styles.heroOrb} ${styles.heroOrbRight}`} />
         </div>

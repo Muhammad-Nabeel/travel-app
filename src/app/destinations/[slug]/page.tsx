@@ -52,6 +52,34 @@ export default async function DestinationDetailsPage({
   const highlights = toStringArray(destination.highlights);
   const travelTips = toStringArray(destination.travelTips);
 
+  let activities: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    imageUrl: string;
+    cost: string;
+    reviews: number;
+    reviewCount: number;
+  }> = [];
+
+  try {
+    activities = await prisma.activity.findMany({
+      where: { destinationId: destination.id, isActive: true },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        cost: true,
+        reviews: true,
+        reviewCount: true,
+      },
+    });
+  } catch {
+    activities = [];
+  }
+
   const facts = [
     {
       label: "Best Time",
@@ -227,6 +255,65 @@ export default async function DestinationDetailsPage({
           </div>
         </aside>
       </section>
+
+      {activities.length > 0 ? (
+        <section className="section-shell mt-10">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Activities in {destination.city}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Book top-rated experiences curated by your team.
+              </p>
+            </div>
+            <Link
+              href="/activities"
+              className="text-sm font-semibold text-sky-700 hover:text-sky-800"
+            >
+              View all activities
+            </Link>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {activities.map((activity) => (
+              <Link
+                key={activity.id}
+                href={`/activities/${activity.id}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-lg"
+              >
+                <div className="relative h-44 overflow-hidden bg-slate-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={activity.imageUrl}
+                    alt={activity.title}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <h3 className="text-base font-bold text-slate-900 line-clamp-2">
+                    {activity.title}
+                  </h3>
+                  {activity.description ? (
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {activity.description}
+                    </p>
+                  ) : null}
+                  <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {activity.cost}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {activity.reviews.toFixed(1)} ({activity.reviewCount})
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

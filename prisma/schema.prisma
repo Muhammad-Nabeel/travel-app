@@ -115,6 +115,7 @@ model Booking {
   flightData       Json?
   hotelData        Json?
   paymentData      Json?
+  isChatbotRequest Boolean         @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
