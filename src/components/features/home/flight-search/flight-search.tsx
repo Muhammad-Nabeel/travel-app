@@ -201,6 +201,7 @@ export function FlightSearchEngine({
   const [calendarSource, setCalendarSource] = useState<"sabre" | "mock" | "">(
     "",
   );
+  const [singleMonthCalendar, setSingleMonthCalendar] = useState(false);
   const [trendingRoutes, setTrendingRoutes] = useState<TrendingRoute[]>([]);
   const [multiCityLegs, setMultiCityLegs] = useState<MultiCityLegState[]>(
     () => {
@@ -536,6 +537,22 @@ export function FlightSearchEngine({
       document.body.style.overflow = previousOverflow;
     };
   }, [showFareCalendar]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const updateCalendarLayout = () => {
+      setSingleMonthCalendar(mediaQuery.matches);
+    };
+
+    updateCalendarLayout();
+
+    mediaQuery.addEventListener("change", updateCalendarLayout);
+    return () => {
+      mediaQuery.removeEventListener("change", updateCalendarLayout);
+    };
+  }, []);
 
   const renderFareMonth = (monthStart: Date) => {
     const cells = getMonthCells(monthStart);
@@ -1219,7 +1236,9 @@ export function FlightSearchEngine({
 
                 <div className={styles.fareMonthsRow}>
                   {renderFareMonth(calendarMonth)}
-                  {renderFareMonth(addMonths(calendarMonth, 1))}
+                  {!singleMonthCalendar
+                    ? renderFareMonth(addMonths(calendarMonth, 1))
+                    : null}
                 </div>
 
                 <div className={styles.fareCalendarFooter}>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
+import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
@@ -190,45 +191,50 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const destinationLabel = destinationDisplay
     ? `${destinationDisplay.city} (${query.destination})`
     : query.destination;
+  const searchSummary = `${originLabel} -> ${destinationLabel} · ${query.departureDate}${query.returnDate ? ` · ${query.returnDate}` : ""}`;
 
   return (
     <main className="flex-1 py-6">
-      <FlightSearchEngine
-        variant="embedded"
-        initialValues={{
-          tripType: query.tripType,
-          directOnly: query.directOnly,
-          adults: query.adults,
-          children: query.children,
-          infants: query.infants,
-          cabinClass: query.cabinClass,
-          origin: originLabel,
-          originIata: query.origin,
-          destination: destinationLabel,
-          destinationIata: query.destination,
-          departureDate: query.departureDate,
-          returnDate: query.returnDate,
-          multiCityLegs:
-            query.tripType === "multi-city"
-              ? (query.legs ?? []).map((leg) => {
-                  const originDisplay = getAirportDisplay(leg.origin);
-                  const destinationDisplay = getAirportDisplay(leg.destination);
+      <MobileSearchToggle summary={searchSummary}>
+        <FlightSearchEngine
+          variant="embedded"
+          initialValues={{
+            tripType: query.tripType,
+            directOnly: query.directOnly,
+            adults: query.adults,
+            children: query.children,
+            infants: query.infants,
+            cabinClass: query.cabinClass,
+            origin: originLabel,
+            originIata: query.origin,
+            destination: destinationLabel,
+            destinationIata: query.destination,
+            departureDate: query.departureDate,
+            returnDate: query.returnDate,
+            multiCityLegs:
+              query.tripType === "multi-city"
+                ? (query.legs ?? []).map((leg) => {
+                    const originDisplay = getAirportDisplay(leg.origin);
+                    const destinationDisplay = getAirportDisplay(
+                      leg.destination,
+                    );
 
-                  return {
-                    origin: originDisplay
-                      ? `${originDisplay.city} (${leg.origin})`
-                      : leg.origin,
-                    originIata: leg.origin,
-                    destination: destinationDisplay
-                      ? `${destinationDisplay.city} (${leg.destination})`
-                      : leg.destination,
-                    destinationIata: leg.destination,
-                    departureDate: leg.departureDate,
-                  };
-                })
-              : undefined,
-        }}
-      />
+                    return {
+                      origin: originDisplay
+                        ? `${originDisplay.city} (${leg.origin})`
+                        : leg.origin,
+                      originIata: leg.origin,
+                      destination: destinationDisplay
+                        ? `${destinationDisplay.city} (${leg.destination})`
+                        : leg.destination,
+                      destinationIata: leg.destination,
+                      departureDate: leg.departureDate,
+                    };
+                  })
+                : undefined,
+          }}
+        />
+      </MobileSearchToggle>
 
       <FareCalendarStrip query={query} />
 

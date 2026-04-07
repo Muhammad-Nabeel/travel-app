@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   BedDouble,
@@ -27,6 +27,7 @@ const NavBar = () => {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [dark, setDark] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -42,8 +43,43 @@ const NavBar = () => {
     );
   }, [dark]);
 
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const height = headerRef.current?.offsetHeight;
+      if (!height) {
+        return;
+      }
+      document.documentElement.style.setProperty(
+        "--app-header-height",
+        `${height}px`,
+      );
+    };
+
+    updateHeaderHeight();
+
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(updateHeaderHeight)
+        : null;
+
+    if (observer && headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    window.addEventListener("resize", updateHeaderHeight, { passive: true });
+    window.addEventListener("orientationchange", updateHeaderHeight, {
+      passive: true,
+    });
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+      window.removeEventListener("orientationchange", updateHeaderHeight);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50">
+    <header ref={headerRef} className="sticky top-0 z-50">
       <nav
         className={`flex w-full items-center justify-between px-4 py-3 sm:px-8
         backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300
