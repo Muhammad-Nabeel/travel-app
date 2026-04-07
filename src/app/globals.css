@@ -3,6 +3,7 @@
 
 /* ── Light theme tokens (corporate) ────────────────────── */
 :root {
+  --app-header-height: 63px;
   --background: #f8f9ff; /* near-white with blue tint */
   --foreground: #1d1d1d; /* corporate base-content */
   --card: #ffffff;

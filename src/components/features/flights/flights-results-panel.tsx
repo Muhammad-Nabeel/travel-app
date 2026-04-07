@@ -3,7 +3,15 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarDays, Clock3, Plane } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  Plane,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 import { FlightFiltersPanel } from "@/components/features/flights/flight-filters-panel";
 import { FlightResultCard } from "@/components/features/flights/flight-result-card";
@@ -212,6 +220,10 @@ export function FlightsResultsPanel({
   const [airlineLookup, setAirlineLookup] = useState<Record<string, string>>(
     {},
   );
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileFilterFocus, setMobileFilterFocus] = useState<
+    "all" | "stops" | "price" | "airlines"
+  >("all");
 
   const maxPrice = useMemo(() => {
     if (offers.length === 0) {
@@ -334,10 +346,170 @@ export function FlightsResultsPanel({
     return { cheapest, fastest, earliest };
   }, [filteredOffers]);
 
+  useEffect(() => {
+    if (!mobileFiltersOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileFiltersOpen]);
+
+  const mobileChipClass =
+    "inline-flex h-11 items-center gap-2 rounded-xl border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-sm";
+
   return (
     <section className="section-shell mt-6 pb-40">
+      <div className="mb-4 space-y-3 lg:hidden">
+        <div
+          className="sticky z-30 -mx-1 flex items-center gap-2 overflow-x-auto bg-base-100/95 px-1 py-1 backdrop-blur lg:hidden"
+          style={{ top: "var(--app-header-height, 63px)" }}
+        >
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-base-300 bg-base-100 text-base-content shadow-sm"
+            onClick={() => {
+              setMobileFilterFocus("all");
+              setMobileFiltersOpen(true);
+            }}
+            aria-label="Open filters"
+          >
+            <SlidersHorizontal className="size-4" />
+          </button>
+
+          <button
+            type="button"
+            className={mobileChipClass}
+            onClick={() => {
+              setMobileFilterFocus("stops");
+              setMobileFiltersOpen(true);
+            }}
+          >
+            Stops
+            <ChevronDown className="size-4" />
+          </button>
+
+          <button
+            type="button"
+            className={mobileChipClass}
+            onClick={() => {
+              setMobileFilterFocus("price");
+              setMobileFiltersOpen(true);
+            }}
+          >
+            Price
+            <ChevronDown className="size-4" />
+          </button>
+
+          <button
+            type="button"
+            className={mobileChipClass}
+            onClick={() => {
+              setMobileFilterFocus("airlines");
+              setMobileFiltersOpen(true);
+            }}
+          >
+            Airlines
+            <ChevronDown className="size-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-[1.65rem] font-bold leading-none text-base-content">
+            {filteredOffers.length} results
+          </p>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-sm font-semibold text-base-content shadow-sm"
+            onClick={() => {
+              setSortBy((current) => {
+                if (current === "recommended") return "lowest-price";
+                if (current === "lowest-price") return "shortest-duration";
+                if (current === "shortest-duration") return "earliest";
+                return "recommended";
+              });
+              setPage(1);
+            }}
+          >
+            {sortBy === "recommended"
+              ? "Best"
+              : sortBy === "lowest-price"
+                ? "Cheapest"
+                : sortBy === "shortest-duration"
+                  ? "Fastest"
+                  : "Earliest"}
+            <ChevronDown className="size-4" />
+          </button>
+        </div>
+      </div>
+
+      {mobileFiltersOpen ? (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/40 p-3 lg:hidden"
+          onClick={() => setMobileFiltersOpen(false)}
+        >
+          <div
+            className="mx-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-base-100 p-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-2 flex items-center justify-between px-1 py-1">
+              <h3 className="text-sm font-semibold text-base-content">
+                {mobileFilterFocus === "stops"
+                  ? "Stops"
+                  : mobileFilterFocus === "price"
+                    ? "Price"
+                    : mobileFilterFocus === "airlines"
+                      ? "Airlines"
+                      : "Filters"}
+              </h3>
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300"
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Close filters"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <FlightFiltersPanel
+              maxPrice={maxPrice}
+              priceCap={effectivePriceCap}
+              currency={offers[0]?.currency ?? "USD"}
+              stopsFilter={stopsFilter}
+              selectedAirlines={selectedAirlines}
+              uniqueAirlines={uniqueAirlines}
+              airlineLookup={airlineLookup}
+              onPriceCapChange={(v) => {
+                setPriceCap(v);
+                setPage(1);
+              }}
+              onStopsFilterChange={(v) => {
+                setStopsFilter(v);
+                setPage(1);
+              }}
+              onAirlinesChange={(v) => {
+                setSelectedAirlines(v);
+                setPage(1);
+              }}
+              onReset={() => {
+                setStopsFilter("all");
+                setSelectedAirlines([]);
+                setPriceCap(maxPrice);
+                setSortBy("lowest-price");
+                setPage(1);
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-        <div className="space-y-4">
+        <div className="hidden space-y-4 lg:block">
           <aside className="surface ring-soft rounded-2xl border border-white/70 p-4">
             <div className="mt-3 rounded-xl border border-base-300 bg-base-200/40 px-3 py-2">
               <p className="text-xs uppercase tracking-widest text-base-content/50">
@@ -388,7 +560,7 @@ export function FlightsResultsPanel({
 
           {/* ── Quick-sort tab bar ── */}
           {quickSortMeta && (
-            <div className="surface ring-soft overflow-hidden rounded-2xl border border-white/70">
+            <div className="surface ring-soft hidden overflow-hidden rounded-2xl border border-white/70 sm:block">
               <div className="grid grid-cols-2 divide-x divide-base-200 sm:grid-cols-4">
                 {(
                   [

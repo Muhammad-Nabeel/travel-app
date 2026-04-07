@@ -33,6 +33,14 @@ type AirportSearchResult = {
     name: string;
 };
 
+type IndexedAirport = {
+    iata: string;
+    normalizedCity: string;
+    normalizedCountry: string;
+    normalizedAirportName: string;
+    result: AirportSearchResult;
+};
+
 export type CitySearchResult = {
     city: string;
     country: string;
@@ -40,6 +48,130 @@ export type CitySearchResult = {
 };
 
 const airports = data.airports;
+const AIRPORT_PREFIX_INDEX_MAX_LENGTH = 12;
+const AIRPORT_SEARCH_CACHE_MAX_SIZE = 200;
+
+const indexedAirports: IndexedAirport[] = airports.map((airport) => {
+    const iata = airport.iata.trim().toUpperCase();
+    const city = airport.city.trim();
+    const airportName = airport.airportName.trim();
+    const country = airport.country.trim();
+
+    return {
+        iata,
+        normalizedCity: city.toUpperCase(),
+        normalizedCountry: country.toUpperCase(),
+        normalizedAirportName: airportName.toUpperCase(),
+        result: {
+            iata,
+            city,
+            country,
+            name: airportName,
+        },
+    };
+});
+
+const airportPrefixIndex = new Map<string, number[]>();
+const airportSearchCache = new Map<string, AirportSearchResult[]>();
+
+function addAirportPrefix(prefix: string, airportIndex: number) {
+    if (prefix.length < 2) {
+        return;
+    }
+
+    const existing = airportPrefixIndex.get(prefix);
+    if (existing) {
+        if (existing[existing.length - 1] !== airportIndex) {
+            existing.push(airportIndex);
+        }
+        return;
+    }
+
+    airportPrefixIndex.set(prefix, [airportIndex]);
+}
+
+function indexAirportValue(value: string, airportIndex: number) {
+    const source = value.trim().toUpperCase();
+    if (!source) {
+        return;
+    }
+
+    const seenPrefixes = new Set<string>();
+    const tokens = source
+        .split(/[\s,./()\-]+/)
+        .filter(Boolean);
+
+    // Include the full source so prefixes that span words still resolve quickly.
+    tokens.push(source);
+
+    for (const token of tokens) {
+        const maxLen = Math.min(token.length, AIRPORT_PREFIX_INDEX_MAX_LENGTH);
+        for (let len = 2; len <= maxLen; len += 1) {
+            const prefix = token.slice(0, len);
+            if (seenPrefixes.has(prefix)) {
+                continue;
+            }
+            seenPrefixes.add(prefix);
+            addAirportPrefix(prefix, airportIndex);
+        }
+    }
+}
+
+function scoreIndexedAirport(
+    airport: IndexedAirport,
+    normalizedQuery: string,
+): number {
+    if (airport.iata === normalizedQuery) {
+        return 500;
+    }
+    if (airport.normalizedCity === normalizedQuery) {
+        return 400;
+    }
+    if (airport.normalizedAirportName === normalizedQuery) {
+        return 350;
+    }
+    if (airport.normalizedCity.startsWith(normalizedQuery)) {
+        return 300;
+    }
+    if (airport.normalizedAirportName.startsWith(normalizedQuery)) {
+        return 250;
+    }
+    if (airport.normalizedCountry === normalizedQuery) {
+        return 200;
+    }
+    if (
+        airport.normalizedCity.includes(normalizedQuery) ||
+        airport.normalizedAirportName.includes(normalizedQuery) ||
+        airport.normalizedCountry.includes(normalizedQuery)
+    ) {
+        return 100;
+    }
+
+    return -1;
+}
+
+function setAirportSearchCache(
+    key: string,
+    value: AirportSearchResult[],
+): AirportSearchResult[] {
+    if (airportSearchCache.size >= AIRPORT_SEARCH_CACHE_MAX_SIZE) {
+        const oldestKey = airportSearchCache.keys().next().value;
+        if (oldestKey) {
+            airportSearchCache.delete(oldestKey);
+        }
+    }
+
+    airportSearchCache.set(key, value);
+    return value;
+}
+
+for (let index = 0; index < indexedAirports.length; index += 1) {
+    const airport = indexedAirports[index];
+    indexAirportValue(airport.iata, index);
+    indexAirportValue(airport.normalizedCity, index);
+    indexAirportValue(airport.normalizedAirportName, index);
+    indexAirportValue(airport.normalizedCountry, index);
+}
 
 const cityReferenceMap = new Map<string, CitySearchResult>();
 
@@ -135,49 +267,37 @@ export function searchAirports(query?: string, limit = 8): AirportSearchResult[]
         return [];
     }
 
-    return airports
-        .map((airport) => {
-            const iata = airport.iata.trim().toUpperCase();
-            const city = airport.city.trim();
-            const airportName = airport.airportName.trim();
-            const country = airport.country.trim();
-            const normalizedCity = city.toUpperCase();
-            const normalizedAirportName = airportName.toUpperCase();
-            const normalizedCountry = country.toUpperCase();
+    const cached = airportSearchCache.get(normalized);
+    if (cached) {
+        return cached.slice(0, limit);
+    }
 
-            let score = -1;
+    const indexedCandidates = airportPrefixIndex.get(normalized);
+    const candidateIndexes = indexedCandidates
+        ? Array.from(new Set(indexedCandidates))
+        : indexedAirports.map((_, index) => index);
 
-            if (iata === normalized) {
-                score = 500;
-            } else if (normalizedCity === normalized) {
-                score = 400;
-            } else if (normalizedAirportName === normalized) {
-                score = 350;
-            } else if (normalizedCity.startsWith(normalized)) {
-                score = 300;
-            } else if (normalizedAirportName.startsWith(normalized)) {
-                score = 250;
-            } else if (normalizedCountry === normalized) {
-                score = 200;
-            } else if (
-                normalizedCity.includes(normalized) ||
-                normalizedAirportName.includes(normalized) ||
-                normalizedCountry.includes(normalized)
-            ) {
-                score = 100;
-            }
-
+    const scored = candidateIndexes
+        .map((index) => {
+            const airport = indexedAirports[index];
             return {
-                score,
-                result: {
-                    iata,
-                    city,
-                    country,
-                    name: airportName,
-                },
+                score: scoreIndexedAirport(airport, normalized),
+                result: airport.result,
             };
         })
         .filter((entry) => entry.score >= 0)
+
+    const scoredCandidates =
+        scored.length > 0
+            ? scored
+            : indexedAirports
+                .map((airport) => ({
+                    score: scoreIndexedAirport(airport, normalized),
+                    result: airport.result,
+                }))
+                .filter((entry) => entry.score >= 0);
+
+    const results = scoredCandidates
         .sort((left, right) => {
             if (right.score !== left.score) {
                 return right.score - left.score;
@@ -192,6 +312,8 @@ export function searchAirports(query?: string, limit = 8): AirportSearchResult[]
         })
         .slice(0, limit)
         .map((entry) => entry.result);
+
+    return setAirportSearchCache(normalized, results);
 }
 
 function normalizeCitySearchValue(value?: string) {
