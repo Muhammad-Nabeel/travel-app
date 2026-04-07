@@ -78,11 +78,21 @@ export function ActivitiesSlider() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/activities")
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/activities", { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setActivities(Array.isArray(data) ? data : []))
+      .then((data) => {
+        if (!cancelled) setActivities(Array.isArray(data) ? data : []);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   if (loading) return <ActivitiesSkeleton />;

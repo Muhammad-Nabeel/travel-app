@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { createPrismaClient, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
+import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
 
 export type ActivityRow = {
@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
         return jsonWithSource([], "db");
     }
 
-    const prisma = createPrismaClient();
     try {
         const where: { isActive?: boolean; destinationId?: string } = {};
         if (!showAll) {
@@ -54,13 +53,10 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         markDatabaseUnavailable(error);
         return jsonWithSource([], "db");
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
 export async function POST(request: NextRequest) {
-    const prisma = createPrismaClient();
     try {
         const body = await request.json();
         const validatedData = activitySchema.parse(body);
@@ -100,7 +96,5 @@ export async function POST(request: NextRequest) {
             { ok: false, error: "Database error" },
             { status: 503 },
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }

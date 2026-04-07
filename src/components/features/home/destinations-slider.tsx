@@ -59,11 +59,21 @@ export function DestinationsSlider() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/destinations")
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/destinations", { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setDestinations(Array.isArray(data) ? data : []))
+      .then((data) => {
+        if (!cancelled) setDestinations(Array.isArray(data) ? data : []);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   if (loading) return <DestinationsSkeleton />;

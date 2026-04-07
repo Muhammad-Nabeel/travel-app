@@ -377,7 +377,7 @@ export function FlightSearchEngine({
     setCalendarMonth(startOfMonth(parseISODate(selectedDate)));
   };
 
-  const loadFareCalendar = async (monthStart: Date) => {
+  const loadFareCalendar = async (monthStart: Date, signal?: AbortSignal) => {
     const legContext =
       tripType === "multi-city" && calendarField === "multi-city"
         ? multiCityLegs[calendarLegIndex ?? 0]
@@ -423,6 +423,7 @@ export function FlightSearchEngine({
 
       const res = await fetch(
         `/api/search/fare-calendar?${fareCalendarQuery.toString()}`,
+        { signal },
       );
       const data = (await res.json()) as {
         ok?: boolean;
@@ -446,18 +447,23 @@ export function FlightSearchEngine({
 
       setCalendarFares(mapped);
       setCalendarSource(data.source ?? "");
-    } catch {
+    } catch (err) {
+      if ((err as { name?: string }).name === "AbortError") return;
       setCalendarError("Unable to load fare calendar.");
       setCalendarFares({});
       setCalendarSource("");
     } finally {
-      setCalendarLoading(false);
+      if (!signal?.aborted) {
+        setCalendarLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     if (!showFareCalendar) return;
-    void loadFareCalendar(calendarMonth);
+    const controller = new AbortController();
+    void loadFareCalendar(calendarMonth, controller.signal);
+    return () => controller.abort();
   }, [
     showFareCalendar,
     calendarMonth,
@@ -475,16 +481,25 @@ export function FlightSearchEngine({
   ]);
 
   useEffect(() => {
-    fetch("/api/search/trending")
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/search/trending", { signal: controller.signal })
       .then((res) => res.json())
       .then((data: { ok?: boolean; routes?: TrendingRoute[] }) => {
+        if (cancelled) return;
         if (!data?.ok || !Array.isArray(data.routes)) {
           setTrendingRoutes([]);
           return;
         }
         setTrendingRoutes(data.routes);
       })
-      .catch(() => setTrendingRoutes([]));
+      .catch(() => {
+        if (!cancelled) setTrendingRoutes([]);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -1058,97 +1073,107 @@ export function FlightSearchEngine({
               </div>
             ) : (
               <>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>From</span>
-                  <div className={styles.fieldBody}>
-                    <PlaneTakeoff
-                      className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                    />
-                    <AirportInput
-                      value={origin}
-                      onChange={(raw) => {
-                        setOrigin(raw);
-                        setOriginIata("");
-                      }}
-                      onSelect={(a: Airport) => {
-                        setOrigin(`${a.city} (${a.iata})`);
-                        setOriginIata(a.iata);
-                      }}
-                      placeholder="City or airport"
-                      required
-                      inputClassName={`input input-sm ${styles.daisyInput}`}
-                    />
-                  </div>
-                </label>
+                {/* Origin + Swap + Destination — grouped for mobile swap-button layout */}
+                <div className={styles.originDestGroup}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>From</span>
+                    <div className={styles.fieldBody}>
+                      <PlaneTakeoff
+                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
+                      />
+                      <AirportInput
+                        value={origin}
+                        onChange={(raw) => {
+                          setOrigin(raw);
+                          setOriginIata("");
+                        }}
+                        onSelect={(a: Airport) => {
+                          setOrigin(`${a.city} (${a.iata})`);
+                          setOriginIata(a.iata);
+                        }}
+                        placeholder="Leaving From"
+                        required
+                        inputClassName={`input input-sm ${styles.daisyInput}`}
+                      />
+                    </div>
+                  </label>
 
-                <button
-                  type="button"
-                  onClick={handleSwapRoute}
-                  className={styles.swapBtn}
-                  aria-label="Swap origin and destination"
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleSwapRoute}
+                    className={styles.swapBtn}
+                    aria-label="Swap origin and destination"
+                  >
+                    <ArrowRightLeft className="h-4 w-4" />
+                  </button>
 
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>To</span>
-                  <div className={styles.fieldBody}>
-                    <PlaneLanding
-                      className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                    />
-                    <AirportInput
-                      value={destination}
-                      onChange={(raw) => {
-                        setDestination(raw);
-                        setDestinationIata("");
-                      }}
-                      onSelect={(a: Airport) => {
-                        setDestination(`${a.city} (${a.iata})`);
-                        setDestinationIata(a.iata);
-                      }}
-                      placeholder="City or airport"
-                      required
-                      inputClassName={`input input-sm ${styles.daisyInput}`}
-                    />
-                  </div>
-                </label>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>To</span>
+                    <div className={styles.fieldBody}>
+                      <PlaneLanding
+                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
+                      />
+                      <AirportInput
+                        value={destination}
+                        onChange={(raw) => {
+                          setDestination(raw);
+                          setDestinationIata("");
+                        }}
+                        onSelect={(a: Airport) => {
+                          setDestination(`${a.city} (${a.iata})`);
+                          setDestinationIata(a.iata);
+                        }}
+                        placeholder="Going To"
+                        required
+                        inputClassName={`input input-sm ${styles.daisyInput}`}
+                      />
+                    </div>
+                  </label>
+                </div>
 
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Departure date</span>
-                  <div className={styles.fieldBody}>
-                    <CalendarDays
-                      className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                    />
-                    <div className={styles.fareCalendarWrapper}>
+                {/* Departure + Return dates — grouped for mobile side-by-side layout */}
+                <div className={styles.dateGroup}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Departure date</span>
+                    <div className={styles.fieldBody}>
+                      <CalendarDays
+                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
+                      />
+                      <div className={styles.fareCalendarWrapper}>
+                        <button
+                          type="button"
+                          className={styles.fareCalendarTrigger}
+                          onClick={() => openFareCalendar("departure")}
+                        >
+                          {departureDate
+                            ? formatSelectedDateLabel(departureDate)
+                            : "Departure Date"}
+                        </button>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`${styles.field} ${tripType !== "round-trip" ? styles.fieldDisabled : ""}`}
+                  >
+                    <span className={styles.fieldLabel}>Return Date</span>
+                    <div className={styles.fieldBody}>
+                      <CalendarDays
+                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
+                      />
                       <button
                         type="button"
-                        className={styles.fareCalendarTrigger}
-                        onClick={() => openFareCalendar("departure")}
+                        disabled={tripType !== "round-trip"}
+                        onClick={() => openFareCalendar("return")}
+                        className={`${styles.fareCalendarTrigger} ${tripType !== "round-trip" ? styles.fareCalendarTriggerDisabled : ""}`}
                       >
-                        {formatSelectedDateLabel(departureDate)}
+                        {returnDate
+                          ? formatSelectedDateLabel(returnDate)
+                          : "Return Date"}
                       </button>
                     </div>
-                  </div>
-                </label>
-
-                <label
-                  className={`${styles.field} ${tripType !== "round-trip" ? styles.fieldDisabled : ""}`}
-                >
-                  <span className={styles.fieldLabel}>Return Date</span>
-                  <div className={styles.fieldBody}>
-                    <CalendarDays
-                      className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                    />
-                    <button
-                      type="button"
-                      disabled={tripType !== "round-trip"}
-                      onClick={() => openFareCalendar("return")}
-                      className={`${styles.fareCalendarTrigger} ${tripType !== "round-trip" ? styles.fareCalendarTriggerDisabled : ""}`}
-                    >
-                      {formatSelectedDateLabel(returnDate)}
-                    </button>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </>
             )}
 

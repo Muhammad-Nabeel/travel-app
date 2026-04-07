@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
@@ -228,6 +229,8 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
               : undefined,
         }}
       />
+
+      <FareCalendarStrip query={query} />
 
       <FlightsResultsPanel
         offers={result.results}

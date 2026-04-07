@@ -94,14 +94,25 @@ export function BlogSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/blog")
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/blog", { signal: controller.signal })
       .then((r) => {
-        if (r.headers.get("x-blog-source") === "dummy") setIsDummy(true);
+        if (!cancelled && r.headers.get("x-blog-source") === "dummy")
+          setIsDummy(true);
         return r.json();
       })
-      .then((data: BlogPost[]) => setPosts(Array.isArray(data) ? data : []))
+      .then((data: BlogPost[]) => {
+        if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   const scroll = (dir: "left" | "right") => {
