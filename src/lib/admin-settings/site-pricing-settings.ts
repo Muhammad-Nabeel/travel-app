@@ -36,13 +36,7 @@ function toPercent(value: unknown): number {
 }
 
 function getPaymentSettingDelegate() {
-    return (prisma as unknown as {
-        paymentSetting?: {
-            findFirst: (args?: unknown) => Promise<any>;
-            update: (args: unknown) => Promise<any>;
-            create: (args: unknown) => Promise<any>;
-        };
-    }).paymentSetting;
+    return prisma.paymentSetting;
 }
 
 async function getLegacySitePricingSettings(): Promise<SitePricingSettings | null> {

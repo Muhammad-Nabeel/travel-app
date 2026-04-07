@@ -31,11 +31,7 @@ function buildUserName(payload: BookingPayload) {
 }
 
 function getBranchDelegate() {
-    return (prisma as unknown as {
-        branch?: {
-            findFirst: (args?: unknown) => Promise<any>;
-        };
-    }).branch;
+    return prisma.branch;
 }
 
 async function findLegacyBranchById(id: string) {

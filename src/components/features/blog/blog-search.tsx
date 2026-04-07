@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Tag } from "lucide-react";
 import Link from "next/link";
 
@@ -22,7 +22,6 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch all blog posts
@@ -38,8 +37,7 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
       });
   }, []);
 
-  // Filter posts based on search query and selected tag
-  useEffect(() => {
+  const filteredPosts = useMemo(() => {
     let filtered = allPosts;
 
     // Filter by tag
@@ -66,7 +64,7 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
       filtered = filtered.filter((post) => post.slug !== currentSlug);
     }
 
-    setFilteredPosts(filtered.slice(0, 5)); // Show top 5 results
+    return filtered.slice(0, 5);
   }, [searchQuery, selectedTag, allPosts, currentSlug]);
 
   // Get all unique tags
@@ -124,7 +122,7 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
 
         {searchQuery && filteredPosts.length === 0 && (
           <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
-            No posts found matching "{searchQuery}"
+            No posts found matching &quot;{searchQuery}&quot;
           </p>
         )}
       </div>

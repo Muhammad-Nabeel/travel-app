@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { createPrismaClient, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { destinationSchema } from "@/lib/validations/destination";
 
 export type DestinationRow = {
@@ -39,7 +39,7 @@ function toSlug(value: string) {
         .slice(0, 60);
 }
 
-async function getUniqueDestinationSlug(city: string) {
+async function getUniqueDestinationSlug(city: string, prisma: ReturnType<typeof createPrismaClient>) {
     const baseSlug = toSlug(city) || "destination";
 
     for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
         return jsonWithSource([], "db");
     }
 
+    const prisma = createPrismaClient();
     try {
         const rows = await prisma.destination.findMany({
             where: showAll ? undefined : { isActive: true },
@@ -77,7 +78,11 @@ export async function GET(request: NextRequest) {
         });
 
         if (rows.length) {
-            return jsonWithSource(rows, "db");
+            return jsonWithSource(rows.map((r) => ({
+                ...r,
+                highlights: (r.highlights as string[] | null) ?? [],
+                travelTips: (r.travelTips as string[] | null) ?? [],
+            })) as DestinationRow[], "db");
         }
 
 
@@ -85,17 +90,20 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         markDatabaseUnavailable(error);
         return jsonWithSource([], "db");
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
 export async function POST(request: NextRequest) {
+    const prisma = createPrismaClient();
     try {
         const body = await request.json();
         const validatedData = destinationSchema.parse(body);
 
         const destination = await prisma.destination.create({
             data: {
-                slug: await getUniqueDestinationSlug(validatedData.city),
+                slug: await getUniqueDestinationSlug(validatedData.city, prisma),
                 city: validatedData.city,
                 country: validatedData.country,
                 scope: validatedData.scope,
@@ -138,5 +146,7 @@ export async function POST(request: NextRequest) {
             { ok: false, error: "Database error" },
             { status: 503 },
         );
+    } finally {
+        await prisma.$disconnect();
     }
 }

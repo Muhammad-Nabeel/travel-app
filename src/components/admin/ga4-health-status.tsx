@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 type HealthState = "checking" | "ok" | "error";
@@ -13,12 +13,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
   const [status, setStatus] = useState<HealthState>("checking");
   const [message, setMessage] = useState("Checking GA4 connection...");
 
-  const checkGa4Health = useCallback(async (resetState = true) => {
-    if (resetState) {
-      setStatus("checking");
-      setMessage("Checking GA4 connection...");
-    }
-
+  async function fetchGa4Health() {
     try {
       const settingsRes = await fetch("/api/admin/settings/ga4", {
         cache: "no-store",
@@ -30,15 +25,17 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
 
       if (settingsJson.provider === "gtm") {
         if (settingsJson.gtmContainerId?.trim()) {
-          setStatus("ok");
-          setMessage("Google Tag Manager is active.");
-        } else {
-          setStatus("error");
-          setMessage(
-            "Google Tag Manager is selected but container ID is missing.",
-          );
+          return {
+            status: "ok" as const,
+            message: "Google Tag Manager is active.",
+          };
         }
-        return;
+
+        return {
+          status: "error" as const,
+          message:
+            "Google Tag Manager is selected but container ID is missing.",
+        };
       }
 
       const res = await fetch("/api/admin/settings/ga4?test=true", {
@@ -47,22 +44,52 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
       const json = (await res.json()) as { ok?: boolean; message?: string };
 
       if (res.ok && json.ok) {
-        setStatus("ok");
-        setMessage(json.message ?? "GA4 connection is healthy.");
+        return {
+          status: "ok" as const,
+          message: json.message ?? "GA4 connection is healthy.",
+        };
+      }
+
+      return {
+        status: "error" as const,
+        message: json.message ?? "GA4 connection check failed.",
+      };
+    } catch {
+      return {
+        status: "error" as const,
+        message: "Unable to reach GA4 test endpoint.",
+      };
+    }
+  }
+
+  async function checkGa4Health() {
+    setStatus("checking");
+    setMessage("Checking GA4 connection...");
+
+    const next = await fetchGa4Health();
+    setStatus(next.status);
+    setMessage(next.message);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const next = await fetchGa4Health();
+      if (cancelled) {
         return;
       }
 
-      setStatus("error");
-      setMessage(json.message ?? "GA4 connection check failed.");
-    } catch {
-      setStatus("error");
-      setMessage("Unable to reach GA4 test endpoint.");
+      setStatus(next.status);
+      setMessage(next.message);
     }
-  }, []);
 
-  useEffect(() => {
-    void checkGa4Health(false);
-  }, [checkGa4Health]);
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const statusText =
     status === "ok"
@@ -91,7 +118,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         </span>
         <button
           type="button"
-          onClick={() => void checkGa4Health(true)}
+          onClick={() => void checkGa4Health()}
           className="rounded-md p-0.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           aria-label="Refresh GA4 health"
         >
@@ -111,7 +138,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         </p>
         <button
           type="button"
-          onClick={() => void checkGa4Health(true)}
+          onClick={() => void checkGa4Health()}
           className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           aria-label="Refresh GA4 health"
         >

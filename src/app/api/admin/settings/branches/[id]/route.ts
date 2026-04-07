@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Branch } from "@prisma/client";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
@@ -13,6 +14,11 @@ type BranchInput = {
     sortOrder?: number;
 };
 
+type BranchRecord = Pick<
+    Branch,
+    "id" | "name" | "city" | "address" | "phone" | "isActive" | "sortOrder" | "createdAt" | "updatedAt"
+>;
+
 function normalizeBranchInput(body: BranchInput) {
     return {
         name: String(body.name ?? "").trim(),
@@ -24,32 +30,23 @@ function normalizeBranchInput(body: BranchInput) {
     };
 }
 
-function getBranchDelegate() {
-    return (prisma as unknown as {
-        branch?: {
-            update: (args: unknown) => Promise<any>;
-            delete: (args: unknown) => Promise<any>;
-        };
-    }).branch;
-}
-
 async function getLegacyBranches() {
     const row = await prisma.adminSetting.findUnique({
         where: { key: BRANCHES_KEY },
         select: { value: true },
     });
 
-    if (!row?.value) return [] as any[];
+    if (!row?.value) return [] as BranchRecord[];
 
     try {
-        const parsed = JSON.parse(row.value) as any[];
+        const parsed = JSON.parse(row.value) as BranchRecord[];
         return Array.isArray(parsed) ? parsed : [];
     } catch {
-        return [] as any[];
+        return [] as BranchRecord[];
     }
 }
 
-async function saveLegacyBranches(branches: any[]) {
+async function saveLegacyBranches(branches: BranchRecord[]) {
     await prisma.adminSetting.upsert({
         where: { key: BRANCHES_KEY },
         update: { value: JSON.stringify(branches) },
@@ -77,34 +74,10 @@ export async function PUT(
             );
         }
 
-        const branch = getBranchDelegate();
-        const updated = branch
-            ? await branch.update({
-                where: { id },
-                data: payload,
-            })
-            : (() => {
-                const existing = { id };
-                return {
-                    ...existing,
-                    ...payload,
-                    updatedAt: new Date().toISOString(),
-                };
-            })();
-
-        if (!branch) {
-            const legacy = await getLegacyBranches();
-            const next = legacy.map((item) =>
-                item.id === id
-                    ? {
-                        ...item,
-                        ...payload,
-                        updatedAt: new Date().toISOString(),
-                    }
-                    : item,
-            );
-            await saveLegacyBranches(next);
-        }
+        const updated = await prisma.branch.update({
+            where: { id },
+            data: payload,
+        });
 
         return NextResponse.json(updated, { status: 200 });
     } catch (error) {
@@ -123,13 +96,7 @@ export async function DELETE(
 
     try {
         const { id } = await context.params;
-        const branch = getBranchDelegate();
-        if (branch) {
-            await branch.delete({ where: { id } });
-        } else {
-            const legacy = await getLegacyBranches();
-            await saveLegacyBranches(legacy.filter((item) => item.id !== id));
-        }
+        await prisma.branch.delete({ where: { id } });
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);

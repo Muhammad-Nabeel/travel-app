@@ -1,6 +1,6 @@
 - [x] Verify that the copilot-instructions.md file in the .github directory is created.
 - [x] Clarify Project Requirements
-      Summary: Greenfield travel platform using Next.js, TypeScript, Tailwind CSS, DaisyUI, Prisma ORM, and MySQL with Sabre and Amadeus planned for provider integrations.
+      Summary: Greenfield travel platform using Next.js, TypeScript, Tailwind CSS, DaisyUI, Prisma ORM, and Supabase Postgres with Sabre and Amadeus planned for provider integrations.
 - [x] Scaffold the Project
       Summary: Created a Next.js App Router project with TypeScript, Tailwind CSS, ESLint, npm, and a src-based layout.
 - [x] Customize the Project

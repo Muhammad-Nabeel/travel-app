@@ -1,17 +1,18 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv/config");
 
 const { PrismaClient } = require("@prisma/client");
-const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
+const { PrismaPg } = require("@prisma/adapter-pg");
 
-const adapter = new PrismaMariaDb({
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-  connectionString: process.env.DATABASE_URL,
-  connectionLimit: 5,
+const { Pool } = require("pg");
+const rawUrl = (process.env.DIRECT_URL || process.env.DATABASE_URL || "")
+  .replace(/[?&]sslmode=[^&]*/g, "")
+  .replace(/[?&]pgbouncer=true/g, "");
+const pool = new Pool({
+  connectionString: rawUrl,
+  ssl: { rejectUnauthorized: false },
 });
-
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({
   adapter,
   log: ["warn", "error"],

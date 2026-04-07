@@ -27,7 +27,7 @@ const EMPTY_FORM = {
   seatsAvailable: "0",
   startDate: "",
   endDate: "",
-  status: "DRAFT" as const,
+  status: "DRAFT" as "DRAFT" | "PUBLISHED" | "ARCHIVED",
 };
 
 export default function AdminPackagesPage() {

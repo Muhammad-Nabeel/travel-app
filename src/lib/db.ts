@@ -1,19 +1,11 @@
-export { prisma } from "../../prisma/client";
+export { createPrismaClient, prisma } from "../../prisma/client";
 
 const DATABASE_RETRY_COOLDOWN_MS = 30_000;
 
 let databaseUnavailableUntil = 0;
 
-function hasHostConfig() {
-    return Boolean(
-        process.env.DATABASE_HOST &&
-        process.env.DATABASE_USER &&
-        process.env.DATABASE_NAME,
-    );
-}
-
 export function isDatabaseConfigured() {
-    return Boolean(process.env.DATABASE_URL) || hasHostConfig();
+    return Boolean(process.env.DIRECT_URL ?? process.env.DATABASE_URL);
 }
 
 export function shouldBypassDatabase() {
