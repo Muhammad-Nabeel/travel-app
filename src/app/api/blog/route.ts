@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPrismaClient, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
+import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
 
 export type BlogPostRow = {
@@ -355,7 +355,6 @@ export async function GET(request: NextRequest) {
         return jsonWithSource(filtered, "dummy");
     }
 
-    const prisma = createPrismaClient();
     try {
         const rows = await prisma.blogPost.findMany({
             where: showAll ? undefined : { status: "PUBLISHED" },
@@ -380,13 +379,10 @@ export async function GET(request: NextRequest) {
             ? DUMMY_BLOG_POSTS
             : DUMMY_BLOG_POSTS.filter((p) => p.status === "PUBLISHED");
         return jsonWithSource(filtered, "dummy");
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
 export async function POST(request: NextRequest) {
-    const prisma = createPrismaClient();
     try {
         const body = await request.json();
         const validated = blogPostSchema.parse(body);
@@ -409,7 +405,5 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: err.message }, { status: 400 });
         }
         return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    } finally {
-        await prisma.$disconnect();
     }
 }

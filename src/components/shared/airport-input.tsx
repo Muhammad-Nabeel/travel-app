@@ -31,6 +31,8 @@ export function AirportInput({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -45,25 +47,59 @@ export function AirportInput({
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
   function handleChange(raw: string) {
     onChange(raw);
     if (timerRef.current) clearTimeout(timerRef.current);
+    abortRef.current?.abort();
+
     if (raw.trim().length < 2) {
+      requestIdRef.current += 1;
       setSuggestions([]);
       setOpen(false);
       setLoading(false);
       return;
     }
+
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     setLoading(true);
     setOpen(true);
     timerRef.current = setTimeout(() => {
-      void fetch(`/api/places/airports?query=${encodeURIComponent(raw.trim())}`)
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      void fetch(
+        `/api/places/airports?query=${encodeURIComponent(raw.trim())}`,
+        {
+          signal: controller.signal,
+        },
+      )
         .then((r) => r.json())
         .then((json: { results?: Airport[] }) => {
+          if (requestIdRef.current !== requestId) {
+            return;
+          }
           setSuggestions(json.results ?? []);
           setLoading(false);
         })
-        .catch(() => setLoading(false));
+        .catch((error: { name?: string }) => {
+          if (
+            error?.name === "AbortError" ||
+            requestIdRef.current !== requestId
+          ) {
+            return;
+          }
+
+          setSuggestions([]);
+          setLoading(false);
+        });
     }, 280);
   }
 
