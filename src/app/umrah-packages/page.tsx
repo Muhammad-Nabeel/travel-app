@@ -1,6 +1,22 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
+
 import type { PackageRow } from "@/app/api/packages/route";
 import { UmrahConfigurator } from "@/components/features/umrah/umrah-configurator";
+import { StructuredData } from "@/components/shared/structured-data";
+import {
+  buildMetadata,
+  createItemListSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Umrah Packages",
+  description:
+    "Compare available Umrah packages, departures, inclusions, and pricing before you book.",
+  path: "/umrah-packages",
+  keywords: ["Umrah packages", "pilgrimage travel", "Umrah booking"],
+});
 
 async function getPackages(): Promise<{
   packages: PackageRow[];
@@ -23,5 +39,28 @@ async function getPackages(): Promise<{
 
 export default async function UmrahPackagesPage() {
   const { packages, isDummy } = await getPackages();
-  return <UmrahConfigurator packages={packages} isDummy={isDummy} />;
+
+  return (
+    <>
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: "Umrah Packages",
+            description:
+              "Compare available Umrah packages, departures, inclusions, and pricing before you book.",
+            path: "/umrah-packages",
+            type: "CollectionPage",
+          }),
+          createItemListSchema(
+            packages.map((pkg) => ({
+              name: pkg.title,
+              path: "/umrah-packages",
+            })),
+            "Umrah packages",
+          ),
+        ]}
+      />
+      <UmrahConfigurator packages={packages} isDummy={isDummy} />
+    </>
+  );
 }

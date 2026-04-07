@@ -1,4 +1,20 @@
+import type { Metadata } from "next";
+
+import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
+import { buildMetadata, createFAQSchema, createWebPageSchema } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getStoredSitePagesSettings();
+  const page = settings.faq;
+
+  return buildMetadata({
+    title: page.title,
+    description: page.intro,
+    path: "/faq",
+    keywords: ["FAQ", "travel questions", "Umrah help"],
+  });
+}
 
 export default async function FaqPage() {
   const settings = await getStoredSitePagesSettings();
@@ -6,6 +22,17 @@ export default async function FaqPage() {
 
   return (
     <main className="section-shell py-12 sm:py-16">
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: page.title,
+            description: page.intro,
+            path: "/faq",
+          }),
+          createFAQSchema(page.faqs),
+        ]}
+      />
+
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
           {page.eyebrow}

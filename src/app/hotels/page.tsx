@@ -1,10 +1,21 @@
+import type { Metadata } from "next";
 import { MapPin, Star } from "lucide-react";
 
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { HotelSearchEngine } from "@/components/features/home/hotel-search/hotel-search";
+import { StructuredData } from "@/components/shared/structured-data";
 import { hotelResults } from "@/lib/mock-data";
+import { buildMetadata, createWebPageSchema } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Hotels",
+  description:
+    "Browse featured hotels and compare stays for religious and leisure travel plans.",
+  path: "/hotels",
+  keywords: ["hotels", "hotel search", "travel accommodation"],
+});
 
 function StarRating({ stars }: { stars: number }) {
   return (
@@ -22,6 +33,16 @@ function StarRating({ stars }: { stars: number }) {
 export default function HotelsPage() {
   return (
     <main className="flex-1">
+      <StructuredData
+        data={createWebPageSchema({
+          title: "Hotels",
+          description:
+            "Browse featured hotels and compare stays for religious and leisure travel plans.",
+          path: "/hotels",
+          type: "CollectionPage",
+        })}
+      />
+
       {/* Hero search */}
       <HotelSearchEngine />
 

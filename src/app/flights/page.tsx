@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
@@ -6,6 +8,7 @@ import { FlightSearchEngine } from "@/components/features/home/flight-search/fli
 import { getAirportDisplay } from "@/lib/aviation-reference";
 import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { searchFlights } from "@/lib/flights/search-service";
+import { buildMetadata } from "@/lib/seo";
 
 function HomeLayout() {
   return (
@@ -65,6 +68,36 @@ function parseMultiCityLegs(raw: string | undefined) {
   } catch {
     return [];
   }
+}
+
+export async function generateMetadata({
+  searchParams,
+}: FlightsPageProps): Promise<Metadata> {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const multiCityLegs = parseMultiCityLegs(resolvedSearchParams.legs);
+  const isMultiCity = resolvedSearchParams.tripType === "multi-city";
+  const hasSearch = isMultiCity
+    ? multiCityLegs.length >= 2
+    : Boolean(
+        resolvedSearchParams.origin &&
+        resolvedSearchParams.destination &&
+        resolvedSearchParams.departureDate,
+      );
+
+  return buildMetadata({
+    title:
+      hasSearch &&
+      resolvedSearchParams.origin &&
+      resolvedSearchParams.destination
+        ? `Flights from ${resolvedSearchParams.origin} to ${resolvedSearchParams.destination}`
+        : "Flight Search",
+    description: hasSearch
+      ? "Review live flight search results and continue to booking when your route fits."
+      : "Search and compare flight options with flexible trip types and cabin filters.",
+    path: "/flights",
+    keywords: ["flight search", "flight booking", "airfare"],
+    noIndex: hasSearch,
+  });
 }
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {

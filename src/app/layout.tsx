@@ -7,6 +7,13 @@ import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 import { Ga4Loader } from "@/components/analytics/ga4-loader";
 import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
+import {
+  getSiteUrl,
+  resolveImageUrl,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE_TEMPLATE,
+} from "@/lib/seo";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -20,9 +27,54 @@ const cormorantGaramond = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Safar Umrah",
-  description:
-    "Travel platform foundation for flights, hotels, and admin-managed Umrah packages.",
+  metadataBase: getSiteUrl(),
+  title: {
+    default: SITE_NAME,
+    template: SITE_TITLE_TEMPLATE,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "Safar Umrah",
+    "Umrah packages",
+    "flight booking",
+    "travel planning",
+    "visa services",
+    "travel blog",
+  ],
+  openGraph: {
+    type: "website",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    locale: "en_GB",
+    url: "/",
+    images: [
+      {
+        url: resolveImageUrl(),
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [resolveImageUrl()],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
 };
 
 export default function RootLayout({

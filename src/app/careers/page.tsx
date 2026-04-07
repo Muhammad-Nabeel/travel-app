@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
+import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
+import {
+  buildMetadata,
+  createItemListSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
 
 function renderParagraphs(content: string) {
   return content
@@ -19,12 +27,41 @@ function getEmailLabel(href: string) {
   return href.replace(/^mailto:/i, "").trim();
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getStoredSitePagesSettings();
+  const page = settings.careers;
+
+  return buildMetadata({
+    title: page.title,
+    description: page.intro,
+    path: "/careers",
+    keywords: ["travel careers", "jobs", "Safar Umrah careers"],
+  });
+}
+
 export default async function CareersPage() {
   const settings = await getStoredSitePagesSettings();
   const page = settings.careers;
 
   return (
     <main className="section-shell relative py-12 sm:py-16">
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: page.title,
+            description: page.intro,
+            path: "/careers",
+          }),
+          createItemListSchema(
+            page.jobs.map((job) => ({
+              name: job.title,
+              path: "/careers",
+            })),
+            "Open travel roles",
+          ),
+        ]}
+      />
+
       <div className="pointer-events-none absolute -top-16 right-6 h-40 w-40 rounded-full bg-sky-200/40 blur-3xl" />
       <div className="pointer-events-none absolute top-40 -left-10 h-52 w-52 rounded-full bg-indigo-200/40 blur-3xl" />
 

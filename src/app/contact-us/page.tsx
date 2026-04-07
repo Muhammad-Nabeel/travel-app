@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
+import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
+import {
+  buildMetadata,
+  createOrganizationSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 function getPhoneDigits(value: string): string {
@@ -11,6 +19,18 @@ function getTelHref(value: string): string {
   return `tel:${value.trim().startsWith("+") ? "+" : ""}${digits}`;
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  const pages = await getStoredSitePagesSettings();
+  const page = pages.contactUs;
+
+  return buildMetadata({
+    title: page.title,
+    description: page.intro,
+    path: "/contact-us",
+    keywords: ["contact us", "travel support", "Safar Umrah contact"],
+  });
+}
+
 export default async function ContactUsPage() {
   const pages = await getStoredSitePagesSettings();
 
@@ -18,6 +38,22 @@ export default async function ContactUsPage() {
 
   return (
     <main className="section-shell py-12 sm:py-16">
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: page.title,
+            description: page.intro,
+            path: "/contact-us",
+            type: "ContactPage",
+          }),
+          createOrganizationSchema({
+            telephone: page.phoneValue,
+            email: page.emailValue,
+            address: page.locationValue,
+          }),
+        ]}
+      />
+
       <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
           <div>
