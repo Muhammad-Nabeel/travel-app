@@ -1,12 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Star } from "lucide-react";
+import { cache } from "react";
 
+import { StructuredData } from "@/components/shared/structured-data";
 import {
   prisma,
   shouldBypassDatabase,
   markDatabaseUnavailable,
 } from "@/lib/db";
+import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
 
 type ActivityPageProps = {
   params: Promise<{ id: string }>;
@@ -19,7 +23,7 @@ type DestinationSummary = {
   country: string;
 };
 
-async function getActivityDetails(id: string) {
+const getActivityDetails = cache(async (id: string) => {
   if (shouldBypassDatabase()) {
     return null;
   }
@@ -41,7 +45,7 @@ async function getActivityDetails(id: string) {
     markDatabaseUnavailable(error);
     return null;
   }
-}
+});
 
 function formatCategory(category: string) {
   return category.split("-").join(" ");
@@ -49,6 +53,36 @@ function formatCategory(category: string) {
 
 function getDestinationHref(destination: DestinationSummary) {
   return `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`;
+}
+
+export async function generateMetadata({
+  params,
+}: ActivityPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const data = await getActivityDetails(id);
+
+  if (!data) {
+    return buildMetadata({
+      title: "Activity Not Found",
+      description: "The requested activity could not be found.",
+      path: `/activities/${id}`,
+      noIndex: true,
+    });
+  }
+
+  return buildMetadata({
+    title: data.activity.title,
+    description:
+      data.activity.description ??
+      `Discover ${data.activity.title} and book it through Safar Umrah.`,
+    path: `/activities/${data.activity.id}`,
+    image: data.activity.imageUrl,
+    keywords: [
+      data.activity.category,
+      data.destination?.city ?? "activity",
+      "travel activities",
+    ],
+  });
 }
 
 export default async function ActivityDetailsPage({
@@ -65,6 +99,41 @@ export default async function ActivityDetailsPage({
 
   return (
     <main className="bg-slate-50 pb-16">
+      <StructuredData
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "TouristAttraction",
+            name: activity.title,
+            description:
+              activity.description ??
+              `Discover ${activity.title} and book it through Safar Umrah.`,
+            url: absoluteUrl(`/activities/${activity.id}`),
+            image: activity.imageUrl,
+            touristType: formatCategory(activity.category),
+            containedInPlace: destination
+              ? {
+                  "@type": "Place",
+                  name: `${destination.city}, ${destination.country}`,
+                }
+              : undefined,
+            aggregateRating:
+              activity.reviewCount > 0
+                ? {
+                    "@type": "AggregateRating",
+                    ratingValue: activity.reviews.toFixed(1),
+                    reviewCount: activity.reviewCount,
+                  }
+                : undefined,
+          },
+          createBreadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Activities", path: "/activities" },
+            { name: activity.title, path: `/activities/${activity.id}` },
+          ]),
+        ]}
+      />
+
       <section className="section-shell pt-10">
         <Link
           href="/"

@@ -1,9 +1,14 @@
-import { PaymentPageClient } from "@/components/features/booking/payment-page-client";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Payment — Travel App",
-  description: "Complete your flight booking by selecting a payment method.",
-};
+import { PaymentPageClient } from "@/components/features/booking/payment-page-client";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Payment",
+  description: "Complete your booking by selecting a payment method.",
+  path: "/flights/payment",
+  noIndex: true,
+});
 
 export default function PaymentPage() {
   return (

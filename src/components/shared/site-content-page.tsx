@@ -1,11 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { StructuredData } from "@/components/shared/structured-data";
+import { createWebPageSchema } from "@/lib/seo";
+
 type SiteContentPageProps = {
   eyebrow: string;
   title: string;
   intro: string;
   body: string;
+  path: string;
   ctaLabel?: string;
   ctaHref?: string;
   aside?: ReactNode;
@@ -31,13 +35,22 @@ export function SiteContentPage({
   title,
   intro,
   body,
+  path,
   ctaLabel,
   ctaHref,
   aside,
 }: SiteContentPageProps) {
   return (
     <main className="section-shell py-12 sm:py-16">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+      <StructuredData
+        data={createWebPageSchema({
+          title,
+          description: intro,
+          path,
+        })}
+      />
+
+      <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
           {eyebrow}
         </p>
@@ -64,7 +77,7 @@ export function SiteContentPage({
             ) : null}
           </div>
 
-          <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+          <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
             {aside ?? (
               <div>
                 <p className="text-sm font-semibold text-slate-900">

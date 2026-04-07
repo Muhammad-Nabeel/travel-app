@@ -1,120 +1,80 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
-import { BlogSearch } from "@/components/features/blog/blog-search";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 
-type BlogPost = {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  coverImageUrl: string;
-  author: string;
-  category: string;
-  tags: string[];
-  publishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+import { BlogSearch } from "@/components/features/blog/blog-search";
+import { StructuredData } from "@/components/shared/structured-data";
+import { getPublishedBlogPostBySlug, getPublishedBlogPosts } from "@/lib/blog";
+import {
+  absoluteUrl,
+  buildMetadata,
+  createArticleSchema,
+  createBreadcrumbSchema,
+} from "@/lib/seo";
+
+type BlogDetailPageProps = {
+  params: Promise<{ slug: string }>;
 };
 
-function BlogDetailSkeleton() {
-  return (
-    <div className="min-h-screen bg-slate-50 py-12">
-      <div className="section-shell">
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main content skeleton */}
-          <div className="space-y-6 lg:col-span-2">
-            <div className="h-8 w-24 animate-pulse rounded bg-slate-200" />
-            <div className="h-96 w-full animate-pulse rounded-lg bg-slate-200" />
-            <div className="space-y-3">
-              <div className="h-8 w-3/4 animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-              <div className="h-4 w-5/6 animate-pulse rounded bg-slate-100" />
-            </div>
-          </div>
+const CATEGORY_LABELS: Record<string, string> = {
+  travel: "Travel",
+  umrah: "Umrah",
+  flights: "Flights",
+  hotels: "Hotels",
+  destinations: "Destinations",
+  tips: "Tips",
+  news: "News",
+};
 
-          {/* Sidebar skeleton */}
-          <div className="space-y-4">
-            <div className="h-40 w-full animate-pulse rounded-lg bg-slate-200" />
-            <div className="h-40 w-full animate-pulse rounded-lg bg-slate-200" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+const CATEGORY_COLORS: Record<string, string> = {
+  travel: "bg-teal-100 text-teal-700",
+  umrah: "bg-emerald-100 text-emerald-700",
+  flights: "bg-sky-100 text-sky-700",
+  hotels: "bg-violet-100 text-violet-700",
+  destinations: "bg-amber-100 text-amber-700",
+  tips: "bg-orange-100 text-orange-700",
+  news: "bg-slate-100 text-slate-600",
+};
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const slug = typeof params.slug === "string" ? params.slug : "";
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export async function generateMetadata({
+  params,
+}: BlogDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPublishedBlogPostBySlug(slug);
 
-  useEffect(() => {
-    if (!slug) return;
-
-    fetch(`/api/blog/${slug}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Post not found");
-        return res.json();
-      })
-      .then((data) => {
-        setPost(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to load blog post");
-        setLoading(false);
-      });
-  }, [slug]);
-
-  if (loading) return <BlogDetailSkeleton />;
-
-  if (error || !post) {
-    return (
-      <div className="min-h-screen bg-slate-50 py-12">
-        <div className="section-shell">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-            <p className="text-red-700 font-semibold mb-4">
-              {error || "Blog post not found"}
-            </p>
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to blog
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+  if (!post) {
+    return buildMetadata({
+      title: "Blog Post Not Found",
+      description: "The requested blog post could not be found.",
+      path: `/blog/${slug}`,
+      noIndex: true,
+    });
   }
 
-  const CATEGORY_LABELS: Record<string, string> = {
-    travel: "Travel",
-    umrah: "Umrah",
-    flights: "Flights",
-    hotels: "Hotels",
-    destinations: "Destinations",
-    tips: "Tips",
-    news: "News",
-  };
+  return buildMetadata({
+    title: post.title,
+    description: post.excerpt,
+    path: `/blog/${post.slug}`,
+    type: "article",
+    image: post.coverImageUrl,
+    publishedTime: post.publishedAt ?? undefined,
+    modifiedTime: post.updatedAt,
+    keywords: [...post.tags, post.category, "travel blog"],
+  });
+}
 
-  const CATEGORY_COLORS: Record<string, string> = {
-    travel: "bg-teal-100 text-teal-700",
-    umrah: "bg-emerald-100 text-emerald-700",
-    flights: "bg-sky-100 text-sky-700",
-    hotels: "bg-violet-100 text-violet-700",
-    destinations: "bg-amber-100 text-amber-700",
-    tips: "bg-orange-100 text-orange-700",
-    news: "bg-slate-100 text-slate-600",
-  };
+export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
+  const { slug } = await params;
+  const [post, posts] = await Promise.all([
+    getPublishedBlogPostBySlug(slug),
+    getPublishedBlogPosts(),
+  ]);
+
+  if (!post) {
+    notFound();
+  }
 
   const formattedDate = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-GB", {
@@ -124,22 +84,56 @@ export default function BlogDetailPage() {
       })
     : null;
 
+  const relatedPosts = posts
+    .filter((item) => item.slug !== post.slug)
+    .slice(0, 5)
+    .map((item) => ({
+      "@type": "ListItem",
+      position:
+        posts.findIndex((candidate) => candidate.slug === item.slug) + 1,
+      name: item.title,
+      url: absoluteUrl(`/blog/${item.slug}`),
+    }));
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
       <div className="section-shell">
-        {/* Back button */}
+        <StructuredData
+          data={[
+            createArticleSchema({
+              title: post.title,
+              description: post.excerpt,
+              path: `/blog/${post.slug}`,
+              image: post.coverImageUrl,
+              publishedTime: post.publishedAt,
+              modifiedTime: post.updatedAt,
+              authorName: post.author,
+              keywords: post.tags,
+            }),
+            createBreadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Blog", path: "/blog" },
+              { name: post.title, path: `/blog/${post.slug}` },
+            ]),
+            {
+              "@context": "https://schema.org",
+              "@type": "ItemList",
+              name: "Related blog posts",
+              itemListElement: relatedPosts,
+            },
+          ]}
+        />
+
         <Link
           href="/blog"
-          className="mb-6 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition"
+          className="mb-6 inline-flex items-center gap-2 font-medium text-teal-600 transition hover:text-teal-700"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to blog
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main content */}
           <article className="space-y-6 lg:col-span-2">
-            {/* Header */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <span
@@ -154,8 +148,7 @@ export default function BlogDetailPage() {
                 {post.title}
               </h1>
 
-              {/* Meta information */}
-              <div className="flex flex-wrap items-center gap-4 border-t border-b border-slate-200 py-3 text-sm text-slate-600">
+              <div className="flex flex-wrap items-center gap-4 border-y border-slate-200 py-3 text-sm text-slate-600">
                 {formattedDate && (
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" />
@@ -166,16 +159,15 @@ export default function BlogDetailPage() {
                   <User className="h-4 w-4" />
                   <span>{post.author}</span>
                 </div>
-                {post.tags && post.tags.length > 0 && (
+                {post.tags.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <Tag className="h-4 w-4" />
-                    <span>{(post.tags as string[]).join(", ")}</span>
+                    <span>{post.tags.join(", ")}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Featured image */}
             <div className="relative overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -186,13 +178,12 @@ export default function BlogDetailPage() {
               />
             </div>
 
-            {/* Content */}
             <div
-              className="space-y-4 text-slate-700 leading-relaxed"
+              className="space-y-4 leading-relaxed text-slate-700"
               style={
                 {
-                  "--content-color": "rgb(55, 65, 81)" /* slate-700 */,
-                } as React.CSSProperties
+                  "--content-color": "rgb(55, 65, 81)",
+                } as CSSProperties
               }
             >
               <style>{`
@@ -257,16 +248,15 @@ export default function BlogDetailPage() {
               />
             </div>
 
-            {/* Author info box */}
-            <div className="mt-8 rounded-lg bg-gradient-to-r from-teal-50 to-blue-50 p-6 border border-teal-100">
+            <div className="mt-8 rounded-lg border border-teal-100 bg-linear-to-r from-teal-50 to-blue-50 p-6">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-slate-900 mb-1">
+                  <h2 className="mb-1 font-semibold text-slate-900">
                     About the Author
-                  </h3>
+                  </h2>
                   <p className="text-sm text-slate-600">
                     <strong>{post.author}</strong> is committed to providing
-                    authentic travel guides and insights to help travelers make
+                    authentic travel guides and insights to help travellers make
                     informed decisions for their journeys.
                   </p>
                 </div>
@@ -274,7 +264,6 @@ export default function BlogDetailPage() {
             </div>
           </article>
 
-          {/* Sidebar */}
           <aside className="lg:sticky lg:top-8 lg:h-min">
             <BlogSearch currentSlug={post.slug} />
           </aside>

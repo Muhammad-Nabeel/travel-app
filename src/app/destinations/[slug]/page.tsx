@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -10,9 +11,12 @@ import {
   MapPin,
   Plane,
 } from "lucide-react";
+import { cache } from "react";
 
 import { prisma } from "@/lib/db";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
+import { StructuredData } from "@/components/shared/structured-data";
+import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
 
 type DestinationPageProps = {
   params: Promise<{ slug: string }>;
@@ -33,11 +37,7 @@ function toStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-export default async function DestinationDetailsPage({
-  params,
-}: DestinationPageProps) {
-  const { slug } = await params;
-
+const getDestinationPageData = cache(async (slug: string) => {
   const destination = await prisma.destination.findFirst({
     where: {
       OR: [{ slug }, { id: slug }],
@@ -46,11 +46,8 @@ export default async function DestinationDetailsPage({
   });
 
   if (!destination) {
-    notFound();
+    return null;
   }
-
-  const highlights = toStringArray(destination.highlights);
-  const travelTips = toStringArray(destination.travelTips);
 
   let activities: Array<{
     id: string;
@@ -79,6 +76,59 @@ export default async function DestinationDetailsPage({
   } catch {
     activities = [];
   }
+
+  return { destination, activities };
+});
+
+export async function generateMetadata({
+  params,
+}: DestinationPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getDestinationPageData(slug);
+
+  if (!data) {
+    return buildMetadata({
+      title: "Destination Not Found",
+      description: "The requested destination could not be found.",
+      path: `/destinations/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  const { destination } = data;
+
+  return buildMetadata({
+    title: `${destination.city}, ${destination.country}`,
+    description:
+      destination.tagline ??
+      destination.notes ??
+      `Explore ${destination.city} with destination guidance, practical travel tips, and curated activities.`,
+    path: `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`,
+    image: destination.imageUrl ?? undefined,
+    keywords: [
+      destination.city,
+      destination.country,
+      destination.scope.toLowerCase(),
+      "destination guide",
+    ],
+  });
+}
+
+export default async function DestinationDetailsPage({
+  params,
+}: DestinationPageProps) {
+  const { slug } = await params;
+
+  const data = await getDestinationPageData(slug);
+
+  if (!data) {
+    notFound();
+  }
+
+  const { destination, activities } = data;
+
+  const highlights = toStringArray(destination.highlights);
+  const travelTips = toStringArray(destination.travelTips);
 
   const facts = [
     {
@@ -110,6 +160,39 @@ export default async function DestinationDetailsPage({
 
   return (
     <main className="bg-slate-50 pb-16">
+      <StructuredData
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "TouristDestination",
+            name: `${destination.city}, ${destination.country}`,
+            description:
+              destination.overview ??
+              destination.tagline ??
+              `Explore ${destination.city} with destination guidance, practical travel tips, and curated activities.`,
+            url: absoluteUrl(
+              `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`,
+            ),
+            image: destination.imageUrl ?? undefined,
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: destination.city,
+              addressCountry: destination.country,
+            },
+            touristType: highlights,
+          },
+          createBreadcrumbSchema([
+            { name: "Home", path: "/" },
+            {
+              name: `${destination.city}, ${destination.country}`,
+              path: `/destinations/${
+                destination.slug?.trim() ? destination.slug : destination.id
+              }`,
+            },
+          ]),
+        ]}
+      />
+
       <section
         className="relative overflow-hidden"
         style={{

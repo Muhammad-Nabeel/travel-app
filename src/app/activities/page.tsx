@@ -1,12 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, Star, ArrowRight } from "lucide-react";
-import { Prisma } from "@prisma/client";
 
+import { StructuredData } from "@/components/shared/structured-data";
 import {
   prisma,
   shouldBypassDatabase,
   markDatabaseUnavailable,
 } from "@/lib/db";
+import {
+  buildMetadata,
+  createItemListSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
 
 type DestinationSummary = {
   id: string;
@@ -38,6 +44,30 @@ function formatCategory(category: string) {
 function toSingleValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
+}
+
+export async function generateMetadata({
+  searchParams,
+}: ActivitiesPageProps): Promise<Metadata> {
+  const resolvedParams = (await searchParams) ?? {};
+  const category = toSingleValue(resolvedParams.category);
+  const destinationId = toSingleValue(resolvedParams.destinationId);
+  const search = toSingleValue(resolvedParams.search);
+  const minRating = toSingleValue(resolvedParams.minRating);
+  const sort = toSingleValue(resolvedParams.sort);
+  const hasFilters = Boolean(
+    category || destinationId || search || minRating || sort,
+  );
+
+  return buildMetadata({
+    title: hasFilters ? "Filtered Activities" : "Travel Activities",
+    description: hasFilters
+      ? "Browse filtered travel activities and curated experiences from Safar Umrah."
+      : "Browse curated travel experiences, tours, and activities for your next trip.",
+    path: "/activities",
+    keywords: ["travel activities", "tours", "experiences"],
+    noIndex: hasFilters,
+  });
 }
 
 async function getActivitiesWithDestinations(filters: {
@@ -146,9 +176,32 @@ export default async function ActivitiesPage({
       sort: sort || undefined,
     });
   const destinationMap = new Map(destinations.map((d) => [d.id, d]));
+  const hasFilters = Boolean(
+    category || destinationId || search || minRatingRaw || sort,
+  );
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12">
+    <main className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: hasFilters ? "Filtered Activities" : "Travel Activities",
+            description: hasFilters
+              ? "Browse filtered travel activities and curated experiences from Safar Umrah."
+              : "Browse curated travel experiences, tours, and activities for your next trip.",
+            path: "/activities",
+            type: "CollectionPage",
+          }),
+          createItemListSchema(
+            activities.map((activity) => ({
+              name: activity.title,
+              path: `/activities/${activity.id}`,
+            })),
+            "Travel activities",
+          ),
+        ]}
+      />
+
       <section className="section-shell">
         <div className="mb-10 space-y-3">
           <h1 className="text-4xl font-bold text-slate-900 sm:text-5xl">

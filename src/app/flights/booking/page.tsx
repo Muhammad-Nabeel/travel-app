@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingFormClient } from "@/components/features/booking/booking-form-client";
 import { searchFlights } from "@/lib/flights/search-service";
 import type { FlightOffer } from "@/lib/flights/types";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Flight Booking",
+  description:
+    "Review the selected itinerary and complete traveler details for your booking.",
+  path: "/flights/booking",
+  noIndex: true,
+});
 
 /**
  * /flights/booking?offerId=<id>&<same search params as /flights>

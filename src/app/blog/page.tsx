@@ -1,20 +1,15 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Calendar, ArrowRight, X } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 
-type BlogPost = {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  coverImageUrl: string;
-  author: string;
-  category: string;
-  tags: string[];
-  publishedAt: string | null;
-};
+import { StructuredData } from "@/components/shared/structured-data";
+import { getPublishedBlogPosts } from "@/lib/blog";
+import {
+  buildMetadata,
+  createBreadcrumbSchema,
+  createItemListSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
 
 const CATEGORY_LABELS: Record<string, string> = {
   travel: "Travel",
@@ -48,73 +43,84 @@ const CATEGORY_BADGE_COLORS: Record<string, string> = {
   news: "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200",
 };
 
-function BlogSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12">
-      <div className="section-shell">
-        <div className="mb-12 space-y-3">
-          <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200" />
-          <div className="h-5 w-96 animate-pulse rounded bg-slate-100" />
-        </div>
+type BlogPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
-            >
-              <div className="h-48 w-full animate-pulse bg-slate-200" />
-              <div className="space-y-3 p-5">
-                <div className="h-5 w-24 animate-pulse rounded bg-slate-200" />
-                <div className="h-6 w-full animate-pulse rounded bg-slate-200" />
-                <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function toSingleValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 }
 
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+export async function generateMetadata({
+  searchParams,
+}: BlogPageProps): Promise<Metadata> {
+  const params = (await searchParams) ?? {};
+  const category = toSingleValue(params.category);
+  const hasFilter = Boolean(category);
+  const categoryLabel = CATEGORY_LABELS[category] ?? category;
 
-  useEffect(() => {
-    fetch("/api/blog?all=true")
-      .then((r) => r.json())
-      .then((data) => {
-        console.log("Blog API response:", data);
-        console.log("Is array:", Array.isArray(data));
-        console.log("Data length:", data?.length);
-        setPosts(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Blog fetch error:", err);
-        setLoading(false);
-      });
-  }, []);
+  return buildMetadata({
+    title: hasFilter ? `${categoryLabel} Travel Blog` : "Travel Blog",
+    description: hasFilter
+      ? `Read ${categoryLabel.toLowerCase()} guides, updates, and planning advice from Safar Umrah.`
+      : "Read destination guides, flight advice, Umrah planning tips, and travel updates from Safar Umrah.",
+    path: "/blog",
+    keywords: [
+      "travel blog",
+      "Umrah blog",
+      "flight advice",
+      "destination guides",
+      categoryLabel,
+    ],
+    noIndex: hasFilter,
+  });
+}
 
-  // Get unique categories from posts
+export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const params = (await searchParams) ?? {};
+  const selectedCategory = toSingleValue(params.category);
+  const posts = await getPublishedBlogPosts();
+
   const allCategories = Array.from(
     new Set(posts.map((post) => post.category)),
   ).sort();
 
-  // Filter posts by selected category
   const filteredPosts = selectedCategory
     ? posts.filter((post) => post.category === selectedCategory)
     : posts;
 
-  if (loading) return <BlogSkeleton />;
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12">
       <div className="section-shell">
-        {/* Header */}
+        <StructuredData
+          data={[
+            createWebPageSchema({
+              title: selectedCategory
+                ? `${CATEGORY_LABELS[selectedCategory] ?? selectedCategory} Travel Blog`
+                : "Travel Blog",
+              description: selectedCategory
+                ? `Read ${(
+                    CATEGORY_LABELS[selectedCategory] ?? selectedCategory
+                  ).toLowerCase()} guides, updates, and planning advice from Safar Umrah.`
+                : "Read destination guides, flight advice, Umrah planning tips, and travel updates from Safar Umrah.",
+              path: "/blog",
+              type: "CollectionPage",
+            }),
+            createBreadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Blog", path: "/blog" },
+            ]),
+            createItemListSchema(
+              filteredPosts.map((post) => ({
+                name: post.title,
+                path: `/blog/${post.slug}`,
+              })),
+              "Blog posts",
+            ),
+          ]}
+        />
+
         <div className="mb-12 space-y-3">
           <h1 className="text-4xl font-bold text-slate-900 sm:text-5xl">
             Travel Blog
@@ -125,29 +131,27 @@ export default function BlogPage() {
           </p>
         </div>
 
-        {/* Category Filter */}
         {allCategories.length > 0 && (
           <div className="mb-8 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
               Filter by Category
-            </h3>
+            </h2>
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition border ${
-                  selectedCategory === null
+              <Link
+                href="/blog"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  !selectedCategory
                     ? "bg-slate-900 text-white border-slate-900"
                     : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                 }`}
               >
                 All Categories
-                {selectedCategory === null && <X className="h-3.5 w-3.5" />}
-              </button>
+              </Link>
               {allCategories.map((category) => (
-                <button
+                <Link
                   key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition border ${
+                  href={`/blog?category=${encodeURIComponent(category)}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                     selectedCategory === category
                       ? CATEGORY_COLORS[category] || "bg-slate-100"
                       : CATEGORY_BADGE_COLORS[category] ||
@@ -155,7 +159,7 @@ export default function BlogPage() {
                   }`}
                 >
                   {CATEGORY_LABELS[category] || category}
-                </button>
+                </Link>
               ))}
             </div>
             {selectedCategory && (
@@ -170,16 +174,14 @@ export default function BlogPage() {
           </div>
         )}
 
-        {/* Blog Grid */}
         {filteredPosts.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
               <Link
                 key={post.id}
                 href={`/blog/${post.slug}`}
-                className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-lg hover:border-slate-300"
+                className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-lg"
               >
-                {/* Image */}
                 <div className="relative h-48 overflow-hidden bg-slate-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -197,16 +199,14 @@ export default function BlogPage() {
                   </span>
                 </div>
 
-                {/* Content */}
                 <div className="flex flex-1 flex-col gap-2 p-5">
-                  <h3 className="text-base font-bold leading-snug text-slate-900 group-hover:text-teal-700 line-clamp-2">
+                  <h2 className="line-clamp-2 text-base font-bold leading-snug text-slate-900 group-hover:text-teal-700">
                     {post.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 line-clamp-3">
+                  </h2>
+                  <p className="line-clamp-3 text-sm text-slate-600">
                     {post.excerpt}
                   </p>
 
-                  {/* Footer */}
                   <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                       <Calendar className="h-3.5 w-3.5" />
@@ -234,7 +234,7 @@ export default function BlogPage() {
               {selectedCategory
                 ? `No blog posts found in ${
                     CATEGORY_LABELS[selectedCategory] || selectedCategory
-                  }`
+                  }.`
                 : "No blog posts available yet."}
             </p>
           </div>
