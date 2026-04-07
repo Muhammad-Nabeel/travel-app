@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin, Star, ArrowRight } from "lucide-react";
+import { Prisma } from "@prisma/client";
 
 import {
   prisma,
@@ -34,10 +35,6 @@ function formatCategory(category: string) {
   return category.split("-").join(" ");
 }
 
-function getDestinationHref(destination: DestinationSummary) {
-  return `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`;
-}
-
 function toSingleValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
@@ -49,7 +46,11 @@ async function getActivitiesWithDestinations(filters: {
   search?: string;
   minRating?: number;
   sort?: string;
-}) {
+}): Promise<{
+  activities: ActivitySummary[];
+  destinations: DestinationSummary[];
+  categories: string[];
+}> {
   if (shouldBypassDatabase()) {
     return { activities: [], destinations: [], categories: [] };
   }
@@ -89,10 +90,10 @@ async function getActivitiesWithDestinations(filters: {
       }
     })();
 
-    const activities = await prisma.activity.findMany({
+    const activities = (await prisma.activity.findMany({
       where,
       orderBy,
-    });
+    })) satisfies ActivitySummary[];
 
     const destinationIds = Array.from(
       new Set(activities.map((activity) => activity.destinationId)),
@@ -103,7 +104,7 @@ async function getActivitiesWithDestinations(filters: {
           where: { id: { in: destinationIds }, isActive: true },
           select: { id: true, slug: true, city: true, country: true },
         })
-      : [];
+      : ([] satisfies DestinationSummary[]);
 
     const categories = await prisma.activity.findMany({
       where: { isActive: true },

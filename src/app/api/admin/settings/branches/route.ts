@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Branch } from "@prisma/client";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
@@ -13,6 +14,11 @@ type BranchInput = {
     sortOrder?: number;
 };
 
+type BranchRecord = Pick<
+    Branch,
+    "id" | "name" | "city" | "address" | "phone" | "isActive" | "sortOrder" | "createdAt" | "updatedAt"
+>;
+
 function normalizeBranchInput(body: BranchInput) {
     return {
         name: String(body.name ?? "").trim(),
@@ -24,32 +30,23 @@ function normalizeBranchInput(body: BranchInput) {
     };
 }
 
-function getBranchDelegate() {
-    return (prisma as unknown as {
-        branch?: {
-            findMany: (args?: unknown) => Promise<any[]>;
-            create: (args: unknown) => Promise<any>;
-        };
-    }).branch;
-}
-
 async function getLegacyBranches() {
     const row = await prisma.adminSetting.findUnique({
         where: { key: BRANCHES_KEY },
         select: { value: true },
     });
 
-    if (!row?.value) return [] as any[];
+    if (!row?.value) return [] as BranchRecord[];
 
     try {
-        const parsed = JSON.parse(row.value) as any[];
+        const parsed = JSON.parse(row.value) as BranchRecord[];
         return Array.isArray(parsed) ? parsed : [];
     } catch {
-        return [] as any[];
+        return [] as BranchRecord[];
     }
 }
 
-async function saveLegacyBranches(branches: any[]) {
+async function saveLegacyBranches(branches: BranchRecord[]) {
     await prisma.adminSetting.upsert({
         where: { key: BRANCHES_KEY },
         update: { value: JSON.stringify(branches) },
@@ -63,12 +60,9 @@ export async function GET() {
     }
 
     try {
-        const branch = getBranchDelegate();
-        const branches = branch
-            ? await branch.findMany({
-                orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-            })
-            : await getLegacyBranches();
+        const branches = await prisma.branch.findMany({
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        });
 
         return NextResponse.json({ branches }, { status: 200 });
     } catch (error) {
@@ -93,25 +87,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const branch = getBranchDelegate();
-        const created = branch
-            ? await branch.create({
-                data: payload,
-            })
-            : (() => {
-                const legacy = {
-                    id: `legacy-${Date.now()}`,
-                    ...payload,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                };
-                return legacy;
-            })();
-
-        if (!branch) {
-            const existing = await getLegacyBranches();
-            await saveLegacyBranches([...existing, created]);
-        }
+        const created = await prisma.branch.create({
+            data: payload,
+        });
 
         return NextResponse.json(created, { status: 201 });
     } catch (error) {

@@ -7,7 +7,7 @@ Safar Umrah is a Next.js travel-platform starter for flights, hotels, and admin-
 - Tailwind CSS v4
 - DaisyUI
 - Prisma ORM
-- MySQL
+- Supabase Postgres
 
 ## Current Scope
 
@@ -32,7 +32,11 @@ npm install
 copy .env.example .env
 ```
 
-3. Update `DATABASE_URL` and provider credentials in `.env`.
+3. Update your Supabase connection strings and provider credentials in `.env`.
+
+`DATABASE_URL` should use the Supabase pooled connection string for runtime and Vercel.
+
+`DIRECT_URL` should use the direct Supabase Postgres connection string for Prisma CLI commands.
 
 4. Generate the Prisma client:
 
@@ -40,21 +44,41 @@ copy .env.example .env
 npm run prisma:generate
 ```
 
-5. Start the development server:
+5. Push the schema to Supabase or apply migrations:
+
+```bash
+npm run db:push
+```
+
+For CI or production promotion, use:
+
+```bash
+npm run prisma:deploy
+```
+
+6. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open http://localhost:3000 in your browser.
+7. Open http://localhost:3000 in your browser.
 
 ## Prisma Commands
 
 ```bash
 npm run prisma:generate
 npm run prisma:migrate -- --name init
+npm run prisma:deploy
 npm run db:push
 ```
+
+## Supabase And Vercel
+
+- Use the Supabase pooled connection string for `DATABASE_URL` in local `.env` and Vercel environment variables.
+- Use the direct Supabase connection string for `DIRECT_URL` when running Prisma CLI commands.
+- Run `npm run prisma:deploy` during deployment before the application serves traffic.
+- If you are moving existing MySQL data, export it from the old database and import it into Supabase before switching production traffic.
 
 ## Suggested Next Steps
 

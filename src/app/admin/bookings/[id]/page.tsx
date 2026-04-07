@@ -203,7 +203,7 @@ export default async function AdminBookingDetailsPage({
           <div className="mt-2 space-y-1 text-sm text-slate-700">
             <p>
               <span className="font-semibold text-slate-900">Amount:</span>{" "}
-              {formatMoney(booking.currency, booking.totalAmount)}
+              {formatMoney(booking.currency, booking.totalAmount.toString())}
             </p>
             <p>
               <span className="font-semibold text-slate-900">Created:</span>{" "}
@@ -244,7 +244,7 @@ export default async function AdminBookingDetailsPage({
             </p>
             <p>
               <span className="font-semibold text-slate-900">Grand Total:</span>{" "}
-              {payment?.grandTotal ?? booking.totalAmount}
+              {(payment?.grandTotal ?? booking.totalAmount).toString()}
             </p>
           </div>
         </article>

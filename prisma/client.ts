@@ -1,19 +1,35 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-declare global {
-    // @ts-ignore - Prevent redeclaration errors in some build environments
-    var prisma: PrismaClient | undefined;
+const globalForPrisma = globalThis as typeof globalThis & {
+    prisma?: PrismaClient;
+};
+
+function createSanitizedConnectionUrl() {
+    const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+    if (!connectionString) {
+        throw new Error("DIRECT_URL or DATABASE_URL environment variable is not set");
+    }
+
+    // Supabase URLs often include sslmode in the query string, which can override
+    // explicit SSL config. Strip it and pass SSL settings directly.
+    return connectionString
+        .replace(/[?&]sslmode=[^&]*/g, "")
+        .replace(/[?&]pgbouncer=true/g, "")
+        .replace(/[?&]$/, "");
 }
 
-function getPrismaClient() {
-    const adapter = new PrismaMariaDb({
-        host: process.env.DATABASE_HOST,
-        user: process.env.DATABASE_USER,
-        password: process.env.DATABASE_PASSWORD,
-        database: process.env.DATABASE_NAME,
-        connectionLimit: 5,
-        allowPublicKeyRetrieval: true,
+export function createPrismaClient() {
+    const sanitizedUrl = createSanitizedConnectionUrl();
+
+    const pool = new Pool({
+        connectionString: sanitizedUrl,
+        ssl: { rejectUnauthorized: false },
+    });
+
+    const adapter = new PrismaPg(pool, {
+        disposeExternalPool: true,
     });
 
     return new PrismaClient({
@@ -22,8 +38,25 @@ function getPrismaClient() {
     });
 }
 
-export const prisma = (global as any).prisma ?? getPrismaClient();
+function getPrismaClient() {
+    const sanitizedUrl = createSanitizedConnectionUrl();
+
+    const pool = new Pool({
+        connectionString: sanitizedUrl,
+        ssl: { rejectUnauthorized: false },
+    });
+
+    const adapter = new PrismaPg(pool, {
+        disposeExternalPool: true,
+    });
+    return new PrismaClient({
+        adapter,
+        log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    });
+}
+
+export const prisma = globalForPrisma.prisma ?? getPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-    (global as any).prisma = prisma;
+    globalForPrisma.prisma = prisma;
 }

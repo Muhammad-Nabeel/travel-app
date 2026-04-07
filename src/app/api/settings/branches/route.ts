@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
+import type { Branch } from "@prisma/client";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 const BRANCHES_KEY = "branches_catalog";
 
-function getBranchDelegate() {
-    return (prisma as unknown as {
-        branch?: {
-            findMany: (args?: unknown) => Promise<any[]>;
-        };
-    }).branch;
-}
+type PublicBranch = Pick<Branch, "id" | "name" | "city" | "address" | "phone"> & {
+    isActive?: boolean;
+    sortOrder?: number;
+};
 
 async function getLegacyBranches() {
     const row = await prisma.adminSetting.findUnique({
@@ -18,13 +16,13 @@ async function getLegacyBranches() {
         select: { value: true },
     });
 
-    if (!row?.value) return [] as any[];
+    if (!row?.value) return [] as PublicBranch[];
 
     try {
-        const parsed = JSON.parse(row.value) as any[];
+        const parsed = JSON.parse(row.value) as PublicBranch[];
         return Array.isArray(parsed) ? parsed : [];
     } catch {
-        return [] as any[];
+        return [] as PublicBranch[];
     }
 }
 
@@ -34,29 +32,17 @@ export async function GET() {
     }
 
     try {
-        const branch = getBranchDelegate();
-        const branches = branch
-            ? await branch.findMany({
-                where: { isActive: true },
-                orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-                select: {
-                    id: true,
-                    name: true,
-                    city: true,
-                    address: true,
-                    phone: true,
-                },
-            })
-            : (await getLegacyBranches())
-                .filter((item) => item?.isActive !== false)
-                .sort((a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0))
-                .map((item) => ({
-                    id: String(item.id ?? ""),
-                    name: String(item.name ?? ""),
-                    city: String(item.city ?? ""),
-                    address: String(item.address ?? ""),
-                    phone: item.phone ? String(item.phone) : null,
-                }));
+        const branches = await prisma.branch.findMany({
+            where: { isActive: true },
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            select: {
+                id: true,
+                name: true,
+                city: true,
+                address: true,
+                phone: true,
+            },
+        });
 
         return NextResponse.json({ branches }, { status: 200 });
     } catch (error) {
