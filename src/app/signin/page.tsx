@@ -6,10 +6,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
 
+const DEFAULT_SIGN_IN_REDIRECT = "/dashboard";
+
 function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const requestedCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl =
+    requestedCallbackUrl && requestedCallbackUrl !== "/"
+      ? requestedCallbackUrl
+      : DEFAULT_SIGN_IN_REDIRECT;
   const verificationStatus = searchParams.get("verification");
   const verificationEmail = searchParams.get("email");
 

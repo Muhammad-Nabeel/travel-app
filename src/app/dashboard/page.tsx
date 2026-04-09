@@ -15,10 +15,16 @@ export const metadata = buildMetadata({
 
 export default async function UserDashboardPage() {
   const session = await getServerSession(authOptions);
-  const sessionUser = session?.user as { id?: string } | undefined;
+  const sessionUser = session?.user as
+    | { id?: string; role?: string }
+    | undefined;
 
   if (!sessionUser?.id) {
     redirect("/signin?callbackUrl=/dashboard");
+  }
+
+  if (sessionUser.role === "ADMIN") {
+    redirect("/admin");
   }
 
   const userId = sessionUser.id;
