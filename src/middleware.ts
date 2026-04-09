@@ -36,7 +36,7 @@ export async function middleware(req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        return NextResponse.redirect(new URL("/", req.url));
+        return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
