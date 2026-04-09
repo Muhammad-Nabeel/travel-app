@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   BedDouble,
   FileCheck2,
   LogIn,
+  LogOut,
   Moon,
   Package,
   Plane,
   PlaneTakeoff,
   Sun,
+  User,
   UserPlus,
 } from "lucide-react";
 
@@ -25,8 +28,10 @@ const links = [
 
 const NavBar = () => {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [dark, setDark] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -131,20 +136,67 @@ const NavBar = () => {
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
 
-          <Link
-            href="/signin"
-            className="flex items-center gap-1.5 rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
-          >
-            <LogIn className="size-4" />
-            Sign In
-          </Link>
-          <Link
-            href="/signup"
-            className="flex items-center gap-1.5 rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
-          >
-            <UserPlus className="size-4" />
-            Sign Up
-          </Link>
+          {status === "loading" ? (
+            <div className="size-8 rounded-full bg-black/10 animate-pulse" />
+          ) : session?.user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((v) => !v)}
+                onBlur={() => setTimeout(() => setUserMenuOpen(false), 150)}
+                className="flex items-center gap-2 rounded-full border border-black/20 px-3 py-1.5 text-sm font-medium text-black transition hover:bg-black/5"
+              >
+                <User className="size-4" />
+                <span className="max-w-30 truncate">
+                  {session.user.name ?? session.user.email}
+                </span>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-black/10 bg-white shadow-lg py-1 z-50">
+                  <div className="px-4 py-2 border-b border-black/8">
+                    <p className="text-xs font-medium text-gray-900 truncate">
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {session.user.email}
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <User className="size-3.5" />
+                    My dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                  >
+                    <LogOut className="size-3.5" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/signin"
+                className="flex items-center gap-1.5 rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-black transition hover:bg-black/5"
+              >
+                <LogIn className="size-4" />
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="flex items-center gap-1.5 rounded-full border border-black bg-black px-4 py-2 text-sm font-semibold text-white! transition hover:bg-black/85 hover:text-white!"
+              >
+                <UserPlus className="size-4" />
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </header>

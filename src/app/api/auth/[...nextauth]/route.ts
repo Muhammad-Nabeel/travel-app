@@ -1,11 +1,6 @@
 import NextAuth from "next-auth";
+import { authOptions } from "@/lib/providers/auth/auth-provider";
 
-
-const handler = NextAuth({
-  providers: [
-    // Add authentication providers here (e.g., Google, GitHub, etc.)   
-    ],
-    // You can also add custom pages, callbacks, and other NextAuth options here    
-});
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

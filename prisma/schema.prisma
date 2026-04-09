@@ -41,12 +41,26 @@ model User {
   name           String
   email          String          @unique
   passwordHash   String?
+  emailVerifiedAt DateTime?
   phone          String?
   role           Role            @default(CUSTOMER)
   bookings       Booking[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   packageOrders  PackageBooking[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model UmrahPackage {
