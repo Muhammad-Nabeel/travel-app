@@ -7,6 +7,7 @@ import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 import { Ga4Loader } from "@/components/analytics/ga4-loader";
 import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
+import { AuthSessionProvider } from "@/components/providers/auth-session-provider";
 import {
   getSiteUrl,
   resolveImageUrl,
@@ -89,13 +90,15 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Ga4Loader />
-        <ConditionalNavbar />
-        <main className="w-full flex-1">
-          <Suspense fallback={<Loading />}>{children}</Suspense>
-        </main>
-        <FloatingReviewWidget />
-        <ConditionalFooter />
+        <AuthSessionProvider>
+          <Ga4Loader />
+          <ConditionalNavbar />
+          <main className="w-full flex-1">
+            <Suspense fallback={<Loading />}>{children}</Suspense>
+          </main>
+          <FloatingReviewWidget />
+          <ConditionalFooter />
+        </AuthSessionProvider>
       </body>
     </html>
   );
