@@ -25,6 +25,14 @@ enum BookingStatus {
   FAILED
 }
 
+enum RequestType {
+  FLIGHT
+  HOTEL
+  UMRAH
+  VISA
+  TOUR
+}
+
 enum SearchProvider {
   SABRE
   AMADEUS
@@ -132,6 +140,25 @@ model Booking {
   isChatbotRequest Boolean         @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+}
+
+model ServiceRequest {
+  id            String        @id @default(cuid())
+  reference     String        @unique
+  type          RequestType
+  status        BookingStatus @default(PENDING)
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+  title         String?
+  amount        Decimal?      @db.Decimal(10, 2)
+  currency      String?
+  payload       Json
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([type, createdAt])
+  @@index([status, createdAt])
 }
 
 model Destination {
