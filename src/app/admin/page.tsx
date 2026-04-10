@@ -11,11 +11,12 @@ import {
 
 type RecentBooking = {
   id: string;
-  type: "Flight" | "Hotel";
+  type: "Flight" | "Hotel" | "Umrah" | "Visa" | "Tour";
   reference: string;
   status: string;
   amount: string;
   createdAt: string;
+  createdAtRaw: string;
 };
 
 export default async function AdminPage() {
@@ -101,7 +102,7 @@ export default async function AdminPage() {
         <article className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold text-slate-900">
-              Recent Bookings (Flights & Hotels)
+              Recent Requests
             </h2>
             <Link
               href="/admin/bookings"
@@ -113,7 +114,7 @@ export default async function AdminPage() {
           <div className="mt-5 overflow-hidden rounded-xl border border-slate-100">
             {recentBookings.length === 0 ? (
               <p className="px-4 py-6 text-sm text-slate-500">
-                No recent bookings available yet.
+                No recent requests available yet.
               </p>
             ) : (
               recentBookings.map((row, index) => (
@@ -221,12 +222,18 @@ async function getRecentBookings(): Promise<RecentBooking[]> {
   }
 
   try {
-    const bookings = await prisma.booking.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    });
+    const [bookings, serviceRequests] = await Promise.all([
+      prisma.booking.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      prisma.serviceRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+    ]);
 
-    return bookings.map(
+    const bookingRows: RecentBooking[] = bookings.map(
       (booking: {
         id: string;
         reference: string;
@@ -239,7 +246,11 @@ async function getRecentBookings(): Promise<RecentBooking[]> {
       }) => {
         const hasFlight = Boolean(booking.flightData);
         const hasHotel = Boolean(booking.hotelData);
-        const type = hasFlight ? "Flight" : hasHotel ? "Hotel" : "Flight";
+        const type: RecentBooking["type"] = hasFlight
+          ? "Flight"
+          : hasHotel
+            ? "Hotel"
+            : "Flight";
         const totalAmount = booking.totalAmount?.toString() ?? "0";
 
         return {
@@ -253,9 +264,41 @@ async function getRecentBookings(): Promise<RecentBooking[]> {
             month: "short",
             year: "numeric",
           }),
+          createdAtRaw: new Date(booking.createdAt).toISOString(),
         };
       },
     );
+
+    const requestRows: RecentBooking[] = serviceRequests.map((request) => {
+      const type: RecentBooking["type"] =
+        request.type === "HOTEL"
+          ? "Hotel"
+          : request.type === "UMRAH"
+            ? "Umrah"
+            : request.type === "VISA"
+              ? "Visa"
+              : "Tour";
+
+      return {
+        id: request.id,
+        type,
+        reference: request.reference,
+        status: request.status,
+        amount: `${request.currency ?? "PKR"} ${request.amount?.toString() ?? "0"}`,
+        createdAt: new Date(request.createdAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+        createdAtRaw: new Date(request.createdAt).toISOString(),
+      };
+    });
+
+    return [...bookingRows, ...requestRows]
+      .sort((left, right) => {
+        return Date.parse(right.createdAtRaw) - Date.parse(left.createdAtRaw);
+      })
+      .slice(0, 6);
   } catch (err) {
     markDatabaseUnavailable(err);
     return [];

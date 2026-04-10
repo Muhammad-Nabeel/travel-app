@@ -13,6 +13,10 @@ import {
   prisma,
   shouldBypassDatabase,
 } from "@/lib/db";
+import {
+  formatServiceRequestType,
+  type ServiceRequestType,
+} from "@/lib/service-requests";
 
 type BookingListItem = {
   id: string;
@@ -28,6 +32,8 @@ type BookingListItem = {
   isChatbotRequest: boolean;
   createdDate: string;
   createdTime: string;
+  createdAtIso: string;
+  viewHref: string;
 };
 
 type BookingFilters = {
@@ -52,6 +58,7 @@ const PAYMENT_OPTIONS = [
   "paypal",
   "sumup",
   "paymob",
+  "enquiry",
 ];
 const TYPE_OPTIONS = ["flight", "hotel", "umrah", "visa", "tour"];
 
@@ -187,11 +194,11 @@ export default async function AdminBookingsPage({
           Administration
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
-          All Bookings
+          All Bookings & Requests
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
-          Basic booking list is shown here. Click View to open full details like
-          selected Sabre flight info, refundable status, and amenities.
+          Review flight bookings together with hotel, visa, tour, and Umrah
+          requests submitted from the site.
         </p>
       </section>
 
@@ -352,7 +359,9 @@ export default async function AdminBookingsPage({
       <section className="rounded-2xl border border-blue-100 bg-white shadow-sm">
         {bookings.length === 0 ? (
           <article className="p-6">
-            <p className="text-sm text-slate-500">No bookings found.</p>
+            <p className="text-sm text-slate-500">
+              No bookings or requests found.
+            </p>
           </article>
         ) : (
           <div className="max-h-[68vh] overflow-y-auto overscroll-contain">
@@ -434,7 +443,7 @@ export default async function AdminBookingsPage({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/admin/bookings/${booking.id}`}
+                        href={booking.viewHref}
                         className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
                       >
                         View
@@ -559,6 +568,43 @@ async function getBookings(
       };
     }>;
 
+    const serviceRequestWhere: Prisma.ServiceRequestWhereInput = {};
+
+    if (filters.status && STATUS_OPTIONS.includes(filters.status)) {
+      serviceRequestWhere.status = filters.status as never;
+    }
+
+    if (filters.customer) {
+      serviceRequestWhere.OR = [
+        { customerName: { contains: filters.customer } },
+        { customerEmail: { contains: filters.customer } },
+      ];
+    }
+
+    if (filters.createdFrom || filters.createdTo) {
+      const createdAtFilter: Prisma.DateTimeFilter = {};
+
+      if (filters.createdFrom) {
+        createdAtFilter.gte = new Date(`${filters.createdFrom}T00:00:00.000Z`);
+      }
+
+      if (filters.createdTo) {
+        createdAtFilter.lte = new Date(`${filters.createdTo}T23:59:59.999Z`);
+      }
+
+      serviceRequestWhere.createdAt = createdAtFilter;
+    }
+
+    if (["hotel", "umrah", "visa", "tour"].includes(filters.type)) {
+      serviceRequestWhere.type = filters.type.toUpperCase() as never;
+    }
+
+    const serviceRequests = await prisma.serviceRequest.findMany({
+      where: serviceRequestWhere,
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+
     const mapped: BookingListItem[] = bookings.map((booking) => {
       const type = inferBookingType({
         flightData: booking.flightData,
@@ -587,10 +633,45 @@ async function getBookings(
         isChatbotRequest: booking.isChatbotRequest,
         createdDate: createdAtParts.date,
         createdTime: createdAtParts.time,
+        createdAtIso: booking.createdAt.toISOString(),
+        viewHref: `/admin/bookings/${booking.id}`,
       };
     });
 
-    return mapped.filter((booking) => {
+    const mappedServiceRequests: BookingListItem[] = serviceRequests.map(
+      (request) => {
+        const createdAtIso = request.createdAt.toISOString();
+        const createdAtParts = formatDateTimeParts(createdAtIso);
+        const type = formatServiceRequestType(
+          request.type as ServiceRequestType,
+        ) as BookingListItem["type"];
+
+        return {
+          id: request.id,
+          reference: request.reference,
+          type,
+          status: request.status,
+          provider: "INTERNAL",
+          totalAmount: request.amount?.toString() ?? "0",
+          currency: request.currency ?? "PKR",
+          customerName: request.customerName?.trim() || "Guest enquiry",
+          customerEmail: request.customerEmail?.trim() || "No email provided",
+          paymentMethod: "Enquiry",
+          isChatbotRequest: false,
+          createdDate: createdAtParts.date,
+          createdTime: createdAtParts.time,
+          createdAtIso,
+          viewHref: `/admin/bookings/requests/${request.id}`,
+        };
+      },
+    );
+
+    const combined = [...mapped, ...mappedServiceRequests].sort(
+      (left, right) =>
+        Date.parse(right.createdAtIso) - Date.parse(left.createdAtIso),
+    );
+
+    return combined.filter((booking) => {
       if (filters.type === "flight" && booking.type !== "Flight") {
         return false;
       }

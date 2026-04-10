@@ -69,7 +69,7 @@ function SignUpForm() {
 
   function handleGoogleSignUp() {
     setGoogleLoading(true);
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: "/auth/redirect" });
   }
 
   return (
