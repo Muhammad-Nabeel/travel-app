@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
+import { submitServiceRequest } from "@/lib/service-requests";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -323,11 +324,55 @@ function PackageCard({
     madinahStars,
   );
   const split = nightSplit(pkg, nights);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!pricing) return null;
 
+  const resolvedPricing = pricing;
+
   const totalPax = adults + childCount;
   const hasMult = makkahStars !== 0 || madinahStars !== 0;
+
+  async function handleEnquire() {
+    setIsSubmitting(true);
+
+    try {
+      const response = await submitServiceRequest({
+        type: "UMRAH",
+        title: pkg.title,
+        amount: resolvedPricing.allPaxTotal,
+        currency: pkg.currency,
+        payload: {
+          packageId: pkg.id,
+          packageSlug: pkg.slug,
+          title: pkg.title,
+          subtitle: pkg.subtitle,
+          departureCity: pkg.departureCity,
+          nights,
+          adults,
+          children: childCount,
+          totalPax,
+          makkahStars,
+          madinahStars,
+          pricing: resolvedPricing,
+          nightSplit: split,
+          submittedAt: new Date().toISOString(),
+        },
+      });
+
+      window.alert(
+        `Umrah enquiry submitted successfully.\nReference: ${response.reference ?? "N/A"}`,
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit Umrah enquiry.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row">
@@ -438,16 +483,17 @@ function PackageCard({
               {nights} nights · {totalPax} pax
             </p>
             <p className="mt-1 text-3xl font-extrabold tabular-nums text-brand-strong">
-              {pkg.currency} {pricing.allPaxTotal.toLocaleString()}
+              {pkg.currency} {resolvedPricing.allPaxTotal.toLocaleString()}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-slate-600">
-              {pkg.currency} {pricing.perPersonTotal.toLocaleString()}
+              {pkg.currency} {resolvedPricing.perPersonTotal.toLocaleString()}
               <span className="ml-1 text-xs font-normal text-slate-400">
                 / person
               </span>
             </p>
             <p className="mt-0.5 text-xs text-slate-400">
-              ≈ {pkg.currency} {pricing.perNightPerPerson.toLocaleString()}
+              ≈ {pkg.currency}{" "}
+              {resolvedPricing.perNightPerPerson.toLocaleString()}
               <span className="ml-0.5">/ night per person</span>
             </p>
             {hasMult && (
@@ -462,8 +508,13 @@ function PackageCard({
             )}
           </div>
 
-          <button className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95">
-            Enquire now
+          <button
+            type="button"
+            onClick={handleEnquire}
+            disabled={isSubmitting}
+            className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? "Submitting..." : "Enquire now"}
           </button>
         </div>
       </div>
