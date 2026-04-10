@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Globe2, Search, Users } from "lucide-react";
 
 import type { VisaType } from "@/lib/admin-settings/visa-settings";
-import { submitServiceRequest } from "@/lib/service-requests";
 import styles from "./visa-search-engine.module.css";
 
 type SearchVisaType = VisaType | "any";
@@ -87,19 +86,6 @@ export function VisaSearchEngine({
       window.alert("Please enter a destination.");
       return;
     }
-
-    void submitServiceRequest({
-      type: "VISA",
-      title: `Visa request for ${applyingFor.trim()}`,
-      payload: {
-        visaType,
-        applyingFor: applyingFor.trim(),
-        adults,
-        children,
-        submittedAt: new Date().toISOString(),
-      },
-    }).catch(() => null);
-
     onSearch?.({
       visaType,
       applyingFor,

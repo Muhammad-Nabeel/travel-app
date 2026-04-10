@@ -41,11 +41,6 @@ const NavBar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  async function handleSignOut() {
-    await signOut({ callbackUrl: "/" });
-    setUserMenuOpen(false);
-  }
-
   useEffect(() => {
     document.documentElement.setAttribute(
       "data-theme",
@@ -175,7 +170,7 @@ const NavBar = () => {
                   </Link>
                   <button
                     type="button"
-                    onClick={handleSignOut}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
                   >
                     <LogOut className="size-3.5" />

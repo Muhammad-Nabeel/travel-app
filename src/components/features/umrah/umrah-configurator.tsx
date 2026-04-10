@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
-import { submitServiceRequest } from "@/lib/service-requests";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -324,53 +323,11 @@ function PackageCard({
     madinahStars,
   );
   const split = nightSplit(pkg, nights);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!pricing) return null;
 
   const totalPax = adults + childCount;
   const hasMult = makkahStars !== 0 || madinahStars !== 0;
-
-  async function handleEnquire() {
-    setIsSubmitting(true);
-
-    try {
-      const response = await submitServiceRequest({
-        type: "UMRAH",
-        title: pkg.title,
-        amount: pricing.allPaxTotal,
-        currency: pkg.currency,
-        payload: {
-          packageId: pkg.id,
-          packageSlug: pkg.slug,
-          title: pkg.title,
-          subtitle: pkg.subtitle,
-          departureCity: pkg.departureCity,
-          nights,
-          adults,
-          children: childCount,
-          totalPax,
-          makkahStars,
-          madinahStars,
-          pricing,
-          nightSplit: split,
-          submittedAt: new Date().toISOString(),
-        },
-      });
-
-      window.alert(
-        `Umrah enquiry submitted successfully.\nReference: ${response.reference ?? "N/A"}`,
-      );
-    } catch (error) {
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit Umrah enquiry.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row">
@@ -505,13 +462,8 @@ function PackageCard({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleEnquire}
-            disabled={isSubmitting}
-            className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSubmitting ? "Submitting..." : "Enquire now"}
+          <button className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95">
+            Enquire now
           </button>
         </div>
       </div>
