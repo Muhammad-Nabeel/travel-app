@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { submitServiceRequest } from "@/lib/service-requests";
 import styles from "./package-search.module.css";
 
 export type TourType =
@@ -192,6 +193,23 @@ export function PackageSearchEngine({
       window.alert("Please enter a destination.");
       return;
     }
+
+    void submitServiceRequest({
+      type: "TOUR",
+      title: `Tour request for ${destination.trim()}`,
+      amount: estimatedPrice,
+      currency: "USD",
+      payload: {
+        destination: destination.trim(),
+        duration,
+        adults,
+        children,
+        tourType,
+        estimatedPrice,
+        submittedAt: new Date().toISOString(),
+      },
+    }).catch(() => null);
+
     onSearch?.({ destination, duration, adults, children, tourType });
   };
 

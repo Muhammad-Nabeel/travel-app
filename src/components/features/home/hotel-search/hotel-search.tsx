@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { submitServiceRequest } from "@/lib/service-requests";
 import styles from "./hotel-search-engine.module.css";
 
 type StayType = "hotel-only" | "hotel+flight";
@@ -97,6 +98,22 @@ export function HotelSearchEngine({
       window.alert("Check-out date must be after check-in date.");
       return;
     }
+
+    void submitServiceRequest({
+      type: "HOTEL",
+      title: `Hotel request for ${destination.trim()}`,
+      payload: {
+        destination: destination.trim(),
+        checkIn,
+        checkOut,
+        adults,
+        children,
+        rooms,
+        stayType,
+        submittedAt: new Date().toISOString(),
+      },
+    }).catch(() => null);
+
     onSearch?.({
       destination,
       checkIn,

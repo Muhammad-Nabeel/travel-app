@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   BookOpen,
   Compass,
@@ -30,6 +31,10 @@ const adminLinks = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+
+  async function handleSignOut() {
+    await signOut({ callbackUrl: "/" });
+  }
 
   return (
     <aside className="sticky top-0 h-screen w-full border-r border-blue-200/80 bg-white text-slate-800 lg:w-72">
@@ -65,13 +70,14 @@ export function AdminSidebar() {
         </nav>
 
         <div className="mt-4 shrink-0 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={handleSignOut}
             className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
             <LogOut className="h-4 w-4" />
             Logout
-          </Link>
+          </button>
         </div>
       </div>
     </aside>
