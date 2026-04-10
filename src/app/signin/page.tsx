@@ -2,14 +2,13 @@
 
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
 
 const DEFAULT_SIGN_IN_REDIRECT = "/dashboard";
 
 function SignInForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCallbackUrl = searchParams.get("callbackUrl");
   const callbackUrl =
@@ -46,8 +45,10 @@ function SignInForm() {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      router.push(callbackUrl);
-      router.refresh();
+      // Full page navigation ensures the server receives the fresh session
+      // cookie so /auth/redirect can correctly branch admin → /admin vs
+      // customer → /dashboard without being interrupted by router.refresh().
+      window.location.href = callbackUrl;
     }
   }
 
