@@ -328,6 +328,8 @@ function PackageCard({
 
   if (!pricing) return null;
 
+  const resolvedPricing = pricing;
+
   const totalPax = adults + childCount;
   const hasMult = makkahStars !== 0 || madinahStars !== 0;
 
@@ -338,7 +340,7 @@ function PackageCard({
       const response = await submitServiceRequest({
         type: "UMRAH",
         title: pkg.title,
-        amount: pricing.allPaxTotal,
+        amount: resolvedPricing.allPaxTotal,
         currency: pkg.currency,
         payload: {
           packageId: pkg.id,
@@ -352,7 +354,7 @@ function PackageCard({
           totalPax,
           makkahStars,
           madinahStars,
-          pricing,
+          pricing: resolvedPricing,
           nightSplit: split,
           submittedAt: new Date().toISOString(),
         },
@@ -481,16 +483,17 @@ function PackageCard({
               {nights} nights · {totalPax} pax
             </p>
             <p className="mt-1 text-3xl font-extrabold tabular-nums text-brand-strong">
-              {pkg.currency} {pricing.allPaxTotal.toLocaleString()}
+              {pkg.currency} {resolvedPricing.allPaxTotal.toLocaleString()}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-slate-600">
-              {pkg.currency} {pricing.perPersonTotal.toLocaleString()}
+              {pkg.currency} {resolvedPricing.perPersonTotal.toLocaleString()}
               <span className="ml-1 text-xs font-normal text-slate-400">
                 / person
               </span>
             </p>
             <p className="mt-0.5 text-xs text-slate-400">
-              ≈ {pkg.currency} {pricing.perNightPerPerson.toLocaleString()}
+              ≈ {pkg.currency}{" "}
+              {resolvedPricing.perNightPerPerson.toLocaleString()}
               <span className="ml-0.5">/ night per person</span>
             </p>
             {hasMult && (

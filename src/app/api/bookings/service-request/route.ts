@@ -13,6 +13,18 @@ function toNumberOrNull(value: unknown) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+function toInputJsonObject(value: unknown): Prisma.InputJsonObject | null {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonObject;
+    } catch {
+        return null;
+    }
+}
+
 export async function POST(request: NextRequest) {
     if (shouldBypassDatabase()) {
         return NextResponse.json(
@@ -48,6 +60,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const payload = toInputJsonObject(body.payload);
+        if (!payload) {
+            return NextResponse.json(
+                {
+                    ok: false,
+                    error: "Request payload contains unsupported values.",
+                },
+                { status: 400 },
+            );
+        }
+
+        const parsedAmount = toNumberOrNull(body.amount);
         const reference = buildServiceRequestReference(type);
         const created = await prisma.serviceRequest.create({
             data: {
@@ -58,12 +82,9 @@ export async function POST(request: NextRequest) {
                 customerEmail: body.customerEmail?.trim() || null,
                 customerPhone: body.customerPhone?.trim() || null,
                 title: body.title?.trim() || null,
-                amount:
-                    toNumberOrNull(body.amount) === null
-                        ? null
-                        : new Prisma.Decimal(toNumberOrNull(body.amount) ?? 0),
+                amount: parsedAmount === null ? null : new Prisma.Decimal(parsedAmount),
                 currency: body.currency?.trim() || null,
-                payload: body.payload,
+                payload,
             },
             select: {
                 id: true,
