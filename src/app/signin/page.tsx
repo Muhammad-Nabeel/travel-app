@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
@@ -49,10 +49,20 @@ function SignInForm() {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      // Full page navigation ensures the server receives the fresh session
-      // cookie so /auth/redirect can correctly branch admin → /admin vs
-      // customer → /dashboard without being interrupted by router.refresh().
-      window.location.href = callbackUrl;
+      // Fetch the session client-side so we can branch on role without
+      // relying on /auth/redirect (which uses getServerSession — broken in
+      // Next.js 15+ because cookies() is now async).
+      const session = await getSession();
+      const role = (session?.user as { role?: string } | undefined)?.role;
+
+      if (callbackUrl !== DEFAULT_SIGN_IN_REDIRECT) {
+        // Honor an explicit callbackUrl (e.g. user was trying to reach /admin)
+        window.location.href = callbackUrl;
+      } else if (role === "ADMIN") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/dashboard";
+      }
     }
   }
 
