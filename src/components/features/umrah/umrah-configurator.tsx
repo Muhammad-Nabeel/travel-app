@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -13,7 +14,6 @@ import {
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
-import { submitServiceRequest } from "@/lib/service-requests";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -324,7 +324,6 @@ function PackageCard({
     madinahStars,
   );
   const split = nightSplit(pkg, nights);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!pricing) return null;
 
@@ -333,46 +332,10 @@ function PackageCard({
   const totalPax = adults + childCount;
   const hasMult = makkahStars !== 0 || madinahStars !== 0;
 
-  async function handleEnquire() {
-    setIsSubmitting(true);
-
-    try {
-      const response = await submitServiceRequest({
-        type: "UMRAH",
-        title: pkg.title,
-        amount: resolvedPricing.allPaxTotal,
-        currency: pkg.currency,
-        payload: {
-          packageId: pkg.id,
-          packageSlug: pkg.slug,
-          title: pkg.title,
-          subtitle: pkg.subtitle,
-          departureCity: pkg.departureCity,
-          nights,
-          adults,
-          children: childCount,
-          totalPax,
-          makkahStars,
-          madinahStars,
-          pricing: resolvedPricing,
-          nightSplit: split,
-          submittedAt: new Date().toISOString(),
-        },
-      });
-
-      window.alert(
-        `Umrah enquiry submitted successfully.\nReference: ${response.reference ?? "N/A"}`,
-      );
-    } catch (error) {
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit Umrah enquiry.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const detailHref =
+    `/umrah-packages/${pkg.slug}` +
+    `?nights=${nights}&adults=${adults}&children=${childCount}` +
+    `&makkahStars=${makkahStars}&madinahStars=${madinahStars}`;
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row">
@@ -508,14 +471,12 @@ function PackageCard({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleEnquire}
-            disabled={isSubmitting}
-            className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          <Link
+            href={detailHref}
+            className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95"
           >
-            {isSubmitting ? "Submitting..." : "Enquire now"}
-          </button>
+            View details
+          </Link>
         </div>
       </div>
     </article>
@@ -624,7 +585,7 @@ export function UmrahConfigurator({ packages, isDummy }: Props) {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100/80">
             Plan your Umrah
           </p>
-          <h1 className="display-font mt-2 text-5xl font-bold text-white sm:text-6xl">
+          <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
             Build your package
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-white/70">

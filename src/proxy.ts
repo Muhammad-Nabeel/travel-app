@@ -1,46 +1,50 @@
-import type { NextRequest } from "next/server";
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 const ADMIN_ROLE = "ADMIN";
 
-export async function proxy(req: NextRequest) {
-    const { pathname, search } = req.nextUrl;
-    const isAdminPage = pathname.startsWith("/admin");
-    const isAdminApi = pathname.startsWith("/api/admin");
-    const isUserDashboard = pathname.startsWith("/dashboard");
+export default withAuth(
+    function proxy(req) {
+        const { pathname } = req.nextUrl;
+        const token = req.nextauth.token;
+        const role = typeof token?.role === "string" ? token.role : null;
 
-    if (!isAdminPage && !isAdminApi && !isUserDashboard) {
-        return NextResponse.next();
-    }
+        const isAdminApi = pathname.startsWith("/api/admin");
+        const isAdminPage = pathname.startsWith("/admin");
 
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    const role = typeof token?.role === "string" ? token.role : null;
-
-    if (!token) {
+        // API routes need JSON error responses instead of redirects.
+        // The authorized callback always returns true for /api/admin so the
+        // request reaches here even when unauthenticated.
         if (isAdminApi) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            if (!token) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+            if (role !== ADMIN_ROLE) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+            return NextResponse.next();
         }
 
-        const signInUrl = new URL("/signin", req.url);
-        signInUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
-        return NextResponse.redirect(signInUrl);
-    }
-
-    if (isUserDashboard) {
-        return NextResponse.next();
-    }
-
-    if (role !== ADMIN_ROLE) {
-        if (isAdminApi) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        // Non-admin logged-in users trying to reach /admin → send to dashboard
+        if (isAdminPage && role !== ADMIN_ROLE) {
+            return NextResponse.redirect(new URL("/dashboard", req.url));
         }
 
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-
-    return NextResponse.next();
-}
+        return NextResponse.next();
+    },
+    {
+        callbacks: {
+            // Pass API admin routes through unconditionally so the middleware
+            // function above can return the correct JSON error instead of a redirect.
+            // All other protected routes require a valid JWT.
+            authorized: ({ token, req }) =>
+                req.nextUrl.pathname.startsWith("/api/admin") ? true : !!token,
+        },
+        pages: {
+            signIn: "/signin",
+        },
+    },
+);
 
 export const config = {
     matcher: ["/admin/:path*", "/api/admin/:path*", "/dashboard/:path*"],

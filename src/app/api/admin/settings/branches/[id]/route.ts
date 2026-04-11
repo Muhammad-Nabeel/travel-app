@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Branch } from "@prisma/client";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+
+const BRANCHES_KEY = "branches_catalog";
 
 type BranchInput = {
     name?: string;
@@ -11,6 +14,11 @@ type BranchInput = {
     sortOrder?: number;
 };
 
+type BranchRecord = Pick<
+    Branch,
+    "id" | "name" | "city" | "address" | "phone" | "isActive" | "sortOrder" | "createdAt" | "updatedAt"
+>;
+
 function normalizeBranchInput(body: BranchInput) {
     return {
         name: String(body.name ?? "").trim(),
@@ -20,6 +28,30 @@ function normalizeBranchInput(body: BranchInput) {
         isActive: Boolean(body.isActive ?? true),
         sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
     };
+}
+
+async function getLegacyBranches() {
+    const row = await prisma.adminSetting.findUnique({
+        where: { key: BRANCHES_KEY },
+        select: { value: true },
+    });
+
+    if (!row?.value) return [] as BranchRecord[];
+
+    try {
+        const parsed = JSON.parse(row.value) as BranchRecord[];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [] as BranchRecord[];
+    }
+}
+
+async function saveLegacyBranches(branches: BranchRecord[]) {
+    await prisma.adminSetting.upsert({
+        where: { key: BRANCHES_KEY },
+        update: { value: JSON.stringify(branches) },
+        create: { key: BRANCHES_KEY, value: JSON.stringify(branches) },
+    });
 }
 
 export async function PUT(

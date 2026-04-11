@@ -33,6 +33,7 @@ const NavBar = () => {
   const [dark, setDark] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -40,11 +41,6 @@ const NavBar = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  async function handleSignOut() {
-    await signOut({ callbackUrl: "/" });
-    setUserMenuOpen(false);
-  }
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -87,6 +83,29 @@ const NavBar = () => {
       window.removeEventListener("orientationchange", updateHeaderHeight);
     };
   }, []);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!userMenuRef.current) {
+        return;
+      }
+
+      if (!userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const dashboardHref = role === "ADMIN" ? "/admin" : "/dashboard";
+
+  async function handleSignOut() {
+    setUserMenuOpen(false);
+    await signOut({ callbackUrl: "/" });
+  }
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50">
@@ -144,11 +163,10 @@ const NavBar = () => {
           {status === "loading" ? (
             <div className="size-8 rounded-full bg-black/10 animate-pulse" />
           ) : session?.user ? (
-            <div className="relative">
+            <div ref={userMenuRef} className="relative">
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((v) => !v)}
-                onBlur={() => setTimeout(() => setUserMenuOpen(false), 150)}
                 className="flex items-center gap-2 rounded-full border border-black/20 px-3 py-1.5 text-sm font-medium text-black transition hover:bg-black/5"
               >
                 <User className="size-4" />
@@ -167,11 +185,12 @@ const NavBar = () => {
                     </p>
                   </div>
                   <Link
-                    href="/dashboard"
+                    href={dashboardHref}
+                    onClick={() => setUserMenuOpen(false)}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
                   >
                     <User className="size-3.5" />
-                    My dashboard
+                    {role === "ADMIN" ? "Admin dashboard" : "My dashboard"}
                   </Link>
                   <button
                     type="button"
