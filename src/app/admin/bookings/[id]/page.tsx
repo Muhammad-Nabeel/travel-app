@@ -158,14 +158,107 @@ function getAmenityTags(flight: FlightPayload | null): string[] {
 
 export default async function AdminBookingDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const sourceParam = Array.isArray(resolvedSearchParams.source)
+    ? resolvedSearchParams.source[0]
+    : resolvedSearchParams.source;
+  const source =
+    sourceParam === "service_request" || sourceParam === "booking"
+      ? sourceParam
+      : undefined;
 
-  const booking = await getBookingById(id);
+  const booking = await getBookingById(id, source);
   if (!booking) {
     notFound();
+  }
+
+  if ("reference" in booking && "payload" in booking) {
+    return (
+      <main className="mx-auto w-full max-w-5xl space-y-6">
+        <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              Service Request Details
+            </p>
+            <Link
+              href="/admin/bookings"
+              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+            >
+              Back To List
+            </Link>
+          </div>
+
+          <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+            {booking.reference}
+          </h1>
+          <p className="mt-2 text-sm text-blue-800/80">
+            Type: {formatStatus(booking.type)} · Status:{" "}
+            {formatStatus(booking.status)}
+          </p>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Basic
+            </p>
+            <div className="mt-2 space-y-1 text-sm text-slate-700">
+              <p>
+                <span className="font-semibold text-slate-900">Amount:</span>{" "}
+                {formatMoney(
+                  booking.currency ?? "PKR",
+                  booking.amount?.toString() ?? "0",
+                )}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">Customer:</span>{" "}
+                {booking.customerName ?? "N/A"} (
+                {booking.customerEmail ?? "N/A"})
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">Phone:</span>{" "}
+                {booking.customerPhone ?? "N/A"}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">Title:</span>{" "}
+                {booking.title ?? "N/A"}
+              </p>
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Timeline
+            </p>
+            <div className="mt-2 space-y-1 text-sm text-slate-700">
+              <p>
+                <span className="font-semibold text-slate-900">Created:</span>{" "}
+                {formatDateTime(booking.createdAt)}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-900">Updated:</span>{" "}
+                {formatDateTime(booking.updatedAt)}
+              </p>
+            </div>
+          </article>
+        </section>
+
+        <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+            Request Payload (JSON)
+          </summary>
+          <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
+            {JSON.stringify(booking.payload, null, 2)}
+          </pre>
+        </details>
+      </main>
+    );
   }
 
   const flight = asFlightPayload(booking.flightData);
@@ -382,13 +475,38 @@ export default async function AdminBookingDetailsPage({
   );
 }
 
-async function getBookingById(id: string) {
+async function getBookingById(
+  id: string,
+  source?: "service_request" | "booking",
+) {
   if (shouldBypassDatabase()) {
     return null;
   }
 
   try {
-    return await prisma.booking.findUnique({
+    if (source === "service_request") {
+      return await prisma.serviceRequest.findUnique({
+        where: { id },
+      });
+    }
+
+    if (source === "booking") {
+      return await prisma.booking.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      });
+    }
+
+    const fromBooking = await prisma.booking.findUnique({
       where: { id },
       include: {
         user: {
@@ -400,6 +518,14 @@ async function getBookingById(id: string) {
           },
         },
       },
+    });
+
+    if (fromBooking) {
+      return fromBooking;
+    }
+
+    return await prisma.serviceRequest.findUnique({
+      where: { id },
     });
   } catch (err) {
     markDatabaseUnavailable(err);
