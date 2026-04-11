@@ -614,7 +614,7 @@ export function UmrahConfigurator({ packages, isDummy }: Props) {
           }}
         />
 
-        <div className="section-shell relative z-10 py-14 pb-10">
+        <div className="section-shell relative z-10 py-14 pb-10 text-center">
           {isDummy && (
             <p className="mb-4 inline-block rounded-full border border-amber-200/60 bg-amber-50/20 px-4 py-1 text-xs text-amber-100 backdrop-blur-sm">
               Demo mode — database not connected
@@ -627,7 +627,7 @@ export function UmrahConfigurator({ packages, isDummy }: Props) {
           <h1 className="display-font mt-2 text-5xl font-bold text-white sm:text-6xl">
             Build your package
           </h1>
-          <p className="mt-3 max-w-xl text-base leading-7 text-white/70">
+          <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-white/70">
             Choose your duration and group size — see the exact cost per person
             instantly.
           </p>
