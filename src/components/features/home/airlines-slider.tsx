@@ -1,23 +1,61 @@
-import Image from "next/image";
+"use client";
 
-const AIRLINES = [
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+
+type AirlineLogoEntry = {
+  id: string;
+  name: string;
+  src: string;
+  storagePath: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+const FALLBACK_AIRLINES = [
   { name: "Emirates", src: "/airlines/ek.gif" },
   { name: "Qatar Airways", src: "/airlines/qr.gif" },
   { name: "Etihad Airways", src: "/airlines/ey.gif" },
   { name: "Turkish Airlines", src: "/airlines/tk.gif" },
   { name: "British Airways", src: "/airlines/ba.gif" },
   { name: "Saudi", src: "/airlines/sv.gif" },
-  { name: "Air Arabia", src: "/airlines/Air-Arabia-Logo.jpg" },
-  { name: "Flydubai", src: "/airlines/fz.png" },
-  { name: "PIA", src: "/airlines/pk.png" },
-  { name: "Airblue", src: "/airlines/Airblue_Logo.png" },
-  { name: "Serene Air", src: "/airlines/serene-logo.jpg" },
-  { name: "Kuwait Airways", src: "/airlines/ku.gif" },
 ];
 
-const LOOPED_AIRLINES = [...AIRLINES, ...AIRLINES];
-
 export function AirlinesSlider() {
+  const [airlines, setAirlines] = useState(FALLBACK_AIRLINES);
+
+  useEffect(() => {
+    async function loadLogos() {
+      try {
+        const res = await fetch("/api/admin/settings/airline-logos", {
+          cache: "no-store",
+        });
+        const json = (await res.json()) as { logos?: AirlineLogoEntry[] };
+        if (!res.ok || !Array.isArray(json.logos)) {
+          return;
+        }
+
+        const next = json.logos
+          .filter((item) => item.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((item) => ({
+            name: item.name,
+            src: item.src,
+          }));
+
+        if (next.length > 0) {
+          setAirlines(next);
+        }
+      } catch {
+        // Keep fallback logos when settings API is unavailable.
+      }
+    }
+
+    void loadLogos();
+  }, []);
+
+  const loopedAirlines = useMemo(() => [...airlines, ...airlines], [airlines]);
+
   return (
     <section className="section-shell py-10" aria-label="Leading airlines">
       <div className="overflow-hidden rounded-4xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7">
@@ -41,7 +79,7 @@ export function AirlinesSlider() {
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l from-white to-transparent" />
 
           <div className="airline-marquee flex w-max items-center gap-4">
-            {LOOPED_AIRLINES.map((airline, index) => (
+            {loopedAirlines.map((airline, index) => (
               <div
                 key={`${airline.name}-${index}`}
                 className="flex h-24 w-40 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"

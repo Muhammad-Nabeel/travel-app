@@ -10,7 +10,7 @@ type Props = {
   pkg: PackageRow;
   nights: number;
   adults: number;
-  children: number;
+  childCount: number;
   makkahStars: number;
   madinahStars: number;
   estimatedTotal: number;
@@ -20,7 +20,7 @@ export function UmrahEnquiryForm({
   pkg,
   nights,
   adults,
-  children,
+  childCount,
   makkahStars,
   madinahStars,
   estimatedTotal,
@@ -76,7 +76,7 @@ export function UmrahEnquiryForm({
           departureCity: pkg.departureCity,
           nights,
           adults,
-          children,
+          childCount,
           makkahStars,
           madinahStars,
           estimatedTotal,

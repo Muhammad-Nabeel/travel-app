@@ -8,6 +8,7 @@ import {
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
+import { getVisaPath } from "@/lib/visa";
 
 export const metadata: Metadata = buildMetadata({
   title: "Visa Guidance",
@@ -41,7 +42,7 @@ export default async function VisaPage() {
           createItemListSchema(
             activeResults.map((item) => ({
               name: item.country,
-              path: "/visa",
+              path: getVisaPath(item.country, item.visaType),
             })),
             "Visa guidance countries",
           ),

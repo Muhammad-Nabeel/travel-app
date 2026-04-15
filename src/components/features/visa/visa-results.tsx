@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
@@ -8,6 +9,7 @@ import type {
   VisaCountryEntry,
   VisaType,
 } from "@/lib/admin-settings/visa-settings";
+import { getVisaPath } from "@/lib/visa";
 
 type SearchVisaType = VisaType | "any";
 
@@ -133,6 +135,12 @@ export function VisaResults({
                     <p className="text-xs font-semibold text-blue-600">
                       Net cost
                     </p>
+                    <Link
+                      href={getVisaPath(visa.country, visa.visaType)}
+                      className="mt-2 inline-flex rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                    >
+                      View details
+                    </Link>
                   </div>
                 </article>
               ))

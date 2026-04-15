@@ -34,6 +34,13 @@ copy .env.example .env
 
 3. Update your Supabase connection strings and provider credentials in `.env`.
 
+For Firebase logo storage, also add:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (use escaped newlines like `\\n`)
+- `FIREBASE_STORAGE_BUCKET` (example: `your-project-id.appspot.com`)
+
 `DATABASE_URL` should use the Supabase pooled connection string for runtime and Vercel.
 
 `DIRECT_URL` should use the direct Supabase Postgres connection string for Prisma CLI commands.
@@ -63,6 +70,12 @@ npm run dev
 ```
 
 7. Open http://localhost:3000 in your browser.
+
+## Logo Management (Firebase)
+
+- Go to `/admin/logos` to upload or remove airline logos.
+- Uploaded files are stored in Firebase Storage and persisted in admin settings.
+- The homepage airlines slider automatically reads from the managed logo list.
 
 ## Prisma Commands
 
