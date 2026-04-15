@@ -44,6 +44,13 @@ type CitySuggestion = {
   iata: string;
 };
 
+type AirportSuggestion = {
+  city: string;
+  country: string;
+  iata: string;
+  name: string;
+};
+
 const TOUR_TYPE_LABELS: Record<TourType, string> = {
   all: "All Tours",
   cultural: "Cultural",
@@ -101,6 +108,8 @@ export function PackageSearchEngine({
   const durationRef = useRef<HTMLDivElement>(null);
   const destinationRef = useRef<HTMLLabelElement>(null);
   const citySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cityAbortRef = useRef<AbortController | null>(null);
+  const cityRequestIdRef = useRef(0);
   const totalPax = adults + children;
 
   // Live price estimate
@@ -139,6 +148,7 @@ export function PackageSearchEngine({
       if (citySearchTimerRef.current) {
         clearTimeout(citySearchTimerRef.current);
       }
+      cityAbortRef.current?.abort();
     };
   }, []);
 
@@ -150,33 +160,86 @@ export function PackageSearchEngine({
     if (citySearchTimerRef.current) {
       clearTimeout(citySearchTimerRef.current);
     }
+    cityAbortRef.current?.abort();
 
-    const trimmed = value.trim();
-
-    if (trimmed.length < 2) {
+    const query = value.trim();
+    if (query.length < 2) {
+      cityRequestIdRef.current += 1;
       setCitySuggestions([]);
       setShowCitySuggestions(false);
       setCityLoading(false);
       return;
     }
 
+    const requestId = cityRequestIdRef.current + 1;
+    cityRequestIdRef.current = requestId;
     setCityLoading(true);
     setShowCitySuggestions(true);
 
     citySearchTimerRef.current = setTimeout(() => {
-      void fetch(`/api/places/cities?query=${encodeURIComponent(trimmed)}`)
+      const controller = new AbortController();
+      cityAbortRef.current = controller;
+
+      void fetch(`/api/places/cities?query=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      })
         .then((res) => res.json())
-        .then((json: { results?: CitySuggestion[] }) => {
-          setCitySuggestions(json.results ?? []);
-          setShowCitySuggestions((json.results?.length ?? 0) > 0);
+        .then(async (json: { results?: CitySuggestion[] }) => {
+          if (cityRequestIdRef.current !== requestId) {
+            return;
+          }
+
+          let results = json.results ?? [];
+
+          if (results.length === 0) {
+            const airportResponse = await fetch(
+              `/api/places/airports?query=${encodeURIComponent(query)}`,
+              { signal: controller.signal },
+            );
+            const airportJson = (await airportResponse.json()) as {
+              results?: AirportSuggestion[];
+            };
+
+            const seen = new Set<string>();
+            results = (airportJson.results ?? [])
+              .map((airport) => ({
+                city: airport.city,
+                country: airport.country,
+                iata: airport.iata,
+              }))
+              .filter((airport) => {
+                const key = `${airport.city.toUpperCase()}|${airport.country.toUpperCase()}`;
+                if (seen.has(key)) {
+                  return false;
+                }
+
+                seen.add(key);
+                return true;
+              })
+              .slice(0, 10);
+          }
+
+          if (cityRequestIdRef.current !== requestId) {
+            return;
+          }
+
+          setCitySuggestions(results);
+          setShowCitySuggestions(true);
           setCityLoading(false);
         })
-        .catch(() => {
+        .catch((error: { name?: string }) => {
+          if (
+            error?.name === "AbortError" ||
+            cityRequestIdRef.current !== requestId
+          ) {
+            return;
+          }
+
           setCitySuggestions([]);
           setShowCitySuggestions(false);
           setCityLoading(false);
         });
-    }, 260);
+    }, 280);
   };
 
   const selectCity = (item: CitySuggestion) => {
@@ -331,7 +394,7 @@ export function PackageSearchEngine({
           {/* Fields row */}
           <div className={styles.fieldsRow}>
             {/* Going to */}
-            <label className={styles.field} ref={destinationRef}>
+            <label className={`${styles.field} relative`} ref={destinationRef}>
               <span className={styles.fieldLabel}>Going to</span>
               <div className={styles.fieldBody}>
                 <MapPin className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
@@ -345,37 +408,63 @@ export function PackageSearchEngine({
                     }
                   }}
                   onChange={(e) => handleDestinationInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setShowCitySuggestions(false);
+                    }
+                  }}
                   placeholder="City, country or region"
                   className={styles.fieldInput}
                   autoComplete="off"
+                  spellCheck={false}
                 />
               </div>
-              {showCitySuggestions &&
-                (cityLoading || citySuggestions.length > 0) && (
-                  <div className="absolute top-full right-0 left-0 z-20 mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                    {cityLoading ? (
-                      <p className="px-2 py-2 text-xs text-slate-500">
-                        Searching cities...
-                      </p>
-                    ) : (
-                      citySuggestions.map((cityItem) => (
-                        <button
-                          key={`${cityItem.city}-${cityItem.country}-${cityItem.iata}`}
-                          type="button"
-                          onClick={() => selectCity(cityItem)}
-                          className="w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
-                        >
-                          <p className="text-sm font-semibold text-slate-900">
-                            {cityItem.city}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {cityItem.country} - {cityItem.iata}
-                          </p>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
+              {showCitySuggestions && (
+                <div
+                  role="listbox"
+                  className="absolute top-full right-0 left-0 z-20 mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                >
+                  {cityLoading ? (
+                    <p className="px-3 py-2 text-xs text-slate-500">
+                      Searching cities...
+                    </p>
+                  ) : citySuggestions.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-slate-500">
+                      No places found.
+                    </p>
+                  ) : (
+                    citySuggestions.map((cityItem, index) => (
+                      <button
+                        key={`${cityItem.city}-${cityItem.country}-${cityItem.iata}`}
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          selectCity(cityItem);
+                        }}
+                        className="block w-full rounded-lg border-0 px-3 py-2 text-left hover:bg-slate-50"
+                        style={{
+                          borderBottom:
+                            index < citySuggestions.length - 1
+                              ? "1px solid #f3f4f6"
+                              : "none",
+                        }}
+                      >
+                        <p className="text-sm font-semibold text-slate-900">
+                          {cityItem.city}{" "}
+                          <span className="text-blue-600">
+                            ({cityItem.iata})
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {cityItem.country}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </label>
 
             {/* Duration */}

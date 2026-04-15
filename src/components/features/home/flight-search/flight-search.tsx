@@ -241,7 +241,6 @@ export function FlightSearchEngine({
   const paxRef = useRef<HTMLDivElement>(null);
   const cabinRef = useRef<HTMLDivElement>(null);
   const fareCalendarPanelRef = useRef<HTMLDivElement>(null);
-  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const minSelectableDepartureDate = useMemo(
     () => formatDateForInput(addDays(new Date(), 3)),
     [],
@@ -479,6 +478,7 @@ export function FlightSearchEngine({
     tripType,
     departureDate,
     returnDate,
+    loadFareCalendar,
   ]);
 
   useEffect(() => {
@@ -966,12 +966,6 @@ export function FlightSearchEngine({
             {tripType === "multi-city" ? (
               <div className={styles.multiCityPanel}>
                 {multiCityLegs.map((leg, index) => {
-                  const minLegDate =
-                    index === 0
-                      ? minSelectableDepartureDate
-                      : multiCityLegs[index - 1]?.departureDate ||
-                        minSelectableDepartureDate;
-
                   return (
                     <div
                       key={`multi-leg-${index}`}

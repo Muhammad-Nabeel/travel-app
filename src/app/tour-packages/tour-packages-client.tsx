@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { MapPin, Star } from "lucide-react";
 
@@ -8,6 +9,7 @@ import {
   type TourType,
 } from "@/components/features/home/package-search/package-search";
 import { tourPackageResults } from "@/lib/mock-data";
+import { getTourPackagePath } from "@/lib/tour-packages";
 
 function StarRating({ rating }: { rating: number }) {
   const full = Math.floor(rating);
@@ -171,12 +173,12 @@ export function TourPackagesClient() {
                           </span>
                         </p>
                       </div>
-                      <button
-                        type="button"
+                      <Link
+                        href={getTourPackagePath(pkg.title)}
                         className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 active:scale-95"
                       >
                         View package
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </article>

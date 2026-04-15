@@ -452,7 +452,7 @@ export default async function UmrahPackageDetailPage({
                 pkg={pkg}
                 nights={nights}
                 adults={adults}
-                children={children}
+                childCount={children}
                 makkahStars={makkahStars}
                 madinahStars={madinahStars}
                 estimatedTotal={pricing?.allPaxTotal ?? 0}

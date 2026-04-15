@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   Compass,
+  Image,
   LayoutDashboard,
   LogOut,
   MessagesSquare,
@@ -13,6 +14,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  X,
 } from "lucide-react";
 
 const adminLinks = [
@@ -25,20 +27,37 @@ const adminLinks = [
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/site-pages", label: "Site Pages", icon: MessagesSquare },
   { href: "/admin/visa", label: "Visa Settings", icon: Compass },
+  { href: "/admin/media", label: "Media", icon: Image },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  onToggle?: () => void;
+}
+
+export function AdminSidebar({ onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
 
   return (
     <aside className="sticky top-0 h-screen w-full border-r border-blue-200/80 bg-white text-slate-800 lg:w-72">
       <div className="flex h-full min-h-0 flex-col p-5">
-        <div className="mb-6 border-b border-blue-100 pb-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-500">
-            Admin Panel
-          </p>
-          <h1 className="mt-2 text-2xl font-bold text-blue-900">Safar Ops</h1>
+        <div className="mb-6 flex items-center justify-between border-b border-blue-100 pb-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-500">
+              Admin Panel
+            </p>
+            <h1 className="mt-2 text-2xl font-bold text-blue-900">Safar Ops</h1>
+          </div>
+          {onToggle && (
+            <button
+              type="button"
+              onClick={onToggle}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              aria-label="Hide menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <nav className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">

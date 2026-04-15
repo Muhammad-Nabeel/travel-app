@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { TourPackagesClient } from "@/app/tour-packages/tour-packages-client";
 import { StructuredData } from "@/components/shared/structured-data";
 import { tourPackageResults } from "@/lib/mock-data";
+import { getTourPackagePath } from "@/lib/tour-packages";
 import {
   buildMetadata,
   createItemListSchema,
@@ -32,7 +33,7 @@ export default function TourPackagesPage() {
           createItemListSchema(
             tourPackageResults.map((pkg) => ({
               name: pkg.title,
-              path: "/tour-packages",
+              path: getTourPackagePath(pkg.title),
             })),
             "Tour packages",
           ),
