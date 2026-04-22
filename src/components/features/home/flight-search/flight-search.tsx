@@ -241,10 +241,12 @@ export function FlightSearchEngine({
   const paxRef = useRef<HTMLDivElement>(null);
   const cabinRef = useRef<HTMLDivElement>(null);
   const fareCalendarPanelRef = useRef<HTMLDivElement>(null);
-  const minSelectableDepartureDate = useMemo(
-    () => formatDateForInput(addDays(new Date(), 3)),
-    [],
-  );
+  const minSelectableDepartureDate = useMemo(() => {
+    const today = formatDateForInput(new Date());
+    // On results page with initialValues, still allow dates from today onwards
+    // Don't restrict to a future date, but also don't allow past dates
+    return today;
+  }, []);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -362,7 +364,7 @@ export function FlightSearchEngine({
     setCalendarField(field);
     setCalendarLegIndex(field === "multi-city" ? (legIndex ?? 0) : null);
     setRoundTripRangeStep(
-      field === "departure" && tripType === "round-trip" ? "start" : "end",
+      tripType === "round-trip" && field !== "return" ? "start" : "end",
     );
     setShowFareCalendar(true);
 
@@ -567,7 +569,8 @@ export function FlightSearchEngine({
     const minDateIso =
       calendarField === "multi-city"
         ? previousLegDate || minSelectableDepartureDate
-        : calendarField === "return" || roundTripRangeStep === "end"
+        : calendarField === "return" ||
+            (tripType === "round-trip" && roundTripRangeStep === "end")
           ? departureDate || minSelectableDepartureDate
           : minSelectableDepartureDate;
     const minDate = parseISODate(minDateIso);
@@ -734,7 +737,7 @@ export function FlightSearchEngine({
 
     if (parsed.departureDate < minSelectableDepartureDate) {
       window.alert(
-        `Departure date must be at least 3 days from today (${minSelectableDepartureDate}).`,
+        `Departure date must be from today onwards (${minSelectableDepartureDate}).`,
       );
       return;
     }
@@ -745,7 +748,7 @@ export function FlightSearchEngine({
       );
       if (invalidLeg) {
         window.alert(
-          `All multi-city dates must be at least 3 days from today (${minSelectableDepartureDate}).`,
+          `All multi-city dates must be from today onwards (${minSelectableDepartureDate}).`,
         );
         return;
       }

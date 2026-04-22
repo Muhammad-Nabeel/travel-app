@@ -120,7 +120,7 @@ export type FlightSearchSuccessResult = {
     ok: true;
     query: FlightSearchQuery;
     results: FlightOffer[];
-    source: "sabre" | "amadeus" | "mock";
+    source: "sabre" | "amadeus" | "mock" | "booking_request";
     warnings: string[];
 };
 

@@ -297,6 +297,14 @@ export function parseFlightSearchQuery(input: SearchInput) {
     return result;
 }
 
+function isSabreConfigured() {
+    const clientId = process.env.SABRE_CLIENT_ID?.trim();
+    const clientSecret = process.env.SABRE_CLIENT_SECRET?.trim();
+    const baseUrl = process.env.SABRE_BASE_URL?.trim();
+
+    return Boolean(clientId && clientSecret && baseUrl);
+}
+
 export async function searchFlights(input: SearchInput): Promise<FlightSearchResult> {
     const queryResult = parseFlightSearchQuery(input);
 
@@ -313,6 +321,23 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
 
     const query = queryResult.data;
     const warnings: string[] = [];
+
+    // Check if Sabre is configured
+    const sabreConfigured = isSabreConfigured();
+
+    if (!sabreConfigured) {
+        // Sabre not configured - return empty results with booking_request source
+        // This will prompt the results page to show a booking request form instead
+        return {
+            ok: true,
+            query,
+            results: [],
+            source: "booking_request",
+            warnings: [
+                "Live flight search is not currently available. Please provide your details below and we'll get back to you with the best options.",
+            ],
+        };
+    }
 
     try {
         const sabreResults = await searchSabreFlights(query);
