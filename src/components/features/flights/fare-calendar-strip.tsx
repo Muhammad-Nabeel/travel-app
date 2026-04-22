@@ -135,6 +135,8 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
 
   useEffect(() => {
     if (query.tripType === "multi-city") {
+      setFares(null);
+      setLoading(false);
       return;
     }
 
@@ -143,16 +145,13 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       query.departureDate,
       new Date().toISOString().slice(0, 10),
     );
-    const monthAnchor = addDays(selectedDate, -3);
 
     const params = new URLSearchParams({
       origin: query.origin,
       destination: query.destination,
-      departureDate: query.departureDate,
-      month: monthAnchor,
+      departureDate: selectedDate,
       tripType,
       cabinClass: query.cabinClass,
-      months: "1",
     });
 
     if (query.returnDate) {
@@ -192,12 +191,12 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       controller.abort();
     };
   }, [
-    query.tripType,
     query.origin,
     query.destination,
     query.departureDate,
     query.returnDate,
     query.cabinClass,
+    query.tripType,
   ]);
 
   if (query.tripType === "multi-city") return null;
