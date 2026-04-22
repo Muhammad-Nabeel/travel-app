@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
@@ -241,10 +241,12 @@ export function FlightSearchEngine({
   const paxRef = useRef<HTMLDivElement>(null);
   const cabinRef = useRef<HTMLDivElement>(null);
   const fareCalendarPanelRef = useRef<HTMLDivElement>(null);
-  const minSelectableDepartureDate = useMemo(
-    () => formatDateForInput(addDays(new Date(), 3)),
-    [],
-  );
+  const minSelectableDepartureDate = useMemo(() => {
+    const today = formatDateForInput(new Date());
+    // On results page with initialValues, still allow dates from today onwards
+    // Don't restrict to a future date, but also don't allow past dates
+    return today;
+  }, []);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -362,7 +364,7 @@ export function FlightSearchEngine({
     setCalendarField(field);
     setCalendarLegIndex(field === "multi-city" ? (legIndex ?? 0) : null);
     setRoundTripRangeStep(
-      field === "departure" && tripType === "round-trip" ? "start" : "end",
+      tripType === "round-trip" && field !== "return" ? "start" : "end",
     );
     setShowFareCalendar(true);
 
@@ -377,109 +379,109 @@ export function FlightSearchEngine({
     setCalendarMonth(startOfMonth(parseISODate(selectedDate)));
   };
 
-  const loadFareCalendar = async (monthStart: Date, signal?: AbortSignal) => {
-    const legContext =
-      tripType === "multi-city" && calendarField === "multi-city"
-        ? multiCityLegs[calendarLegIndex ?? 0]
-        : null;
+  const loadFareCalendar = useCallback(
+    async (monthStart: Date, signal?: AbortSignal) => {
+      const legContext =
+        tripType === "multi-city" && calendarField === "multi-city"
+          ? multiCityLegs[calendarLegIndex ?? 0]
+          : null;
 
-    const originCode = legContext
-      ? extractAirportCode(legContext.origin, legContext.originIata)
-      : extractAirportCode(origin, originIata);
-    const destinationCode = legContext
-      ? extractAirportCode(legContext.destination, legContext.destinationIata)
-      : extractAirportCode(destination, destinationIata);
+      const originCode = legContext
+        ? extractAirportCode(legContext.origin, legContext.originIata)
+        : extractAirportCode(origin, originIata);
+      const destinationCode = legContext
+        ? extractAirportCode(legContext.destination, legContext.destinationIata)
+        : extractAirportCode(destination, destinationIata);
 
-    if (!originCode || !destinationCode) {
-      setCalendarError(
-        legContext
-          ? "Select valid origin and destination for this leg first."
-          : "Select valid origin and destination airports first.",
-      );
-      setCalendarFares({});
-      setCalendarSource("");
-      return;
-    }
-
-    setCalendarLoading(true);
-    setCalendarError("");
-
-    try {
-      const month = formatDateForInput(monthStart);
-      const fareCalendarQuery = new URLSearchParams({
-        origin: originCode,
-        destination: destinationCode,
-        month,
-        months: "2",
-        cabinClass,
-      });
-
-      if (tripType === "round-trip" && calendarField !== "multi-city") {
-        fareCalendarQuery.set("tripType", tripType);
-        if (departureDate)
-          fareCalendarQuery.set("departureDate", departureDate);
-        if (returnDate) fareCalendarQuery.set("returnDate", returnDate);
-      }
-
-      const res = await fetch(
-        `/api/search/fare-calendar?${fareCalendarQuery.toString()}`,
-        { signal },
-      );
-      const data = (await res.json()) as {
-        ok?: boolean;
-        source?: "sabre" | "mock";
-        fares?: FareCell[];
-        error?: string;
-      };
-
-      if (!res.ok || !data.ok) {
-        setCalendarError(data.error ?? "Unable to load fare calendar.");
+      if (!originCode || !destinationCode) {
+        setCalendarError(
+          legContext
+            ? "Select valid origin and destination for this leg first."
+            : "Select valid origin and destination airports first.",
+        );
         setCalendarFares({});
         setCalendarSource("");
         return;
       }
 
-      const mapped: Record<string, FareCell> = {};
-      for (const item of data.fares ?? []) {
-        if (!item?.date || !Number.isFinite(item.amount)) continue;
-        mapped[item.date] = item;
-      }
+      setCalendarLoading(true);
+      setCalendarError("");
 
-      setCalendarFares(mapped);
-      setCalendarSource(data.source ?? "");
-    } catch (err) {
-      if ((err as { name?: string }).name === "AbortError") return;
-      setCalendarError("Unable to load fare calendar.");
-      setCalendarFares({});
-      setCalendarSource("");
-    } finally {
-      if (!signal?.aborted) {
-        setCalendarLoading(false);
+      try {
+        // Use departure date for the API, default to today if not set
+        const effectiveDepartureDate =
+          departureDate || formatDateForInput(new Date());
+
+        const fareCalendarQuery = new URLSearchParams({
+          origin: originCode,
+          destination: destinationCode,
+          departureDate: effectiveDepartureDate,
+          cabinClass,
+          tripType,
+        });
+
+        if (tripType === "round-trip" && returnDate) {
+          fareCalendarQuery.set("returnDate", returnDate);
+        }
+
+        const res = await fetch(
+          `/api/search/fare-calendar?${fareCalendarQuery.toString()}`,
+          { signal },
+        );
+        const data = (await res.json()) as {
+          ok?: boolean;
+          source?: "sabre" | "mock";
+          fares?: FareCell[];
+          error?: string;
+        };
+
+        if (!res.ok || !data.ok) {
+          setCalendarError(data.error ?? "Unable to load fare calendar.");
+          setCalendarFares({});
+          setCalendarSource("");
+          return;
+        }
+
+        const mapped: Record<string, FareCell> = {};
+        for (const item of data.fares ?? []) {
+          if (!item?.date || !Number.isFinite(item.amount)) continue;
+          mapped[item.date] = item;
+        }
+
+        setCalendarFares(mapped);
+        setCalendarSource(data.source ?? "");
+      } catch (err) {
+        if ((err as { name?: string }).name === "AbortError") return;
+        setCalendarError("Unable to load fare calendar.");
+        setCalendarFares({});
+        setCalendarSource("");
+      } finally {
+        if (!signal?.aborted) {
+          setCalendarLoading(false);
+        }
       }
-    }
-  };
+    },
+    [
+      tripType,
+      calendarField,
+      calendarLegIndex,
+      multiCityLegs,
+      origin,
+      originIata,
+      destination,
+      destinationIata,
+      departureDate,
+      returnDate,
+      cabinClass,
+    ],
+  );
 
   useEffect(() => {
     if (!showFareCalendar) return;
     const controller = new AbortController();
     void loadFareCalendar(calendarMonth, controller.signal);
     return () => controller.abort();
-  }, [
-    showFareCalendar,
-    calendarMonth,
-    calendarField,
-    calendarLegIndex,
-    multiCityLegs,
-    origin,
-    originIata,
-    destination,
-    destinationIata,
-    cabinClass,
-    tripType,
-    departureDate,
-    returnDate,
-    loadFareCalendar,
-  ]);
+  }, [showFareCalendar, calendarMonth, loadFareCalendar]);
 
   useEffect(() => {
     let cancelled = false;
@@ -567,7 +569,8 @@ export function FlightSearchEngine({
     const minDateIso =
       calendarField === "multi-city"
         ? previousLegDate || minSelectableDepartureDate
-        : calendarField === "return" || roundTripRangeStep === "end"
+        : calendarField === "return" ||
+            (tripType === "round-trip" && roundTripRangeStep === "end")
           ? departureDate || minSelectableDepartureDate
           : minSelectableDepartureDate;
     const minDate = parseISODate(minDateIso);
@@ -734,7 +737,7 @@ export function FlightSearchEngine({
 
     if (parsed.departureDate < minSelectableDepartureDate) {
       window.alert(
-        `Departure date must be at least 3 days from today (${minSelectableDepartureDate}).`,
+        `Departure date must be from today onwards (${minSelectableDepartureDate}).`,
       );
       return;
     }
@@ -745,7 +748,7 @@ export function FlightSearchEngine({
       );
       if (invalidLeg) {
         window.alert(
-          `All multi-city dates must be at least 3 days from today (${minSelectableDepartureDate}).`,
+          `All multi-city dates must be from today onwards (${minSelectableDepartureDate}).`,
         );
         return;
       }
