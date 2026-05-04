@@ -73,7 +73,7 @@ function detectFares(payload: unknown): FareOption[] {
   const candidates = [root.fares, root.options, root.fare_options, root.results];
   for (const candidate of candidates) {
     if (!Array.isArray(candidate)) continue;
-    const normalized = candidate
+    const normalized: FareOption[] = candidate
       .map((entry, idx) => {
         const rec = asRecord(entry);
         if (!rec) return null;
@@ -102,7 +102,7 @@ function detectFares(payload: unknown): FareOption[] {
           summary: toText(rec.summary) || toText(rec.description) || undefined,
         } satisfies FareOption;
       })
-      .filter((item): item is FareOption => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     if (normalized.length > 0) return normalized;
   }
@@ -222,7 +222,9 @@ export function ChatbotWidget() {
       ]);
       if (fares.length === 0) {
         setStatus(
-          `No selectable fares returned for now. You can still create a ${serviceTitle(selectedService)} request below.`,
+          `No selectable fares returned for now. You can still create a ${
+            selectedService ? serviceTitle(selectedService) : "service"
+          } request below.`,
         );
       }
     } catch (err) {
