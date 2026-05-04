@@ -4,11 +4,23 @@ import {
     getStoredSitePricingSettings,
     saveStoredSitePricingSettings,
 } from "@/lib/admin-settings/site-pricing-settings";
+import { getWiseRuntimeStatus } from "@/lib/payments/wise-config";
 
 export async function GET() {
     try {
         const settings = await getStoredSitePricingSettings();
-        return NextResponse.json(settings, { status: 200 });
+        const wise = getWiseRuntimeStatus();
+        return NextResponse.json(
+            {
+                ...settings,
+                wiseConfigured: wise.configured,
+                wiseMissingKeys: wise.missingKeys,
+                wiseEnvironment: wise.environment,
+                wiseWebhookSecretConfigured: wise.webhookSecretConfigured,
+                wiseWebhookPath: wise.webhookPath,
+            },
+            { status: 200 },
+        );
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unexpected error";
         return NextResponse.json({ ok: false, error: message }, { status: 500 });

@@ -86,6 +86,8 @@ type SitePricingResponse = {
   enablePaymob?: boolean;
   enableCashOnDelivery?: boolean;
   enablePayAtBranch?: boolean;
+  wiseConfigured?: boolean;
+  wiseCheckoutUrl?: string | null;
 };
 
 type BranchOption = {
@@ -161,6 +163,8 @@ export function PaymentPageClient() {
   const [paymentSwitches, setPaymentSwitches] = useState(
     DEFAULT_PAYMENT_SWITCHES,
   );
+  const [wiseConfigured, setWiseConfigured] = useState(false);
+  const [wiseCheckoutUrl, setWiseCheckoutUrl] = useState<string | null>(null);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
@@ -204,9 +208,13 @@ export function PaymentPageClient() {
           enableCashOnDelivery: json.enableCashOnDelivery ?? true,
           enablePayAtBranch: json.enablePayAtBranch ?? true,
         });
+        setWiseConfigured(Boolean(json.wiseConfigured));
+        setWiseCheckoutUrl(json.wiseCheckoutUrl ?? null);
       } catch {
         setServiceChargePercent(0);
         setPaymentSwitches(DEFAULT_PAYMENT_SWITCHES);
+        setWiseConfigured(false);
+        setWiseCheckoutUrl(null);
       }
     }
 
@@ -230,6 +238,9 @@ export function PaymentPageClient() {
   }, []);
 
   const availableGateways = GATEWAYS.filter((gateway) => {
+    if (gateway.id === "wise") {
+      return paymentSwitches.enableWise && wiseConfigured;
+    }
     const toggleKey = GATEWAY_TOGGLE_KEY[gateway.id];
     return toggleKey ? paymentSwitches[toggleKey] : true;
   });
@@ -287,11 +298,18 @@ export function PaymentPageClient() {
 
     if (
       selectedGateway === "cash_on_delivery" ||
-      selectedGateway === "pay_at_branch"
+      selectedGateway === "pay_at_branch" ||
+      selectedGateway === "wise"
     ) {
       setSubmittingPayment(true);
 
       try {
+        if (selectedGateway === "wise" && (!wiseConfigured || !wiseCheckoutUrl)) {
+          throw new Error(
+            "Wise is not configured yet. Please contact support to complete payment setup.",
+          );
+        }
+
         const res = await fetch("/api/bookings/flight-request", {
           method: "POST",
           headers: {
@@ -320,6 +338,37 @@ export function PaymentPageClient() {
 
         if (!res.ok || !json.ok) {
           throw new Error(json.error ?? "Unable to create booking request.");
+        }
+
+        if (selectedGateway === "wise") {
+          const wiseRedirect = new URL(wiseCheckoutUrl!);
+          const origin =
+            typeof window !== "undefined" ? window.location.origin : "";
+          const successUrl = `${origin}/flights/payment/wise/success`;
+          const failedUrl = `${origin}/flights/payment/wise/failed`;
+          if (json.reference) {
+            wiseRedirect.searchParams.set("booking_reference", json.reference);
+          }
+          wiseRedirect.searchParams.set(
+            "amount",
+            String(pricing.grandTotal.toFixed(2)),
+          );
+          wiseRedirect.searchParams.set("currency", payload.offer.currency);
+          wiseRedirect.searchParams.set(
+            "success_url",
+            `${successUrl}?booking_reference=${encodeURIComponent(json.reference ?? "")}`,
+          );
+          wiseRedirect.searchParams.set(
+            "cancel_url",
+            `${failedUrl}?booking_reference=${encodeURIComponent(json.reference ?? "")}`,
+          );
+          wiseRedirect.searchParams.set(
+            "failure_url",
+            `${failedUrl}?booking_reference=${encodeURIComponent(json.reference ?? "")}`,
+          );
+          sessionStorage.removeItem("booking_payload");
+          window.location.href = wiseRedirect.toString();
+          return;
         }
 
         sessionStorage.removeItem("booking_payload");
@@ -425,6 +474,12 @@ export function PaymentPageClient() {
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                 No payment methods are currently enabled. Please contact
                 support.
+              </p>
+            )}
+            {paymentSwitches.enableWise && !wiseConfigured && (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Wise is activated but not configured yet. Please ask support to
+                finish Wise credentials in server environment settings.
               </p>
             )}
           </div>

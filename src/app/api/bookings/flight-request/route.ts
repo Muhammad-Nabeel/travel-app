@@ -8,7 +8,7 @@ const BRANCHES_KEY = "branches_catalog";
 
 type FlightBookingRequestBody = {
     payload?: BookingPayload;
-    paymentMethod?: "cash_on_delivery" | "pay_at_branch" | string;
+    paymentMethod?: "cash_on_delivery" | "pay_at_branch" | "wise" | string;
     selectedBranchId?: string;
     pricing?: {
         serviceChargePercent?: number;
@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
 
         if (
             body.paymentMethod !== "cash_on_delivery" &&
-            body.paymentMethod !== "pay_at_branch"
+            body.paymentMethod !== "pay_at_branch" &&
+            body.paymentMethod !== "wise"
         ) {
             return NextResponse.json(
                 {
@@ -215,7 +216,10 @@ export async function POST(request: NextRequest) {
                 },
                 paymentData: {
                     method: body.paymentMethod,
-                    status: "REQUESTED",
+                    status:
+                        body.paymentMethod === "wise"
+                            ? "PENDING_CHECKOUT"
+                            : "REQUESTED",
                     serviceChargePercent: toNumber(body.pricing?.serviceChargePercent, 0),
                     serviceChargeAmount: toNumber(body.pricing?.serviceChargeAmount, 0),
                     grandTotal: totalAmount,

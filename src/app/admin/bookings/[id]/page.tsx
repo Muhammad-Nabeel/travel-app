@@ -6,6 +6,7 @@ import {
   prisma,
   shouldBypassDatabase,
 } from "@/lib/db";
+import { WiseRetryControls } from "@/components/admin/wise-retry-controls";
 
 type FlightPayload = {
   offer?: {
@@ -75,6 +76,20 @@ type PaymentPayload = {
     address?: string;
     phone?: string | null;
   } | null;
+  wiseWebhookHistory?: Array<{
+    eventKey?: string;
+    eventId?: string | null;
+    outcome?: string;
+    receivedAt?: string;
+  }>;
+  wiseReconciliationLog?: Array<{
+    source?: string;
+    at?: string;
+    outcome?: string;
+    bookingStatus?: string;
+    paymentStatus?: string;
+    note?: string;
+  }>;
 };
 
 function formatDateTime(value?: string | Date | null) {
@@ -340,8 +355,66 @@ export default async function AdminBookingDetailsPage({
               {(payment?.grandTotal ?? booking.totalAmount).toString()}
             </p>
           </div>
+          {payment?.method === "wise" ? (
+            <WiseRetryControls
+              bookingId={booking.id}
+              disabled={booking.status === "CONFIRMED"}
+            />
+          ) : null}
         </article>
       </section>
+
+      {payment?.method === "wise" ? (
+        <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+            Wise Reconciliation
+          </p>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Webhook Events
+              </p>
+              {Array.isArray(payment.wiseWebhookHistory) &&
+              payment.wiseWebhookHistory.length > 0 ? (
+                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                  {payment.wiseWebhookHistory.map((event, index) => (
+                    <li key={`wise-webhook-${index}`}>
+                      {formatDateTime(event.receivedAt)} Â·{" "}
+                      {formatStatus(event.outcome)} Â·{" "}
+                      {event.eventId ?? event.eventKey ?? "N/A"}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  No webhook events recorded yet.
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Reconciliation Log
+              </p>
+              {Array.isArray(payment.wiseReconciliationLog) &&
+              payment.wiseReconciliationLog.length > 0 ? (
+                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                  {payment.wiseReconciliationLog.map((entry, index) => (
+                    <li key={`wise-log-${index}`}>
+                      {formatDateTime(entry.at)} Â·{" "}
+                      {formatStatus(entry.source)} Â·{" "}
+                      {entry.note ?? formatStatus(entry.outcome)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  No reconciliation actions logged yet.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
