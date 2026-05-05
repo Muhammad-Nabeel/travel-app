@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
 import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
@@ -20,6 +21,8 @@ function getTelHref(value: string): string {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  await connection();
+
   const pages = await getStoredSitePagesSettings();
   const page = pages.contactUs;
 
@@ -32,6 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactUsPage() {
+  await connection();
+
   const pages = await getStoredSitePagesSettings();
 
   const page = pages.contactUs;
