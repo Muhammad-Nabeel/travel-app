@@ -51,26 +51,28 @@ export async function getStoredCurrencySettings(): Promise<CurrencySettings> {
             return defaultCurrencySettings();
         }
 
-        return sanitizeCurrencySettings(row.value);
+        return sanitizeCurrencySettings(JSON.parse(row.value));
     } catch (error) {
-        markDatabaseUnavailable();
+        markDatabaseUnavailable(error);
         return defaultCurrencySettings();
     }
 }
 
 export async function saveStoredCurrencySettings(settings: CurrencySettings): Promise<void> {
     if (shouldBypassDatabase()) {
-        return;
+        throw new Error("Database is not available for saving currency settings.");
     }
+
+    const value = JSON.stringify(sanitizeCurrencySettings(settings));
 
     try {
         await prisma.adminSetting.upsert({
             where: { key: CURRENCY_SETTINGS_KEY },
-            update: { value: settings },
-            create: { key: CURRENCY_SETTINGS_KEY, value: settings },
+            update: { value },
+            create: { key: CURRENCY_SETTINGS_KEY, value },
         });
     } catch (error) {
-        markDatabaseUnavailable();
+        markDatabaseUnavailable(error);
         throw error;
     }
 }

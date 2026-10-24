@@ -17,6 +17,8 @@ import { AirportInput, type Airport } from "../../../shared/airport-input";
 import { TrendingSearches } from "../../../shared/trending-searches";
 import type { CabinClass, TripType } from "@/lib/flights/types";
 import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
+import { flightSearchSchema } from "@/lib/validations/search";
+import { trackGa4Event } from "@/lib/analytics/ga4-events";
 const CABIN_CLASSES = [
   "Economy",
   "Premium Economy",

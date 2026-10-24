@@ -6,6 +6,9 @@ const createJestConfig = nextJest({ dir: "./" });
 const config = {
   testEnvironment: "node",
   testMatch: ["**/__tests__/**/*.test.ts"],
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1",
+  },
 };
 
-module.exports = createJestConfig(config);
+export default createJestConfig(config);

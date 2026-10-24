@@ -30,6 +30,15 @@ const EMPTY_SUPPORT_FORM = {
   landlineNumber: "",
 };
 
+const EMPTY_BRANCH_FORM = {
+  name: "",
+  city: "",
+  address: "",
+  phone: "",
+  sortOrder: "0",
+  isActive: true,
+};
+
 const EMPTY_CURRENCY_FORM = {
   currencySelectorEnabled: true,
   defaultCurrency: "PKR",
