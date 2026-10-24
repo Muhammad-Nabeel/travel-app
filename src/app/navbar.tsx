@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
 import { useMediaSettings } from "@/lib/hooks/use-media-settings";
+import { CurrencySelector } from "@/components/shared/currency-selector";
 import {
   FileCheck2,
   Loader2,
@@ -33,11 +35,14 @@ const NavBar = () => {
   const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [dark, setDark] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState("PKR");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const { settings: currencySettings, loading: currencyLoading } = useCurrencySettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -47,11 +52,26 @@ const NavBar = () => {
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute(
-      "data-theme",
-      dark ? "business" : "corporate",
-    );
-  }, [dark]);
+    if (typeof window === "undefined") return;
+
+    const storedCurrency = window.localStorage
+      .getItem("selectedCurrency")
+      ?.toUpperCase();
+
+    if (storedCurrency) {
+      setSelectedCurrency(storedCurrency);
+      return;
+    }
+
+    if (!currencyLoading && currencySettings.defaultCurrency) {
+      setSelectedCurrency(currencySettings.defaultCurrency);
+    }
+  }, [currencySettings.defaultCurrency, currencyLoading]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("selectedCurrency", selectedCurrency);
+  }, [selectedCurrency]);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -170,6 +190,12 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Currency selector */}
+          <CurrencySelector
+            selectedCurrency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+          />
+
           {/* Dark / light toggle */}
           <button
             type="button"

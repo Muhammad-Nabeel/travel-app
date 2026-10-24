@@ -6,12 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CalendarDays,
-  CheckCircle,
   ChevronDown,
   Clock3,
-  Loader2,
   Plane,
-  Send,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -27,12 +24,11 @@ import {
   getAirlineCode,
   getAirlineLogoSrc,
 } from "@/lib/flights/airline-branding";
-import { submitServiceRequest } from "@/lib/service-requests";
 
 type FlightsResultsPanelProps = {
   offers: FlightOffer[];
   query: FlightSearchQuery;
-  source: "sabre" | "amadeus" | "mock" | "booking_request";
+  source: "sabre" | "amadeus" | "mock";
   warnings: string[];
 };
 
@@ -185,7 +181,6 @@ function filterAndSortOffers(params: {
 export function FlightsResultsPanel({
   offers,
   query,
-  source,
   warnings,
 }: FlightsResultsPanelProps) {
   const router = useRouter();
@@ -366,19 +361,6 @@ export function FlightsResultsPanel({
 
   const mobileChipClass =
     "inline-flex h-11 items-center gap-2 rounded-xl border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-sm";
-
-  if (source === "booking_request") {
-    return (
-      <section className="section-shell mt-6 pb-10">
-        {warnings.length > 0 ? (
-          <div className="alert alert-warning bg-amber-50 text-amber-900">
-            <span>{warnings[0]}</span>
-          </div>
-        ) : null}
-        <SimpleFlightRequestForm query={query} />
-      </section>
-    );
-  }
 
   return (
     <section className="section-shell mt-6 pb-40">
@@ -751,275 +733,6 @@ export function FlightsResultsPanel({
         </div>
       )}
     </section>
-  );
-}
-
-function getFlightRequestTitle(query: FlightSearchQuery) {
-  if (query.tripType === "multi-city") {
-    return `Flight request (${query.legs?.length ?? 0} legs)`;
-  }
-
-  if (query.tripType === "round-trip") {
-    return `Flight request ${query.origin} to ${query.destination} (round-trip)`;
-  }
-
-  return `Flight request ${query.origin} to ${query.destination}`;
-}
-
-type SimpleFlightRequestFormProps = {
-  query: FlightSearchQuery;
-};
-
-function SimpleFlightRequestForm({ query }: SimpleFlightRequestFormProps) {
-  const [form, setForm] = useState({
-    customerName: "",
-    customerEmail: "",
-    customerPhone: "",
-    notes: "",
-  });
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof typeof form, string>>
-  >({});
-  const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
-  const [reference, setReference] = useState<string | null>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  function validate() {
-    const next: Partial<Record<keyof typeof form, string>> = {};
-
-    if (!form.customerName.trim()) {
-      next.customerName = "Name is required.";
-    }
-
-    if (!form.customerEmail.trim()) {
-      next.customerEmail = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) {
-      next.customerEmail = "Enter a valid email address.";
-    }
-
-    if (!form.customerPhone.trim()) {
-      next.customerPhone = "Phone number is required.";
-    }
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!validate()) return;
-
-    setStatus("submitting");
-    setServerError(null);
-
-    try {
-      const response = await submitServiceRequest({
-        type: "FLIGHT",
-        title: getFlightRequestTitle(query),
-        customerName: form.customerName.trim(),
-        customerEmail: form.customerEmail.trim(),
-        customerPhone: form.customerPhone.trim(),
-        payload: {
-          tripType: query.tripType,
-          origin: query.origin,
-          destination: query.destination,
-          departureDate: query.departureDate,
-          returnDate: query.returnDate ?? null,
-          adults: query.adults,
-          children: query.children,
-          infants: query.infants,
-          cabinClass: query.cabinClass,
-          directOnly: query.directOnly,
-          legs: query.legs ?? [],
-          notes: form.notes.trim() || null,
-          submittedAt: new Date().toISOString(),
-        },
-      });
-
-      setReference(response.reference ?? null);
-      setStatus("success");
-    } catch (error) {
-      setServerError(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit request. Please try again.",
-      );
-      setStatus("error");
-    }
-  }
-
-  if (status === "success") {
-    return (
-      <div className="surface ring-soft mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-8 text-center">
-        <CheckCircle className="mx-auto h-11 w-11 text-emerald-500" />
-        <h3 className="mt-3 text-2xl font-extrabold tracking-tight text-emerald-800">
-          Request submitted
-        </h3>
-        <p className="mt-1 text-sm text-emerald-700">
-          Thanks {form.customerName.trim()}. Our flights team will contact you
-          shortly.
-        </p>
-        {reference ? (
-          <p className="mt-3 inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-semibold text-emerald-800">
-            Ref: {reference}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="surface ring-soft mt-4 rounded-3xl border border-white/70 p-6 sm:p-8">
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-foreground">
-          Get flight options from our team
-        </h3>
-        <p className="mt-2 text-sm text-muted">
-          Live provider search is currently unavailable. Share your details and
-          we will send tailored fares.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <label
-              className="text-sm font-semibold text-slate-700"
-              htmlFor="flight-request-name"
-            >
-              Full name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              id="flight-request-name"
-              value={form.customerName}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customerName: e.target.value }))
-              }
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
-                errors.customerName
-                  ? "border-rose-400 bg-rose-50"
-                  : "border-slate-200 bg-white"
-              }`}
-              autoComplete="name"
-              placeholder="e.g. Ahmed Khan"
-            />
-            {errors.customerName ? (
-              <p className="text-xs text-rose-500">{errors.customerName}</p>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              className="text-sm font-semibold text-slate-700"
-              htmlFor="flight-request-email"
-            >
-              Email <span className="text-rose-500">*</span>
-            </label>
-            <input
-              id="flight-request-email"
-              type="email"
-              value={form.customerEmail}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customerEmail: e.target.value }))
-              }
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
-                errors.customerEmail
-                  ? "border-rose-400 bg-rose-50"
-                  : "border-slate-200 bg-white"
-              }`}
-              autoComplete="email"
-              placeholder="e.g. ahmed@example.com"
-            />
-            {errors.customerEmail ? (
-              <p className="text-xs text-rose-500">{errors.customerEmail}</p>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              className="text-sm font-semibold text-slate-700"
-              htmlFor="flight-request-phone"
-            >
-              Phone <span className="text-rose-500">*</span>
-            </label>
-            <input
-              id="flight-request-phone"
-              type="tel"
-              value={form.customerPhone}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customerPhone: e.target.value }))
-              }
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
-                errors.customerPhone
-                  ? "border-rose-400 bg-rose-50"
-                  : "border-slate-200 bg-white"
-              }`}
-              autoComplete="tel"
-              placeholder="+92 300 1234567"
-            />
-            {errors.customerPhone ? (
-              <p className="text-xs text-rose-500">{errors.customerPhone}</p>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <label
-              className="text-sm font-semibold text-slate-700"
-              htmlFor="flight-request-notes"
-            >
-              Notes
-            </label>
-            <textarea
-              id="flight-request-notes"
-              value={form.notes}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, notes: e.target.value }))
-              }
-              className="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-              placeholder="Any preferred airline, timing, or budget details"
-            />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm">
-          <p className="font-semibold text-base-content">Requested itinerary</p>
-          <p className="mt-1 text-base-content/70">
-            {query.origin} to {query.destination} on {query.departureDate}
-            {query.returnDate ? `, return ${query.returnDate}` : ""}
-          </p>
-          <p className="mt-1 text-base-content/70">
-            {query.adults} adult(s), {query.children} child(ren),{" "}
-            {query.infants} infant(s) - {query.cabinClass}
-          </p>
-        </div>
-
-        {serverError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {serverError}
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          className="btn btn-primary min-w-36"
-          disabled={status === "submitting"}
-        >
-          {status === "submitting" ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4" />
-              Submit Request
-            </>
-          )}
-        </button>
-      </form>
-    </div>
   );
 }
 

@@ -23,6 +23,7 @@ export type FlightSearchQuery = {
     children: number;
     infants: number;
     cabinClass: CabinClass;
+    currency: string;
     directOnly: boolean;
 };
 
@@ -120,7 +121,7 @@ export type FlightSearchSuccessResult = {
     ok: true;
     query: FlightSearchQuery;
     results: FlightOffer[];
-    source: "sabre" | "amadeus" | "mock" | "booking_request";
+    source: "sabre" | "amadeus" | "mock";
     warnings: string[];
 };
 

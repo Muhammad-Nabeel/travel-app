@@ -30,13 +30,10 @@ const EMPTY_SUPPORT_FORM = {
   landlineNumber: "",
 };
 
-const EMPTY_BRANCH_FORM = {
-  name: "",
-  city: "",
-  address: "",
-  phone: "",
-  sortOrder: "0",
-  isActive: true,
+const EMPTY_CURRENCY_FORM = {
+  currencySelectorEnabled: true,
+  defaultCurrency: "PKR",
+  availableCurrencies: ["PKR", "USD", "EUR", "GBP", "SAR", "AED", "JPY"],
 };
 
 const GTM_EVENT_NAMES = [
@@ -64,6 +61,7 @@ type SettingsPanel =
   | "payments"
   | "branches"
   | "support"
+  | "currency"
   | null;
 
 export default function AdminSettingsPage() {
@@ -84,13 +82,6 @@ export default function AdminSettingsPage() {
   const [paymentSaving, setPaymentSaving] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentError, setPaymentError] = useState("");
-  const [wiseConfigured, setWiseConfigured] = useState(true);
-  const [wiseMissingKeys, setWiseMissingKeys] = useState<string[]>([]);
-  const [wiseWebhookSecretConfigured, setWiseWebhookSecretConfigured] =
-    useState(false);
-  const [wiseWebhookPath, setWiseWebhookPath] = useState(
-    "/api/payments/wise/webhook",
-  );
   const [supportForm, setSupportForm] = useState(EMPTY_SUPPORT_FORM);
   const [supportSaving, setSupportSaving] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
@@ -103,6 +94,10 @@ export default function AdminSettingsPage() {
   const [branchError, setBranchError] = useState("");
   const [copiedEventName, setCopiedEventName] = useState("");
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
+  const [currencyForm, setCurrencyForm] = useState(EMPTY_CURRENCY_FORM);
+  const [currencySaving, setCurrencySaving] = useState(false);
+  const [currencyMessage, setCurrencyMessage] = useState("");
+  const [currencyError, setCurrencyError] = useState("");
 
   async function handleCopyEventName(eventName: string) {
     try {
@@ -119,7 +114,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const [res, pricingRes, supportRes, branchRes] = await Promise.all([
+        const [res, pricingRes, supportRes, branchRes, currencyRes] = await Promise.all([
           fetch("/api/admin/settings/ga4", {
             cache: "no-store",
           }),
@@ -130,6 +125,9 @@ export default function AdminSettingsPage() {
             cache: "no-store",
           }),
           fetch("/api/admin/settings/branches", {
+            cache: "no-store",
+          }),
+          fetch("/api/admin/settings/currency", {
             cache: "no-store",
           }),
         ]);
@@ -162,10 +160,6 @@ export default function AdminSettingsPage() {
           enablePaymob?: boolean;
           enableCashOnDelivery?: boolean;
           enablePayAtBranch?: boolean;
-          wiseConfigured?: boolean;
-          wiseMissingKeys?: string[];
-          wiseWebhookSecretConfigured?: boolean;
-          wiseWebhookPath?: string;
         };
 
         const supportJson = (await supportRes.json()) as {
@@ -175,6 +169,12 @@ export default function AdminSettingsPage() {
 
         const branchJson = (await branchRes.json()) as {
           branches?: BranchRow[];
+        };
+
+        const currencyJson = (await currencyRes.json()) as {
+          currencySelectorEnabled?: boolean;
+          defaultCurrency?: string;
+          availableCurrencies?: string[];
         };
 
         setPricingForm({
@@ -189,18 +189,6 @@ export default function AdminSettingsPage() {
           enableCashOnDelivery: pricingJson.enableCashOnDelivery ?? true,
           enablePayAtBranch: pricingJson.enablePayAtBranch ?? true,
         });
-        setWiseConfigured(Boolean(pricingJson.wiseConfigured ?? false));
-        setWiseMissingKeys(
-          Array.isArray(pricingJson.wiseMissingKeys)
-            ? pricingJson.wiseMissingKeys
-            : [],
-        );
-        setWiseWebhookSecretConfigured(
-          Boolean(pricingJson.wiseWebhookSecretConfigured),
-        );
-        setWiseWebhookPath(
-          pricingJson.wiseWebhookPath ?? "/api/payments/wise/webhook",
-        );
         setSupportForm({
           mobileNumber: supportJson.mobileNumber ?? "",
           landlineNumber: supportJson.landlineNumber ?? "",
@@ -208,6 +196,11 @@ export default function AdminSettingsPage() {
         setBranches(
           Array.isArray(branchJson.branches) ? branchJson.branches : [],
         );
+        setCurrencyForm({
+          currencySelectorEnabled: currencyJson.currencySelectorEnabled ?? true,
+          defaultCurrency: currencyJson.defaultCurrency ?? "PKR",
+          availableCurrencies: currencyJson.availableCurrencies ?? ["PKR", "USD", "EUR", "GBP", "SAR", "AED"],
+        });
       } catch {
         setError("Unable to load settings.");
       } finally {
@@ -494,6 +487,31 @@ export default function AdminSettingsPage() {
     }
   }
 
+  async function handleCurrencySave() {
+    setCurrencySaving(true);
+    setCurrencyMessage("");
+    setCurrencyError("");
+
+    try {
+      const res = await fetch("/api/admin/settings/currency", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currencyForm),
+      });
+
+      if (!res.ok) {
+        const json = (await res.json()) as { error?: string };
+        throw new Error(json.error ?? "Failed to save currency settings");
+      }
+
+      setCurrencyMessage("Currency settings saved successfully.");
+    } catch (err) {
+      setCurrencyError(err instanceof Error ? err.message : "Failed to save currency settings");
+    } finally {
+      setCurrencySaving(false);
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6">
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
@@ -569,6 +587,17 @@ export default function AdminSettingsPage() {
               }`}
             >
               Support
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("currency")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "currency"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Currency
             </button>
           </div>
         </aside>
@@ -902,38 +931,6 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {paymentForm.enableWise && !wiseConfigured && (
-                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Wise is enabled but not fully configured in `.env`. Missing:
-                  {" "}
-                  {wiseMissingKeys.length > 0
-                    ? wiseMissingKeys.join(", ")
-                    : "WISE_* credentials"}
-                </p>
-              )}
-              {paymentForm.enableWise && (
-                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-xs text-blue-900">
-                  <p className="font-semibold">Wise Webhook Setup</p>
-                  <p className="mt-1">
-                    Configure Wise webhook URL to:
-                    {" "}
-                    <code>{wiseWebhookPath}</code>
-                  </p>
-                  <p className="mt-1">
-                    Set
-                    {" "}
-                    <code>WISE_WEBHOOK_SECRET</code>
-                    {" "}
-                    in `.env` and use the same secret in Wise dashboard.
-                  </p>
-                  <p className="mt-1">
-                    Webhook secret status:
-                    {" "}
-                    {wiseWebhookSecretConfigured ? "Configured" : "Missing"}
-                  </p>
-                </div>
-              )}
-
               {paymentMessage && (
                 <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   {paymentMessage}
@@ -1173,7 +1170,7 @@ export default function AdminSettingsPage() {
                 </table>
               </div>
             </div>
-          ) : (
+          ) : activePanel === "support" ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
                 Support
@@ -1244,7 +1241,117 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
             </div>
-          )}
+          ) : activePanel === "currency" ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                Currency
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+                Currency Settings
+              </h2>
+              <p className="mt-1 text-sm text-blue-800/80">
+                Configure currency selector for flight searches and set the default currency.
+              </p>
+
+              <div className="mt-4 space-y-4">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={currencyForm.currencySelectorEnabled}
+                    onChange={(e) =>
+                      setCurrencyForm((prev) => ({
+                        ...prev,
+                        currencySelectorEnabled: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">
+                      Enable Currency Selector
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      Allow users to select currency for flight searches in the navbar
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Default Currency
+                  </span>
+                  <select
+                    value={currencyForm.defaultCurrency}
+                    onChange={(e) =>
+                      setCurrencyForm((prev) => ({
+                        ...prev,
+                        defaultCurrency: e.target.value,
+                      }))
+                    }
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  >
+                    {currencyForm.availableCurrencies.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div>
+                  <span className="text-xs font-semibold text-slate-600">
+                    Available Currencies
+                  </span>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Currencies users can select from
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {["PKR", "USD", "EUR", "GBP", "SAR", "AED"].map((currency) => (
+                      <label key={currency} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={currencyForm.availableCurrencies.includes(currency)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setCurrencyForm((prev) => ({
+                              ...prev,
+                              availableCurrencies: checked
+                                ? [...prev.availableCurrencies, currency]
+                                : prev.availableCurrencies.filter((c) => c !== currency),
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-slate-700">{currency}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {currencyMessage && (
+                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {currencyMessage}
+                </p>
+              )}
+              {currencyError && (
+                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {currencyError}
+                </p>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleCurrencySave()}
+                  disabled={currencySaving}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                >
+                  {currencySaving ? "Saving..." : "Save Currency Settings"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

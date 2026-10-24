@@ -72,6 +72,7 @@ function getSearchHref(query: FlightSearchQuery, departureDate: string) {
     infants: String(query.infants),
     cabinClass: query.cabinClass,
     directOnly: String(query.directOnly),
+    currency: query.currency,
   });
 
   const stayDays = getStayDays(query);
@@ -135,8 +136,6 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
 
   useEffect(() => {
     if (query.tripType === "multi-city") {
-      setFares(null);
-      setLoading(false);
       return;
     }
 
@@ -145,13 +144,17 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       query.departureDate,
       new Date().toISOString().slice(0, 10),
     );
+    const monthAnchor = addDays(selectedDate, -3);
 
     const params = new URLSearchParams({
       origin: query.origin,
       destination: query.destination,
-      departureDate: selectedDate,
+      departureDate: query.departureDate,
+      month: monthAnchor,
       tripType,
       cabinClass: query.cabinClass,
+      months: "1",
+      currency: query.currency,
     });
 
     if (query.returnDate) {
@@ -191,12 +194,12 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       controller.abort();
     };
   }, [
+    query.tripType,
     query.origin,
     query.destination,
     query.departureDate,
     query.returnDate,
     query.cabinClass,
-    query.tripType,
   ]);
 
   if (query.tripType === "multi-city") return null;

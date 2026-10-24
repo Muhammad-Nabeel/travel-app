@@ -44,6 +44,12 @@ export const flightSearchSchema = z.object({
     children: z.coerce.number().int().min(0).max(9).default(0),
     infants: z.coerce.number().int().min(0).max(9).default(0),
     cabinClass: z.enum(CABIN_CLASSES).default("Economy"),
+    currency: z
+        .string()
+        .trim()
+        .default("PKR")
+        .transform((value) => value.toUpperCase())
+        .refine((value) => /^[A-Z]{3}$/.test(value), "Currency must be a valid 3-letter ISO code"),
     directOnly: z
         .union([z.boolean(), z.string()])
         .transform((val) => {

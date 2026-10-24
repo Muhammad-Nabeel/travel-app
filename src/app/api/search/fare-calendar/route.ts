@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { searchSabreFareCalendar } from "@/lib/providers/sabre/flight-search";
 
+function getDateOffset(base: Date, monthsToAdd: number) {
+    const d = new Date(base);
+    d.setUTCMonth(d.getUTCMonth() + monthsToAdd, 1);
+    return d;
+}
+
 function asIsoDate(value: string | null) {
     if (!value) return "";
     const match = value.match(/^\d{4}-\d{2}-\d{2}$/);
@@ -30,6 +36,7 @@ export async function GET(request: NextRequest) {
 
     const origin = codeFrom(searchParams.get("origin"));
     const destination = codeFrom(searchParams.get("destination"));
+    const months = Math.min(Math.max(Number(searchParams.get("months") ?? "2"), 1), 4);
     const cabinClass = (searchParams.get("cabinClass") as
         | "Economy"
         | "Premium Economy"
@@ -39,6 +46,7 @@ export async function GET(request: NextRequest) {
     const tripType = searchParams.get("tripType") === "round-trip" ? "round-trip" : "one-way";
     const selectedDepartureDate = asIsoDate(searchParams.get("departureDate"));
     const selectedReturnDate = asIsoDate(searchParams.get("returnDate"));
+    const currency = codeFrom(searchParams.get("currency"));
     const derivedLengthOfStay =
         tripType === "round-trip" && selectedDepartureDate && selectedReturnDate
             ? daysBetween(selectedDepartureDate, selectedReturnDate)
@@ -54,31 +62,38 @@ export async function GET(request: NextRequest) {
         );
     }
 
-    if (!selectedDepartureDate) {
-        return NextResponse.json(
-            {
-                ok: false,
-                error: "Departure date is required.",
-            },
-            { status: 400 },
-        );
-    }
+    const monthInput = asIsoDate(searchParams.get("month"));
+    const monthStart = monthInput ? new Date(`${monthInput}T00:00:00.000Z`) : new Date();
+    monthStart.setUTCDate(1);
 
+    const allFares = new Map<string, { amount: number; currency: string }>();
     try {
-        // Only fetch fares for the next 7 days from the selected departure date
-        const fares = await searchSabreFareCalendar({
-            origin,
-            destination,
-            departureDate: selectedDepartureDate,
-            lengthOfStay: derivedLengthOfStay ?? 7,
-            cabinClass,
-            tripType,
-        });
+        for (let i = 0; i < months; i += 1) {
+            const targetMonth = getDateOffset(monthStart, i);
+            const monthDate = targetMonth.toISOString().slice(0, 10);
+            const fares = await searchSabreFareCalendar({
+                origin,
+                destination,
+                departureDate: monthDate,
+                lengthOfStay: derivedLengthOfStay ?? 7,
+                cabinClass,
+                tripType,
+                currency,
+            });
+
+            for (const fare of fares) {
+                const existing = allFares.get(fare.date);
+                if (!existing || fare.amount < existing.amount) {
+                    allFares.set(fare.date, { amount: fare.amount, currency: fare.currency });
+                }
+            }
+        }
 
         return NextResponse.json({
             ok: true,
             source: "sabre",
-            fares: fares
+            fares: Array.from(allFares.entries())
+                .map(([date, value]) => ({ date, ...value }))
                 .sort((a, b) => a.date.localeCompare(b.date)),
         });
     } catch (error) {

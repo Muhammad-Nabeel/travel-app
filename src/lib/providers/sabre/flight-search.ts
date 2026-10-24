@@ -178,6 +178,7 @@ function buildSabreSearchCorePayload(
     query: FlightSearchQuery,
     env: NonNullable<ReturnType<typeof getSabreEnv>>,
 ) {
+    const requestedCurrency = query.currency?.toUpperCase() || env.isoCurrency;
     const passengers = [
         { code: "ADT", quantity: query.adults },
         { code: "CNN", quantity: query.children },
@@ -256,7 +257,7 @@ function buildSabreSearchCorePayload(
                         Type: "1",
                     },
                     ISOCountry: env.isoCountry,
-                    ISOCurrency: env.isoCurrency,
+                    ISOCurrency: requestedCurrency,
                 },
             ],
         },
@@ -317,7 +318,7 @@ function buildSabreSearchCorePayload(
                 },
             ],
             PriceRequestInformation: {
-                CurrencyCode: env.isoCurrency,
+                CurrencyCode: requestedCurrency,
                 NegotiatedFaresOnly: false,
                 ProcessThruFaresOnly: true,
                 TPA_Extensions: {
@@ -780,6 +781,7 @@ export async function searchSabreFareCalendar(params: {
     lengthOfStay?: number;
     cabinClass?: FlightSearchQuery["cabinClass"];
     tripType?: FlightSearchQuery["tripType"];
+    currency?: string;
 }): Promise<FareCalendarEntry[]> {
     const env = getSabreEnv();
     if (!env) {
@@ -789,6 +791,7 @@ export async function searchSabreFareCalendar(params: {
     const token = await getSabreAccessToken();
     const endpointPath =
         process.env.SABRE_FARE_CALENDAR_PATH?.trim() || DEFAULT_FARE_CALENDAR_PATH;
+    const requestedCurrency = params.currency?.toUpperCase() || env.isoCurrency;
 
     const departureDateTime = `${params.departureDate}T00:00:00`;
     const stayDays = Math.max(1, params.lengthOfStay ?? 7);
@@ -854,6 +857,7 @@ export async function searchSabreFareCalendar(params: {
                             ID: "1",
                             Type: "1",
                         },
+                        ISOCurrency: requestedCurrency,
                     },
                 ],
             },

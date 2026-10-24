@@ -152,7 +152,7 @@ function buildAmadeusSearchPayload(
     }
 
     return {
-        currencyCode: env.currency,
+        currencyCode: query.currency || env.currency,
         originDestinations,
         travelers,
         sources: ["GDS"],

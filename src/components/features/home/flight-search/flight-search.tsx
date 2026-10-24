@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
@@ -16,9 +16,7 @@ import styles from "./flight-search-engine.module.css";
 import { AirportInput, type Airport } from "../../../shared/airport-input";
 import { TrendingSearches } from "../../../shared/trending-searches";
 import type { CabinClass, TripType } from "@/lib/flights/types";
-import { trackGa4Event } from "@/lib/analytics/ga4-events";
-import { flightSearchSchema } from "@/lib/validations/search";
-
+import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
 const CABIN_CLASSES = [
   "Economy",
   "Premium Economy",
@@ -155,6 +153,7 @@ export function FlightSearchEngine({
   initialValues,
 }: FlightSearchEngineProps) {
   const router = useRouter();
+  const { settings: currencySettings, loading: currencyLoading } = useCurrencySettings();
 
   const [tripType, setTripType] = useState<TripType>(
     initialValues?.tripType ?? "one-way",
@@ -187,6 +186,7 @@ export function FlightSearchEngine({
     "departure" | "return" | "multi-city"
   >("departure");
   const [calendarLegIndex, setCalendarLegIndex] = useState<number | null>(null);
+  const [currency, setCurrency] = useState("PKR");
   const [roundTripRangeStep, setRoundTripRangeStep] = useState<"start" | "end">(
     "start",
   );
@@ -202,6 +202,19 @@ export function FlightSearchEngine({
     "",
   );
   const [singleMonthCalendar, setSingleMonthCalendar] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const urlCurrency = new URLSearchParams(window.location.search)
+      .get("currency")
+      ?.toUpperCase();
+    const storedCurrency = window.localStorage
+      .getItem("selectedCurrency")
+      ?.toUpperCase();
+
+    setCurrency(urlCurrency || storedCurrency || (!currencyLoading ? currencySettings.defaultCurrency : "PKR"));
+  }, [currencySettings.defaultCurrency, currencyLoading]);
   const [trendingRoutes, setTrendingRoutes] = useState<TrendingRoute[]>([]);
   const [multiCityLegs, setMultiCityLegs] = useState<MultiCityLegState[]>(
     () => {
@@ -241,12 +254,10 @@ export function FlightSearchEngine({
   const paxRef = useRef<HTMLDivElement>(null);
   const cabinRef = useRef<HTMLDivElement>(null);
   const fareCalendarPanelRef = useRef<HTMLDivElement>(null);
-  const minSelectableDepartureDate = useMemo(() => {
-    const today = formatDateForInput(new Date());
-    // On results page with initialValues, still allow dates from today onwards
-    // Don't restrict to a future date, but also don't allow past dates
-    return today;
-  }, []);
+  const minSelectableDepartureDate = useMemo(
+    () => formatDateForInput(addDays(new Date(), 3)),
+    [],
+  );
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -257,7 +268,7 @@ export function FlightSearchEngine({
     }
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
+  }, [currencySettings.defaultCurrency, currencyLoading]);
 
   const boundedInfants = Math.min(infants, adults);
 
@@ -364,7 +375,7 @@ export function FlightSearchEngine({
     setCalendarField(field);
     setCalendarLegIndex(field === "multi-city" ? (legIndex ?? 0) : null);
     setRoundTripRangeStep(
-      tripType === "round-trip" && field !== "return" ? "start" : "end",
+      field === "departure" && tripType === "round-trip" ? "start" : "end",
     );
     setShowFareCalendar(true);
 
@@ -379,109 +390,109 @@ export function FlightSearchEngine({
     setCalendarMonth(startOfMonth(parseISODate(selectedDate)));
   };
 
-  const loadFareCalendar = useCallback(
-    async (monthStart: Date, signal?: AbortSignal) => {
-      const legContext =
-        tripType === "multi-city" && calendarField === "multi-city"
-          ? multiCityLegs[calendarLegIndex ?? 0]
-          : null;
+  const loadFareCalendar = async (monthStart: Date, signal?: AbortSignal) => {
+    const legContext =
+      tripType === "multi-city" && calendarField === "multi-city"
+        ? multiCityLegs[calendarLegIndex ?? 0]
+        : null;
 
-      const originCode = legContext
-        ? extractAirportCode(legContext.origin, legContext.originIata)
-        : extractAirportCode(origin, originIata);
-      const destinationCode = legContext
-        ? extractAirportCode(legContext.destination, legContext.destinationIata)
-        : extractAirportCode(destination, destinationIata);
+    const originCode = legContext
+      ? extractAirportCode(legContext.origin, legContext.originIata)
+      : extractAirportCode(origin, originIata);
+    const destinationCode = legContext
+      ? extractAirportCode(legContext.destination, legContext.destinationIata)
+      : extractAirportCode(destination, destinationIata);
 
-      if (!originCode || !destinationCode) {
-        setCalendarError(
-          legContext
-            ? "Select valid origin and destination for this leg first."
-            : "Select valid origin and destination airports first.",
-        );
+    if (!originCode || !destinationCode) {
+      setCalendarError(
+        legContext
+          ? "Select valid origin and destination for this leg first."
+          : "Select valid origin and destination airports first.",
+      );
+      setCalendarFares({});
+      setCalendarSource("");
+      return;
+    }
+
+    setCalendarLoading(true);
+    setCalendarError("");
+
+    try {
+      const month = formatDateForInput(monthStart);
+      const fareCalendarQuery = new URLSearchParams({
+        origin: originCode,
+        destination: destinationCode,
+        month,
+        months: "2",
+        cabinClass,
+      });
+
+      if (tripType === "round-trip" && calendarField !== "multi-city") {
+        fareCalendarQuery.set("tripType", tripType);
+        if (departureDate)
+          fareCalendarQuery.set("departureDate", departureDate);
+        if (returnDate) fareCalendarQuery.set("returnDate", returnDate);
+      }
+
+      const res = await fetch(
+        `/api/search/fare-calendar?${fareCalendarQuery.toString()}`,
+        { signal },
+      );
+      const data = (await res.json()) as {
+        ok?: boolean;
+        source?: "sabre" | "mock";
+        fares?: FareCell[];
+        error?: string;
+      };
+
+      if (!res.ok || !data.ok) {
+        setCalendarError(data.error ?? "Unable to load fare calendar.");
         setCalendarFares({});
         setCalendarSource("");
         return;
       }
 
-      setCalendarLoading(true);
-      setCalendarError("");
-
-      try {
-        // Use departure date for the API, default to today if not set
-        const effectiveDepartureDate =
-          departureDate || formatDateForInput(new Date());
-
-        const fareCalendarQuery = new URLSearchParams({
-          origin: originCode,
-          destination: destinationCode,
-          departureDate: effectiveDepartureDate,
-          cabinClass,
-          tripType,
-        });
-
-        if (tripType === "round-trip" && returnDate) {
-          fareCalendarQuery.set("returnDate", returnDate);
-        }
-
-        const res = await fetch(
-          `/api/search/fare-calendar?${fareCalendarQuery.toString()}`,
-          { signal },
-        );
-        const data = (await res.json()) as {
-          ok?: boolean;
-          source?: "sabre" | "mock";
-          fares?: FareCell[];
-          error?: string;
-        };
-
-        if (!res.ok || !data.ok) {
-          setCalendarError(data.error ?? "Unable to load fare calendar.");
-          setCalendarFares({});
-          setCalendarSource("");
-          return;
-        }
-
-        const mapped: Record<string, FareCell> = {};
-        for (const item of data.fares ?? []) {
-          if (!item?.date || !Number.isFinite(item.amount)) continue;
-          mapped[item.date] = item;
-        }
-
-        setCalendarFares(mapped);
-        setCalendarSource(data.source ?? "");
-      } catch (err) {
-        if ((err as { name?: string }).name === "AbortError") return;
-        setCalendarError("Unable to load fare calendar.");
-        setCalendarFares({});
-        setCalendarSource("");
-      } finally {
-        if (!signal?.aborted) {
-          setCalendarLoading(false);
-        }
+      const mapped: Record<string, FareCell> = {};
+      for (const item of data.fares ?? []) {
+        if (!item?.date || !Number.isFinite(item.amount)) continue;
+        mapped[item.date] = item;
       }
-    },
-    [
-      tripType,
-      calendarField,
-      calendarLegIndex,
-      multiCityLegs,
-      origin,
-      originIata,
-      destination,
-      destinationIata,
-      departureDate,
-      returnDate,
-      cabinClass,
-    ],
-  );
+
+      setCalendarFares(mapped);
+      setCalendarSource(data.source ?? "");
+    } catch (err) {
+      if ((err as { name?: string }).name === "AbortError") return;
+      setCalendarError("Unable to load fare calendar.");
+      setCalendarFares({});
+      setCalendarSource("");
+    } finally {
+      if (!signal?.aborted) {
+        setCalendarLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!showFareCalendar) return;
     const controller = new AbortController();
     void loadFareCalendar(calendarMonth, controller.signal);
     return () => controller.abort();
-  }, [showFareCalendar, calendarMonth, loadFareCalendar]);
+  }, [
+    showFareCalendar,
+    calendarMonth,
+    calendarField,
+    calendarLegIndex,
+    multiCityLegs,
+    origin,
+    originIata,
+    destination,
+    destinationIata,
+    cabinClass,
+    tripType,
+    departureDate,
+    returnDate,
+    loadFareCalendar,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -503,7 +514,7 @@ export function FlightSearchEngine({
       cancelled = true;
       controller.abort();
     };
-  }, []);
+  }, [currencySettings.defaultCurrency, currencyLoading]);
 
   useEffect(() => {
     if (!showFareCalendar) return;
@@ -554,7 +565,7 @@ export function FlightSearchEngine({
     return () => {
       mediaQuery.removeEventListener("change", updateCalendarLayout);
     };
-  }, []);
+  }, [currencySettings.defaultCurrency, currencyLoading]);
 
   const renderFareMonth = (monthStart: Date) => {
     const cells = getMonthCells(monthStart);
@@ -569,8 +580,7 @@ export function FlightSearchEngine({
     const minDateIso =
       calendarField === "multi-city"
         ? previousLegDate || minSelectableDepartureDate
-        : calendarField === "return" ||
-            (tripType === "round-trip" && roundTripRangeStep === "end")
+        : calendarField === "return" || roundTripRangeStep === "end"
           ? departureDate || minSelectableDepartureDate
           : minSelectableDepartureDate;
     const minDate = parseISODate(minDateIso);
@@ -724,6 +734,7 @@ export function FlightSearchEngine({
       children,
       infants: boundedInfants,
       cabinClass,
+      currency,
       directOnly,
     });
 
@@ -737,7 +748,7 @@ export function FlightSearchEngine({
 
     if (parsed.departureDate < minSelectableDepartureDate) {
       window.alert(
-        `Departure date must be from today onwards (${minSelectableDepartureDate}).`,
+        `Departure date must be at least 3 days from today (${minSelectableDepartureDate}).`,
       );
       return;
     }
@@ -748,7 +759,7 @@ export function FlightSearchEngine({
       );
       if (invalidLeg) {
         window.alert(
-          `All multi-city dates must be from today onwards (${minSelectableDepartureDate}).`,
+          `All multi-city dates must be at least 3 days from today (${minSelectableDepartureDate}).`,
         );
         return;
       }
@@ -765,6 +776,7 @@ export function FlightSearchEngine({
       children: String(parsed.children),
       infants: String(parsed.infants),
       cabinClass: parsed.cabinClass,
+      currency: parsed.currency,
       directOnly: String(parsed.directOnly),
     });
     if (parsed.tripType === "multi-city" && (parsed.legs?.length ?? 0) > 0) {

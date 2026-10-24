@@ -35,6 +35,7 @@ type FlightsPageProps = {
     children?: string;
     infants?: string;
     cabinClass?: string;
+    currency?: string;
     directOnly?: string;
   }>;
 };
