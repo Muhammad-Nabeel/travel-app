@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
+import {
+  buildOrganizationJsonLd,
+  buildStaticPageMetadata,
+} from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
-import {
-  buildMetadata,
-  createOrganizationSchema,
-  createWebPageSchema,
-} from "@/lib/seo";
+import { createWebPageSchema } from "@/lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 function getPhoneDigits(value: string): string {
@@ -20,24 +20,19 @@ function getTelHref(value: string): string {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const pages = await getStoredSitePagesSettings();
-  const page = pages.contactUs;
-
-  return buildMetadata({
-    title: page.title,
-    description: page.intro,
-    path: "/contact-us",
-    keywords: ["contact us", "travel support", "Safar Umrah contact"],
-  });
+  return buildStaticPageMetadata("contactUs");
 }
 
 export default async function ContactUsPage() {
-  const pages = await getStoredSitePagesSettings();
+  const [pages, organizationJsonLd] = await Promise.all([
+    getStoredSitePagesSettings(),
+    buildOrganizationJsonLd(),
+  ]);
 
   const page = pages.contactUs;
 
   return (
-    <main className="section-shell py-12 sm:py-16">
+    <div className="section-shell py-12 sm:py-16">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -46,11 +41,7 @@ export default async function ContactUsPage() {
             path: "/contact-us",
             type: "ContactPage",
           }),
-          createOrganizationSchema({
-            telephone: page.phoneValue,
-            email: page.emailValue,
-            address: page.locationValue,
-          }),
+          organizationJsonLd,
         ]}
       />
 
@@ -167,6 +158,6 @@ export default async function ContactUsPage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

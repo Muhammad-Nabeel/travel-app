@@ -41,7 +41,7 @@ export function SiteContentPage({
   aside,
 }: SiteContentPageProps) {
   return (
-    <main className="section-shell py-12 sm:py-16">
+    <div className="section-shell py-12 sm:py-16">
       <StructuredData
         data={createWebPageSchema({
           title,
@@ -92,6 +92,6 @@ export function SiteContentPage({
           </aside>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

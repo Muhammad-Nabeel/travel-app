@@ -16,6 +16,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { StructuredData } from "@/components/shared/structured-data";
+import { fitTitle } from "@/lib/seo-copy";
 import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
 
 type DestinationPageProps = {
@@ -97,12 +98,16 @@ export async function generateMetadata({
 
   const { destination } = data;
 
+  const lead = (destination.tagline ?? `Plan your trip to ${destination.city}, ${destination.country}`).replace(/\.$/, "");
+  const fare = destination.fare ? ` Flights from Pakistan from ${destination.fare}.` : "";
+
   return buildMetadata({
-    title: `${destination.city}, ${destination.country}`,
-    description:
-      destination.tagline ??
-      destination.notes ??
-      `Explore ${destination.city} with destination guidance, practical travel tips, and curated activities.`,
+    title: fitTitle(
+      `${destination.city} Travel Guide – Best Time, Tips & Flights`,
+      `${destination.city} Travel Guide – Best Time & Tips`,
+      `${destination.city} Travel Guide`,
+    ),
+    description: `${lead}. Best time to visit ${destination.city}, how long to stay, local tips and things to do.${fare}`,
     path: `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`,
     image: destination.imageUrl ?? undefined,
     keywords: [
@@ -159,7 +164,7 @@ export default async function DestinationDetailsPage({
   ].filter((fact) => Boolean(fact.value));
 
   return (
-    <main className="bg-slate-50 pb-16">
+    <div className="bg-slate-50 pb-16">
       <StructuredData
         data={[
           {
@@ -397,6 +402,6 @@ export default async function DestinationDetailsPage({
           </div>
         </section>
       ) : null}
-    </main>
+    </div>
   );
 }

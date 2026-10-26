@@ -13,6 +13,7 @@ import {
 
 import { TourEnquiryForm } from "@/components/features/tour/tour-enquiry-form";
 import { StructuredData } from "@/components/shared/structured-data";
+import { CATALOG_INDEXING, fitTitle } from "@/lib/seo-copy";
 import {
   absoluteUrl,
   buildMetadata,
@@ -53,11 +54,18 @@ export async function generateMetadata({
     });
   }
 
+  const city = pkg.destination.split(",")[0].trim();
+
   return buildMetadata({
-    title: pkg.title,
+    title: fitTitle(
+      `${pkg.title} – ${pkg.duration}-Day ${city} Package`,
+      `${pkg.title} – ${pkg.duration}-Day Package`,
+      pkg.title,
+    ),
     description: packageDescription(pkg),
     path: getTourPackagePath(pkg.title),
     keywords: [pkg.destination, `${pkg.duration} day tour`, pkg.tourType],
+    noIndex: !CATALOG_INDEXING.tourPackages,
   });
 }
 
@@ -79,7 +87,7 @@ export default async function TourPackageDetailsPage({
   const estimatedForTwoAdults = (pkg.pricePerAdult * 2).toLocaleString();
 
   return (
-    <main className="flex-1 bg-slate-50 pb-14">
+    <div className="flex-1 bg-slate-50 pb-14">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -224,6 +232,6 @@ export default async function TourPackageDetailsPage({
           </div>
         </aside>
       </section>
-    </main>
+    </div>
   );
 }

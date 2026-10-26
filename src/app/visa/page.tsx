@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { VisaResults } from "@/components/features/visa/visa-results";
 import { getStoredVisaCountries } from "@/lib/admin-settings/visa-settings";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
 import { getVisaPath } from "@/lib/visa";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Visa Guidance",
-  description:
-    "Review destination-specific visa guidance and planning details before you travel.",
-  path: "/visa",
-  keywords: ["visa guidance", "travel visa", "visa requirements"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return buildStaticPageMetadata("visa");
+}
 
 export default async function VisaPage() {
   const visaResults = await getStoredVisaCountries();
@@ -29,7 +25,7 @@ export default async function VisaPage() {
   const popularCountries = countryOptions.slice(0, 6);
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -54,6 +50,6 @@ export default async function VisaPage() {
         countryOptions={countryOptions}
         popularCountries={popularCountries}
       />
-    </main>
+    </div>
   );
 }

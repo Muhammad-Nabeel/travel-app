@@ -63,7 +63,7 @@ export const DUMMY_BLOG_POSTS: BlogPostRow[] = [
 <p>Your first Umrah is a journey of faith and personal growth. With proper preparation and the right mindset, it will be an experience that stays with you forever. We wish you a blessed and fulfilling pilgrimage.</p>`,
         coverImageUrl:
             "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=800&auto=format&fit=crop",
-        author: "AIM Digital",
+        author: "Safar Umrah Travel Team",
         category: "umrah",
         tags: ["umrah", "tips", "first-time"],
         status: "PUBLISHED",
@@ -133,7 +133,7 @@ export const DUMMY_BLOG_POSTS: BlogPostRow[] = [
 <p>Whether you're seeking comfort or budget-friendly options, Dubai has something to offer year-round. Winter is unbeatable for overall experience, but don't overlook shoulder seasons for your perfect Dubai escape.</p>`,
         coverImageUrl:
             "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&auto=format&fit=crop",
-        author: "AIM Digital",
+        author: "Safar Umrah Travel Team",
         category: "destinations",
         tags: ["dubai", "uae", "travel-guide"],
         status: "PUBLISHED",
@@ -214,7 +214,7 @@ export const DUMMY_BLOG_POSTS: BlogPostRow[] = [
 <p>Booking cheap flights requires strategy, flexibility, and research. By implementing these tips, you can save thousands of rupees on your next international journey. Happy travels!</p>`,
         coverImageUrl:
             "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop",
-        author: "AIM Digital",
+        author: "Safar Umrah Travel Team",
         category: "flights",
         tags: ["flights", "budget", "pakistan"],
         status: "PUBLISHED",
@@ -328,7 +328,7 @@ export const DUMMY_BLOG_POSTS: BlogPostRow[] = [
 <p>Istanbul is a city that enchants every visitor with its unique blend of ancient history, Ottoman grandeur, and modern vibrancy. This 5-day itinerary covers the must-see attractions while leaving room for spontaneous discoveries. Whether you're a history buff, food lover, or adventure seeker, Istanbul will leave you wanting to return.</p>`,
         coverImageUrl:
             "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&auto=format&fit=crop",
-        author: "AIM Digital",
+        author: "Safar Umrah Travel Team",
         category: "destinations",
         tags: ["istanbul", "turkey", "city-guide"],
         status: "PUBLISHED",

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import {
   ArrowLeft,
   Calendar,
@@ -14,8 +13,18 @@ import {
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
+import { StructuredData } from "@/components/shared/structured-data";
 import { UmrahEnquiryForm } from "@/components/features/umrah/umrah-enquiry-form";
-import { buildMetadata } from "@/lib/seo";
+import {
+  buildMetadata,
+  createBreadcrumbSchema,
+  createTouristTripSchema,
+} from "@/lib/seo";
+import {
+  buildUmrahPackageSeo,
+  getPublishedUmrahPackageBySlug,
+  getUmrahPackagePath,
+} from "@/lib/umrah-packages";
 
 // ─── Pricing helpers (mirrors umrah-configurator.tsx) ────────────────────────
 
@@ -72,25 +81,6 @@ function buildPricing(
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
-async function getPackage(slug: string): Promise<PackageRow | null> {
-  try {
-    const h = await headers();
-    const host = h.get("host") ?? "localhost:3000";
-    const protocol = host.startsWith("localhost") ? "http" : "https";
-    const res = await fetch(
-      `${protocol}://${host}/api/packages/${encodeURIComponent(slug)}`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as PackageRow & { ok?: boolean };
-    if ("ok" in data && data.ok === false) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -100,18 +90,24 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const pkg = await getPackage(slug);
-  if (!pkg)
+  const result = await getPublishedUmrahPackageBySlug(slug);
+  if (!result)
     return buildMetadata({
       title: "Package not found",
       description: "The requested Umrah package could not be found.",
-      path: `/umrah-packages/${slug}`,
+      path: getUmrahPackagePath(slug),
+      noIndex: true,
     });
+
+  const { pkg, isDummy } = result;
+  const seo = buildUmrahPackageSeo(pkg);
   return buildMetadata({
-    title: pkg.title,
-    description: pkg.subtitle ?? pkg.description,
-    path: `/umrah-packages/${pkg.slug}`,
+    title: seo.title,
+    description: seo.description,
+    path: getUmrahPackagePath(pkg.slug),
     keywords: ["Umrah package", pkg.departureCity, "pilgrimage"],
+    // Demo packages (no published rows in the database) must not be indexed.
+    noIndex: isDummy,
   });
 }
 
@@ -127,8 +123,11 @@ export default async function UmrahPackageDetailPage({
   const { slug } = await params;
   const sp = await searchParams;
 
-  const pkg = await getPackage(slug);
-  if (!pkg) notFound();
+  const result = await getPublishedUmrahPackageBySlug(slug);
+  if (!result) notFound();
+  const { pkg } = result;
+  const packagePath = getUmrahPackagePath(pkg.slug);
+  const seo = buildUmrahPackageSeo(pkg);
 
   // Config from URL params (set by the configurator card link)
   const nights = Math.max(1, Number(sp.nights) || 14);
@@ -159,6 +158,30 @@ export default async function UmrahPackageDetailPage({
 
   return (
     <div className="flex-1">
+      <StructuredData
+        data={[
+          createTouristTripSchema({
+            name: pkg.title,
+            description: seo.description,
+            path: packagePath,
+            price: pkg.basePrice,
+            currency: pkg.currency,
+            seatsAvailable: pkg.seatsAvailable,
+            validFrom: pkg.createdAt,
+            validThrough: pkg.startDate,
+            touristType: "Pilgrims",
+            itinerary: [
+              `${pkg.makkahNights} nights in Makkah`,
+              `${pkg.madinahNights} nights in Madinah`,
+            ],
+          }),
+          createBreadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Umrah Packages", path: "/umrah-packages" },
+            { name: pkg.title, path: packagePath },
+          ]),
+        ]}
+      />
       {/* ── Hero ── */}
       <section
         className="relative w-full overflow-hidden"

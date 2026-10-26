@@ -48,7 +48,7 @@ const EMPTY_FORM = {
   excerpt: "",
   content: "",
   coverImageUrl: "",
-  author: "AIM Digital",
+  author: "Safar Umrah Travel Team",
   category: "travel",
   tags: "",
   status: "DRAFT",
@@ -380,7 +380,7 @@ export default function AdminBlogPage() {
                     onChange={(e) =>
                       setFormData((f) => ({ ...f, author: e.target.value }))
                     }
-                    placeholder="AIM Digital"
+                    placeholder="Safar Umrah Travel Team"
                   />
                 </div>
                 <div className="flex flex-col gap-1">

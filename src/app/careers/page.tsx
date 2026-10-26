@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
@@ -28,15 +28,7 @@ function getEmailLabel(href: string) {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getStoredSitePagesSettings();
-  const page = settings.careers;
-
-  return buildMetadata({
-    title: page.title,
-    description: page.intro,
-    path: "/careers",
-    keywords: ["travel careers", "jobs", "Safar Umrah careers"],
-  });
+  return buildStaticPageMetadata("careers");
 }
 
 export default async function CareersPage() {
@@ -44,7 +36,7 @@ export default async function CareersPage() {
   const page = settings.careers;
 
   return (
-    <main className="section-shell relative py-12 sm:py-16">
+    <div className="section-shell relative py-12 sm:py-16">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -207,6 +199,6 @@ export default async function CareersPage() {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

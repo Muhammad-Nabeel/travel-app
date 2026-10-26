@@ -12,6 +12,6 @@ COPY . .
 # Explicitly generate Prisma client
 RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 3004
 
 CMD ["npm", "run", "dev"]

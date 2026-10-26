@@ -5,7 +5,7 @@ export const SITE_TITLE_TEMPLATE = `%s | ${SITE_NAME}`;
 export const SITE_DESCRIPTION =
   "Search flights, compare destinations, book activities, and plan Umrah travel with clearer pricing and practical support.";
 
-const DEFAULT_SITE_URL = "http://localhost:3000";
+const DEFAULT_SITE_URL = "http://localhost:3004";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   process.env.SITE_URL ??
@@ -15,6 +15,8 @@ const SITE_URL =
 
 type MetadataOptions = {
   title: string;
+  /** Skip the root " | Safar Umrah" template (homepage, titles that already carry the brand). */
+  absoluteTitle?: boolean;
   description: string;
   path: string;
   keywords?: string[];
@@ -45,13 +47,41 @@ type ArticleSchemaOptions = {
   publishedTime?: string | null;
   modifiedTime?: string | null;
   authorName?: string;
+  /** Profile URL of a named author; when present the author is a Person. */
+  authorUrl?: string;
   keywords?: string[];
+  section?: string;
+};
+
+type OrganizationBranch = {
+  name: string;
+  city: string;
+  address: string;
+  phone?: string | null;
 };
 
 type OrganizationSchemaOptions = {
+  legalName?: string;
+  logoUrl?: string;
   telephone?: string;
   email?: string;
   address?: string;
+  sameAs?: string[];
+  branches?: OrganizationBranch[];
+};
+
+type TouristTripSchemaOptions = {
+  name: string;
+  description: string;
+  path: string;
+  image?: string | null;
+  price: number;
+  currency: string;
+  seatsAvailable?: number;
+  validFrom?: string;
+  validThrough?: string;
+  itinerary?: string[];
+  touristType?: string;
 };
 
 export function getSiteUrl() {
@@ -85,7 +115,7 @@ export function toMetaDescription(value: string, maxLength = 160) {
     return compact;
   }
 
-  return `${compact.slice(0, maxLength - 1).trimEnd()}...`;
+  return `${compact.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 export function stripHtml(value: string) {
@@ -94,6 +124,7 @@ export function stripHtml(value: string) {
 
 export function buildMetadata({
   title,
+  absoluteTitle = false,
   description,
   path,
   keywords = [],
@@ -108,7 +139,7 @@ export function buildMetadata({
   const finalImage = resolveImageUrl(image);
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description: finalDescription,
     keywords,
     alternates: {
@@ -126,7 +157,7 @@ export function buildMetadata({
           url: finalImage,
           width: 1200,
           height: 630,
-          alt: `${title} | ${SITE_NAME}`,
+          alt: absoluteTitle ? title : `${title} | ${SITE_NAME}`,
         },
       ],
       ...(publishedTime ? { publishedTime } : {}),
@@ -197,43 +228,63 @@ export function createArticleSchema({
   publishedTime,
   modifiedTime,
   authorName = SITE_NAME,
+  authorUrl,
   keywords = [],
+  section,
 }: ArticleSchemaOptions) {
+  // Only claim a Person author when there is a profile page to back it up.
+  const isPerson = Boolean(authorUrl);
+
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: title,
+    "@type": "BlogPosting",
+    headline: title.slice(0, 110),
     description: toMetaDescription(description),
     image: [resolveImageUrl(image)],
     datePublished: publishedTime ?? undefined,
     dateModified: modifiedTime ?? publishedTime ?? undefined,
     author: {
-      "@type": "Organization",
+      "@type": isPerson ? "Person" : "Organization",
       name: authorName,
+      ...(authorUrl ? { url: absoluteUrl(authorUrl) } : {}),
     },
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
+      url: absoluteUrl("/"),
       logo: {
         "@type": "ImageObject",
         url: resolveImageUrl(),
       },
     },
-    mainEntityOfPage: absoluteUrl(path),
-    keywords,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": absoluteUrl(path),
+    },
+    articleSection: section,
+    keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
+    inLanguage: "en",
   };
 }
 
 export function createOrganizationSchema({
+  legalName,
+  logoUrl,
   telephone,
   email,
   address,
+  sameAs = [],
+  branches = [],
 }: OrganizationSchemaOptions = {}) {
   return {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
+    "@id": absoluteUrl("/#organization"),
     name: SITE_NAME,
+    legalName: legalName || undefined,
     url: absoluteUrl("/"),
+    logo: logoUrl || undefined,
+    image: resolveImageUrl(),
     description: SITE_DESCRIPTION,
     telephone: telephone || undefined,
     email: email || undefined,
@@ -243,6 +294,76 @@ export function createOrganizationSchema({
           streetAddress: address,
         }
       : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+    contactPoint: telephone
+      ? {
+          "@type": "ContactPoint",
+          telephone,
+          contactType: "customer service",
+          availableLanguage: ["English", "Urdu"],
+        }
+      : undefined,
+    department:
+      branches.length > 0
+        ? branches.map((branch) => ({
+            "@type": "TravelAgency",
+            name: `${SITE_NAME} – ${branch.name}`,
+            telephone: branch.phone || undefined,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: branch.address,
+              addressLocality: branch.city,
+            },
+          }))
+        : undefined,
+  };
+}
+
+export function createTouristTripSchema({
+  name,
+  description,
+  path,
+  image,
+  price,
+  currency,
+  seatsAvailable,
+  validFrom,
+  validThrough,
+  itinerary = [],
+  touristType,
+}: TouristTripSchemaOptions) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name,
+    description: toMetaDescription(description),
+    url: absoluteUrl(path),
+    image: image ? resolveImageUrl(image) : undefined,
+    touristType: touristType || undefined,
+    provider: { "@id": absoluteUrl("/#organization") },
+    itinerary:
+      itinerary.length > 0
+        ? {
+            "@type": "ItemList",
+            itemListElement: itinerary.map((item, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: item,
+            })),
+          }
+        : undefined,
+    offers: {
+      "@type": "Offer",
+      price: price.toFixed(2),
+      priceCurrency: currency,
+      url: absoluteUrl(path),
+      availability:
+        seatsAvailable === undefined || seatsAvailable > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/SoldOut",
+      validFrom: validFrom || undefined,
+      priceValidUntil: validThrough ? validThrough.slice(0, 10) : undefined,
+    },
   };
 }
 

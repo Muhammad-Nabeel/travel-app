@@ -7,8 +7,8 @@ import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 import { BlogSearch } from "@/components/features/blog/blog-search";
 import { StructuredData } from "@/components/shared/structured-data";
 import { getPublishedBlogPostBySlug, getPublishedBlogPosts } from "@/lib/blog";
+import { getBlogCategoryLabel, getBlogCategoryPath } from "@/lib/blog-categories";
 import {
-  absoluteUrl,
   buildMetadata,
   createArticleSchema,
   createBreadcrumbSchema,
@@ -18,15 +18,6 @@ type BlogDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  travel: "Travel",
-  umrah: "Umrah",
-  flights: "Flights",
-  hotels: "Hotels",
-  destinations: "Destinations",
-  tips: "Tips",
-  news: "News",
-};
 
 const CATEGORY_COLORS: Record<string, string> = {
   travel: "bg-teal-100 text-teal-700",
@@ -84,16 +75,25 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       })
     : null;
 
+  // Same-category posts first, then shared tags, then most recent: internal
+  // links keep readers and crawlers moving through the topic cluster.
   const relatedPosts = posts
     .filter((item) => item.slug !== post.slug)
-    .slice(0, 5)
     .map((item) => ({
-      "@type": "ListItem",
-      position:
-        posts.findIndex((candidate) => candidate.slug === item.slug) + 1,
-      name: item.title,
-      url: absoluteUrl(`/blog/${item.slug}`),
-    }));
+      item,
+      score:
+        (item.category === post.category ? 2 : 0) +
+        item.tags.filter((tag) => post.tags.includes(tag)).length,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ item }) => item);
+
+  const categoryLabel = getBlogCategoryLabel(post.category);
+  const categoryPath = getBlogCategoryPath(post.category);
+
+  // The page title is the only H1; demote any H1 an editor typed into the body.
+  const content = post.content.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2");
 
   return (
     <div className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
@@ -109,18 +109,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               modifiedTime: post.updatedAt,
               authorName: post.author,
               keywords: post.tags,
+              section: categoryLabel,
             }),
             createBreadcrumbSchema([
               { name: "Home", path: "/" },
               { name: "Blog", path: "/blog" },
+              { name: categoryLabel, path: categoryPath },
               { name: post.title, path: `/blog/${post.slug}` },
             ]),
-            {
-              "@context": "https://schema.org",
-              "@type": "ItemList",
-              name: "Related blog posts",
-              itemListElement: relatedPosts,
-            },
           ]}
         />
 
@@ -136,13 +132,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           <article className="space-y-6 lg:col-span-2">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span
+                <Link
+                  href={categoryPath}
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS.travel
                   }`}
                 >
-                  {CATEGORY_LABELS[post.category] ?? post.category}
-                </span>
+                  {categoryLabel}
+                </Link>
               </div>
               <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
                 {post.title}
@@ -152,7 +149,9 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 {formattedDate && (
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" />
-                    <span>{formattedDate}</span>
+                    <time dateTime={post.publishedAt ?? undefined}>
+                      {formattedDate}
+                    </time>
                   </div>
                 )}
                 <div className="flex items-center gap-1.5">
@@ -244,7 +243,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               `}</style>
               <div
                 className="blog-content"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: content }}
               />
             </div>
 
@@ -262,6 +261,39 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 </div>
               </div>
             </div>
+            {relatedPosts.length > 0 && (
+              <section aria-labelledby="related-articles" className="mt-8">
+                <h2
+                  id="related-articles"
+                  className="mb-4 text-xl font-bold text-slate-900"
+                >
+                  Related articles
+                </h2>
+                <ul className="grid gap-4 sm:grid-cols-3">
+                  {relatedPosts.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        href={`/blog/${item.slug}`}
+                        className="block h-full rounded-lg border border-slate-200 bg-white p-4 transition hover:border-teal-300 hover:shadow-md"
+                      >
+                        <span className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                          {getBlogCategoryLabel(item.category)}
+                        </span>
+                        <span className="mt-1 line-clamp-3 block text-sm font-semibold text-slate-900">
+                          {item.title}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={categoryPath}
+                  className="mt-4 inline-block text-sm font-medium text-teal-700 hover:text-teal-800"
+                >
+                  More {categoryLabel.toLowerCase()} articles →
+                </Link>
+              </section>
+            )}
           </article>
 
           <aside className="lg:sticky lg:top-8 lg:h-min">

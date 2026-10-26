@@ -264,7 +264,7 @@ async function getRecentBookings(): Promise<RecentBooking[]> {
 
 async function getAnalyticsFromApi(): Promise<AdminAnalyticsData> {
   const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
+  const host = h.get("host") ?? "localhost:3004";
   const protocol = host.startsWith("localhost") ? "http" : "https";
 
   const fallbackData: AdminAnalyticsData = {

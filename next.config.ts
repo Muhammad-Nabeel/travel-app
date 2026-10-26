@@ -31,6 +31,19 @@ const nextConfig = {
   images: {
     remotePatterns,
   },
+  async redirects() {
+    return [
+      // Old filtered blog URLs (/blog?category=umrah) move to indexable
+      // category hubs. A config redirect returns a real 308, unlike
+      // permanentRedirect() inside a streamed page.
+      {
+        source: "/blog",
+        has: [{ type: "query", key: "category", value: "(?<category>[a-z-]+)" }],
+        destination: "/blog/category/:category",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

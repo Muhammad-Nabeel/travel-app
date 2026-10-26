@@ -10,7 +10,13 @@ import {
   shouldBypassDatabase,
   markDatabaseUnavailable,
 } from "@/lib/db";
-import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
+import { fitTitle } from "@/lib/seo-copy";
+import {
+  absoluteUrl,
+  buildMetadata,
+  createBreadcrumbSchema,
+  stripHtml,
+} from "@/lib/seo";
 
 type ActivityPageProps = {
   params: Promise<{ id: string }>;
@@ -70,11 +76,18 @@ export async function generateMetadata({
     });
   }
 
+  const { activity, destination } = data;
+  const firstSentence = activity.description
+    ? stripHtml(activity.description).split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, "")
+    : `Discover ${activity.title}${destination ? ` in ${destination.city}` : ""}`;
+
   return buildMetadata({
-    title: data.activity.title,
-    description:
-      data.activity.description ??
-      `Discover ${data.activity.title} and book it through Safar Umrah.`,
+    title: fitTitle(
+      ...(destination ? [`${activity.title} in ${destination.city} – Tickets & Prices`] : []),
+      `${activity.title} – Tickets & Prices`,
+      activity.title,
+    ),
+    description: `${firstSentence}. From ${activity.cost}. Check what's included and book with a Safar Umrah travel adviser.`,
     path: `/activities/${data.activity.id}`,
     image: data.activity.imageUrl,
     keywords: [
@@ -98,7 +111,7 @@ export default async function ActivityDetailsPage({
   const { activity, destination } = data;
 
   return (
-    <main className="bg-slate-50 pb-16">
+    <div className="bg-slate-50 pb-16">
       <StructuredData
         data={[
           {
@@ -215,6 +228,6 @@ export default async function ActivityDetailsPage({
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

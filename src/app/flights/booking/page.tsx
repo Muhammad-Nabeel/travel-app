@@ -35,14 +35,14 @@ export default async function BookingPage({ searchParams }: BookingPageProps) {
 
   if (!result.ok) {
     return (
-      <main className="section-shell flex-1 py-10">
+      <div className="section-shell flex-1 py-10">
         <div className="alert alert-error">
           <span>
             Unable to reload your flight selection. Please go back and try
             again.
           </span>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -62,8 +62,8 @@ export default async function BookingPage({ searchParams }: BookingPageProps) {
   }
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <BookingFormClient offer={selectedOffer} query={result.query} />
-    </main>
+    </div>
   );
 }

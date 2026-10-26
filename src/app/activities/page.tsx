@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, Star, ArrowRight } from "lucide-react";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
   prisma,
@@ -9,7 +10,6 @@ import {
   markDatabaseUnavailable,
 } from "@/lib/db";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
@@ -59,15 +59,8 @@ export async function generateMetadata({
     category || destinationId || search || minRating || sort,
   );
 
-  return buildMetadata({
-    title: hasFilters ? "Filtered Activities" : "Travel Activities",
-    description: hasFilters
-      ? "Browse filtered travel activities and curated experiences from Safar Umrah."
-      : "Browse curated travel experiences, tours, and activities for your next trip.",
-    path: "/activities",
-    keywords: ["travel activities", "tours", "experiences"],
-    noIndex: hasFilters,
-  });
+  // Filtered views are thin variations of /activities; keep them out of the index.
+  return buildStaticPageMetadata("activities", { noIndex: hasFilters });
 }
 
 async function getActivitiesWithDestinations(filters: {
@@ -181,7 +174,7 @@ export default async function ActivitiesPage({
   );
 
   return (
-    <main className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -387,6 +380,6 @@ export default async function ActivitiesPage({
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

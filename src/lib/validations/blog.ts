@@ -22,7 +22,7 @@ export const blogPostSchema = z.object({
         .string()
         .url("Cover image must be a valid URL")
         .max(500, "URL too long"),
-    author: z.string().max(100).trim().default("AIM Digital"),
+    author: z.string().max(100).trim().default("Safar Umrah Travel Team"),
     category: z
         .enum([
             "travel",

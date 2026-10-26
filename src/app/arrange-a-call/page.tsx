@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { SiteContentPage } from "@/components/shared/site-content-page";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
 import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
-import { buildMetadata } from "@/lib/seo";
 
 function getPhoneDigits(value: string): string {
   return value.replace(/\D/g, "");
@@ -17,15 +17,7 @@ function getTelHref(value: string): string {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getStoredSitePagesSettings();
-  const page = settings.arrangeCall;
-
-  return buildMetadata({
-    title: page.title,
-    description: page.intro,
-    path: "/arrange-a-call",
-    keywords: ["travel consultation", "call back", "Umrah support"],
-  });
+  return buildStaticPageMetadata("arrangeCall");
 }
 
 export default async function ArrangeCallPage() {

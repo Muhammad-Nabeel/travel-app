@@ -1,22 +1,21 @@
 import type { Metadata } from "next";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
+import { CATALOG_INDEXING } from "@/lib/seo-copy";
 import { TourPackagesClient } from "@/app/tour-packages/tour-packages-client";
 import { StructuredData } from "@/components/shared/structured-data";
 import { tourPackageResults } from "@/lib/mock-data";
 import { getTourPackagePath } from "@/lib/tour-packages";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Tour Packages",
-  description:
-    "Browse featured tour packages and compare durations, prices, and highlights before you enquire.",
-  path: "/tour-packages",
-  keywords: ["tour packages", "holiday packages", "group tours"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return buildStaticPageMetadata("tourPackages", {
+    noIndex: !CATALOG_INDEXING.tourPackages,
+  });
+}
 
 export default function TourPackagesPage() {
   return (

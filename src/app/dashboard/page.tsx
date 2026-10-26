@@ -66,7 +66,7 @@ export default async function UserDashboardPage() {
     flightAndHotelBookings.length > 0 || packageBookings.length > 0;
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
           User Area
@@ -177,6 +177,6 @@ export default async function UserDashboardPage() {
           </div>
         </section>
       ) : null}
-    </main>
+    </div>
   );
 }

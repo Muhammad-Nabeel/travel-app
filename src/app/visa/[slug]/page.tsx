@@ -15,6 +15,7 @@ import {
   getStoredVisaCountries,
   type VisaCountryEntry,
 } from "@/lib/admin-settings/visa-settings";
+import { fitTitle } from "@/lib/seo-copy";
 import {
   absoluteUrl,
   buildMetadata,
@@ -33,6 +34,22 @@ function visaLabel(type: VisaCountryEntry["visaType"]) {
 
 function detailsTitle(visa: VisaCountryEntry) {
   return `${visa.country} ${visaLabel(visa.visaType)}`;
+}
+
+function searchTitle(visa: VisaCountryEntry) {
+  const label = visaLabel(visa.visaType);
+  return fitTitle(
+    `${visa.country} ${label} from Pakistan – Requirements & Fees`,
+    `${visa.country} Visa from Pakistan – Requirements & Fees`,
+    `${visa.country} ${label} – Requirements & Fees`,
+    detailsTitle(visa),
+  );
+}
+
+function searchDescription(visa: VisaCountryEntry) {
+  const cost = visa.netCost ? ` Fees from ${visa.netCost}.` : "";
+  const entry = /entry$/i.test(visa.entry) ? visa.entry.toLowerCase() : `${visa.entry} entry`;
+  return `Apply for a ${visa.country} ${visaLabel(visa.visaType)} from Pakistan: ${visa.duration} stay, ${entry}.${cost} Document checklist and expert help with your application.`;
 }
 
 function detailsDescription(visa: VisaCountryEntry) {
@@ -61,8 +78,8 @@ export async function generateMetadata({
   }
 
   return buildMetadata({
-    title: detailsTitle(visa),
-    description: detailsDescription(visa),
+    title: searchTitle(visa),
+    description: searchDescription(visa),
     path: getVisaPath(visa.country, visa.visaType),
     keywords: [visa.country, visaLabel(visa.visaType), "visa assistance"],
   });
@@ -81,7 +98,7 @@ export default async function VisaDetailsPage({
   const pagePath = getVisaPath(visa.country, visa.visaType);
 
   return (
-    <main className="flex-1 bg-slate-50 pb-14">
+    <div className="flex-1 bg-slate-50 pb-14">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -193,6 +210,6 @@ export default async function VisaDetailsPage({
           <VisaEnquiryForm visa={visa} />
         </aside>
       </section>
-    </main>
+    </div>
   );
 }

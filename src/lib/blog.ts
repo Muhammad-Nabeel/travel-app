@@ -51,7 +51,15 @@ function toRecord(row: BlogPostRow | PrismaBlogPost): BlogPostRecord {
   };
 }
 
+// Demo posts are for local development only. In production an empty blog is
+// better than indexed placeholder articles (thin, duplicate content).
+const ALLOW_DEMO_POSTS = process.env.NODE_ENV !== "production";
+
 function getDummyPosts() {
+  if (!ALLOW_DEMO_POSTS) {
+    return [] as BlogPostRecord[];
+  }
+
   return DUMMY_BLOG_POSTS.filter((post) => post.status === "PUBLISHED")
     .sort((a, b) => {
       const aTime = a.publishedAt?.getTime() ?? 0;
@@ -84,6 +92,20 @@ export const getPublishedBlogPosts = cache(async () => {
 });
 
 export const getPublishedBlogPostBySlug = cache(async (slug: string) => {
-  const posts = await getPublishedBlogPosts();
-  return posts.find((post) => post.slug === slug) ?? null;
+  const findDummy = () => getDummyPosts().find((post) => post.slug === slug) ?? null;
+
+  if (shouldBypassDatabase()) {
+    return findDummy();
+  }
+
+  try {
+    const post = await prisma.blogPost.findFirst({
+      where: { slug, status: "PUBLISHED" },
+    });
+
+    return post ? toRecord(post) : findDummy();
+  } catch (error) {
+    markDatabaseUnavailable(error);
+    return findDummy();
+  }
 });

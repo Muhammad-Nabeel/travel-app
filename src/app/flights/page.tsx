@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
@@ -14,12 +15,12 @@ import { buildMetadata } from "@/lib/seo";
 
 function HomeLayout() {
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <FlightSearchEngine />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />
-    </main>
+    </div>
   );
 }
 
@@ -87,21 +88,21 @@ export async function generateMetadata({
         resolvedSearchParams.departureDate,
       );
 
+  if (!hasSearch) {
+    return buildStaticPageMetadata("flights");
+  }
+
+  // Search result URLs are per-user and infinite; never index them.
   return buildMetadata({
     title:
-      hasSearch &&
-      resolvedSearchParams.origin &&
-      resolvedSearchParams.destination
+      resolvedSearchParams.origin && resolvedSearchParams.destination
         ? `Flights from ${resolvedSearchParams.origin} to ${resolvedSearchParams.destination}`
-        : "Flight Search",
-    description: hasSearch
-      ? "Review live flight search results and continue to booking when your route fits."
-      : "Search and compare flight options with flexible trip types and cabin filters.",
+        : "Flight Search Results",
+    description:
+      "Review live flight search results and continue to booking when your route fits.",
     path: "/flights",
-    keywords: ["flight search", "flight booking", "airfare"],
-    noIndex: hasSearch,
-  });
-}
+    noIndex: true,
+  });}
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -129,7 +130,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
 
   if (!result.ok) {
     return (
-      <main className="section-shell flex-1 py-10">
+      <div className="section-shell flex-1 py-10">
         <div className="alert alert-error bg-red-50 text-red-900">
           <div>
             <span>
@@ -143,7 +144,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
             )}
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -195,7 +196,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const searchSummary = `${originLabel} -> ${destinationLabel} · ${query.departureDate}${query.returnDate ? ` · ${query.returnDate}` : ""}`;
 
   return (
-    <main className="flex-1 py-6">
+    <div className="flex-1 py-6">
       <MobileSearchToggle summary={searchSummary}>
         <FlightSearchEngine
           variant="embedded"
@@ -245,6 +246,6 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
         source={result.source}
         warnings={result.warnings}
       />
-    </main>
+    </div>
   );
 }
