@@ -1,8 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+
+import { SectionHeader } from "@/components/shared/section-header";
 
 type Destination = {
   id: string;
@@ -29,8 +31,8 @@ const GRADIENTS: Record<string, string> = {
 
 function DestinationsSkeleton() {
   return (
-    <section className="section-shell py-10">
-      <div className="mb-5 flex items-center justify-between gap-4">
+    <section className="section-shell py-12 md:py-16">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <div className="h-7 w-52 animate-pulse rounded-lg bg-slate-200" />
           <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-100" />
@@ -40,13 +42,13 @@ function DestinationsSkeleton() {
           <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
         </div>
       </div>
-      <div className="flex gap-4 overflow-hidden pb-3">
+      <div className="flex gap-5 overflow-hidden pb-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-48 min-w-55 shrink-0 animate-pulse rounded-2xl bg-slate-200 sm:min-w-65"
-          >
-            <div className="m-3 h-5 w-10 rounded-md bg-white/40" />
+          <div key={i} className="w-[78%] shrink-0 sm:w-64">
+            <div className="aspect-4/3 animate-pulse rounded-2xl bg-slate-200" />
+            <div className="mt-3 h-4 w-24 animate-pulse rounded bg-slate-200" />
+            <div className="mt-2 h-3 w-16 animate-pulse rounded bg-slate-100" />
+            <div className="mt-2 h-3 w-32 animate-pulse rounded bg-slate-100" />
           </div>
         ))}
       </div>
@@ -135,85 +137,65 @@ function DestinationCarousel({
   };
 
   return (
-    <section className="section-shell py-10" aria-label={title}>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            {title}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={() => scroll("left")}
-            disabled={!canLeft}
-            aria-label="Scroll destinations left"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:opacity-30"
-          >
-            <ChevronLeft className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            disabled={!canRight}
-            aria-label="Scroll destinations right"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:opacity-30"
-          >
-            <ChevronRight className="h-4 w-4 text-slate-700" />
-          </button>
-        </div>
-      </div>
+    <section className="section-shell py-12 md:py-16" aria-label={title}>
+      <SectionHeader
+        title={title}
+        subtitle={subtitle}
+        onPrev={() => scroll("left")}
+        onNext={() => scroll("right")}
+        canPrev={canLeft}
+        canNext={canRight}
+        scrollLabel="destinations"
+      />
 
       <div
         ref={scrollRef}
         onScroll={updateArrows}
-        className="flex gap-4 overflow-x-auto pb-3"
+        className="-mx-1 flex snap-x gap-5 overflow-x-auto px-1 pb-3"
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
       >
         {items.map((d) => (
           <Link
             key={d.id}
             href={`/destinations/${d.slug?.trim() ? d.slug : d.id}`}
-            className="block focus-visible:outline-none"
+            className="group block w-[78%] shrink-0 snap-start sm:w-64"
             aria-label={`View details for ${d.city}`}
           >
-            <article
-              className="relative flex h-48 min-w-55 shrink-0 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-4 text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:min-w-65"
-              style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
-            >
-              {d.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={d.imageUrl}
-                  alt={d.city}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
-                />
-              ) : null}
-              <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/20 to-transparent" />
-
-              <div className="relative flex items-start justify-between">
+            <article>
+              <div
+                className="relative aspect-4/3 overflow-hidden rounded-2xl"
+                style={{ background: GRADIENTS[d.gradient] ?? GRADIENTS.blue }}
+              >
+                {d.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={d.imageUrl}
+                    alt={d.city}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                ) : null}
                 {d.iataCode ? (
-                  <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm">
+                  <span className="absolute left-3 top-3 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold tracking-wider text-foreground shadow-card">
                     {d.iataCode}
                   </span>
-                ) : (
-                  <span />
-                )}
+                ) : null}
               </div>
 
-              <div className="relative">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3 shrink-0 text-white/70" />
-                  <p className="text-xs text-white/80">{d.country}</p>
-                </div>
-                <h3 className="mt-0.5 text-xl font-bold leading-tight">
+              <div className="pt-3">
+                <h3 className="text-base font-semibold text-foreground group-hover:text-brand">
                   {d.city}
                 </h3>
+                <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
+                  <MapPin className="size-3.5 shrink-0" />
+                  {d.country}
+                </p>
                 {d.notes && (
-                  <p className="mt-1 text-xs text-white/70">{d.notes}</p>
+                  <p className="mt-1 line-clamp-1 text-xs text-muted">{d.notes}</p>
                 )}
-                <p className="mt-1.5 text-sm font-semibold text-white">
-                  {d.fare}
+                <p className="mt-1.5 text-sm text-muted">
+                  Flights from{" "}
+                  <span className="font-semibold text-foreground">{d.fare}</span>
                 </p>
               </div>
             </article>

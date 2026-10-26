@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MapPin, Star } from "lucide-react";
+import { CalendarDays, Check, MapPin, Star } from "lucide-react";
 
 import {
   PackageSearchEngine,
@@ -10,29 +10,6 @@ import {
 } from "@/components/features/home/package-search/package-search";
 import { tourPackageResults } from "@/lib/mock-data";
 import { getTourPackagePath } from "@/lib/tour-packages";
-
-function StarRating({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  return (
-    <div className="flex items-center gap-0.5" aria-label={`${rating} stars`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={`h-3.5 w-3.5 ${i < full ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-const TOUR_TYPE_COLORS: Record<string, string> = {
-  luxury: "bg-amber-100 text-amber-800",
-  cultural: "bg-blue-100 text-blue-800",
-  adventure: "bg-orange-100 text-orange-800",
-  family: "bg-green-100 text-green-800",
-  religious: "bg-purple-100 text-purple-800",
-  all: "bg-slate-100 text-slate-700",
-};
 
 export function TourPackagesClient() {
   const [searchParams, setSearchParams] = useState<{
@@ -71,21 +48,21 @@ export function TourPackagesClient() {
   };
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <PackageSearchEngine
         variant="hero"
         onSearch={(params) => setSearchParams(params)}
       />
 
       <section className="section-shell py-10" aria-label="Tour packages">
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
               {searchParams
-                ? `Packages to "${searchParams.destination || "Anywhere"}"`
-                : "Featured Tour Packages"}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
+                ? `Packages to ${searchParams.destination || "anywhere"}`
+                : "Featured tour packages"}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
               {filteredResults.length} package
               {filteredResults.length !== 1 ? "s" : ""} available
               {searchParams &&
@@ -95,90 +72,104 @@ export function TourPackagesClient() {
         </div>
 
         {filteredResults.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
-            <p className="text-lg font-semibold text-slate-700">
-              No packages found
+          <div className="rounded-2xl border border-line bg-subtle px-6 py-16 text-center">
+            <p className="text-lg font-semibold text-foreground">
+              No packages match your search
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Try adjusting your destination, duration, or tour type.
+            <p className="mt-1 text-sm text-muted">
+              Try a different destination, duration or tour type.
             </p>
+            <button
+              type="button"
+              onClick={() => setSearchParams(null)}
+              className="mt-5 rounded-full border border-line bg-white px-5 py-2 text-sm font-semibold text-foreground transition hover:shadow-card"
+            >
+              Show all packages
+            </button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredResults.map((pkg) => {
               const totalPrice = priceForPax(pkg);
+              const travellers = searchParams
+                ? searchParams.adults + searchParams.children
+                : 1;
               return (
                 <article
                   key={pkg.id}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised"
                 >
-                  <div className="h-2 w-full bg-linear-to-r from-amber-500 to-orange-400" />
+                  <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-brand to-navy">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pkg.image}
+                      alt={pkg.destination}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                    />
+                    <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-foreground shadow-card">
+                      {pkg.tourType}
+                    </span>
+                  </div>
 
-                  <div className="flex flex-1 flex-col gap-4 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${TOUR_TYPE_COLORS[pkg.tourType] ?? "bg-slate-100 text-slate-700"}`}
-                        >
-                          {pkg.tourType}
-                        </span>
-                        <h2 className="mt-1.5 text-lg font-bold leading-snug text-slate-900">
-                          {pkg.title}
-                        </h2>
-                        <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span>{pkg.destination}</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <StarRating rating={pkg.rating} />
-                        <p className="mt-1 text-xs text-slate-400">
-                          {pkg.reviews} reviews
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="text-xs font-medium text-slate-500">
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="text-lg font-semibold leading-snug text-foreground">
+                      <Link
+                        href={getTourPackagePath(pkg.title)}
+                        className="after:absolute after:inset-0 group-hover:text-brand"
+                      >
+                        {pkg.title}
+                      </Link>
+                    </h3>
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                      <MapPin className="size-3.5 shrink-0" />
+                      {pkg.destination}
+                      <span aria-hidden>·</span>
+                      <CalendarDays className="size-3.5 shrink-0" />
                       {pkg.duration} {pkg.duration === 1 ? "day" : "days"}
                     </p>
 
-                    <ul className="flex flex-wrap gap-1.5">
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+                        {pkg.rating.toFixed(1)}
+                        <Star className="size-3 fill-white" />
+                      </span>
+                      <span className="text-xs text-muted">
+                        {pkg.reviews} reviews
+                      </span>
+                    </div>
+
+                    <ul className="mt-4 space-y-1.5">
                       {pkg.highlights.slice(0, 3).map((h) => (
                         <li
                           key={h}
-                          className="rounded-full border border-slate-100 bg-slate-50 px-3 py-0.5 text-xs text-slate-600"
+                          className="flex items-center gap-2 text-sm text-foreground"
                         >
+                          <Check className="size-4 shrink-0 text-success" />
                           {h}
                         </li>
                       ))}
-                      {pkg.highlights.length > 3 && (
-                        <li className="rounded-full border border-slate-100 bg-slate-50 px-3 py-0.5 text-xs text-slate-500">
-                          +{pkg.highlights.length - 3} more
-                        </li>
-                      )}
                     </ul>
 
-                    <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-400">
-                          {searchParams &&
-                          searchParams.adults + searchParams.children > 1
-                            ? `Total for ${searchParams.adults + searchParams.children} pax`
-                            : "Per adult"}
+                    <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+                      {pkg.highlights.length > 3 ? (
+                        <span className="text-xs text-muted">
+                          +{pkg.highlights.length - 3} more included
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="text-right">
+                        <p className="text-xs text-muted">
+                          {travellers > 1 ? `Total for ${travellers} travellers` : "from"}
                         </p>
-                        <p className="text-2xl font-extrabold tabular-nums text-amber-700">
-                          {pkg.currency}{" "}
-                          <span className="text-3xl">
-                            {totalPrice.toLocaleString()}
-                          </span>
+                        <p className="text-2xl font-bold tabular-nums text-foreground">
+                          {pkg.currency} {totalPrice.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {travellers > 1 ? "includes taxes" : "per adult"}
                         </p>
                       </div>
-                      <Link
-                        href={getTourPackagePath(pkg.title)}
-                        className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 active:scale-95"
-                      >
-                        View package
-                      </Link>
                     </div>
                   </div>
                 </article>
@@ -187,6 +178,6 @@ export function TourPackagesClient() {
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

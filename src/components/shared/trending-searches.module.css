@@ -4,11 +4,9 @@
 
 .trendingTitle {
   margin: 0 0 8px;
-  color: #6b7280;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .trendingList {
@@ -27,9 +25,9 @@
 .trendingChip {
   flex: 0 0 auto;
   border-radius: 9999px;
-  border: 1.5px solid #e0e7ff;
-  background: #f5f7ff;
-  color: #3730a3;
+  border: 1.5px solid var(--border);
+  background: var(--primary-soft);
+  color: var(--primary);
   font-size: 0.8rem;
   font-weight: 600;
   line-height: 1;
@@ -43,7 +41,7 @@
 }
 
 .trendingChip:hover {
-  border-color: #a5b4fc;
-  background: #eef2ff;
-  color: #1e1b4b;
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
 }

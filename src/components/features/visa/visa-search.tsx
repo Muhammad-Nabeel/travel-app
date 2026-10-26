@@ -101,28 +101,17 @@ export function VisaSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Visa search engine"
     >
-      {isHero ? (
-        <div className="pointer-events-none absolute inset-0 opacity-80">
-          <div className={`${styles.heroOrb} ${styles.heroOrbLeft}`} />
-          <div className={`${styles.heroOrb} ${styles.heroOrbRight}`} />
-        </div>
-      ) : null}
 
       <div
-        className={`section-shell relative z-10 ${isHero ? "py-10 md:py-14" : "py-4"}`}
+        className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}
       >
         {isHero ? (
-          <div className="mx-auto mb-8 max-w-6xl text-center text-white">
-            <div className="mx-auto flex w-fit items-center justify-center gap-2 rounded-full border border-white/35 bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/95 backdrop-blur-2xl">
-              <Globe2 className="h-3.5 w-3.5" />
-              Fast visa approvals
-            </div>
-            <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-              Apply for your visa in minutes.
+          <div className="mx-auto mb-8 max-w-4xl text-center text-white md:mb-10">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+              Apply for your visa in minutes
             </h1>
-            <p className="mx-auto mt-3 max-w-3xl text-base leading-7 text-sky-50/95 sm:text-lg">
-              Pick your destination, confirm travelers, and we will guide you
-              through every step.
+            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">
+              Pick a destination, add travellers and we guide you through every step.
             </p>
           </div>
         ) : null}

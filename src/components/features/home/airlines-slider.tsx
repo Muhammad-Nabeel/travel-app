@@ -57,21 +57,15 @@ export function AirlinesSlider() {
   const loopedAirlines = useMemo(() => [...airlines, ...airlines], [airlines]);
 
   return (
-    <section className="section-shell py-10" aria-label="Leading airlines">
-      <div className="overflow-hidden rounded-4xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7">
-        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
-              Trusted airline partners
-            </p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              Book with leading airlines
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-              Search and compare fares across top regional and international
-              carriers in one place.
-            </p>
-          </div>
+    <section className="section-shell py-12 md:py-16" aria-label="Leading airlines">
+      <div>
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+            Book with leading airlines
+          </h2>
+          <p className="mt-2 text-sm text-muted sm:text-base">
+            Compare fares across top regional and international carriers.
+          </p>
         </div>
 
         <div className="relative overflow-hidden">
@@ -82,7 +76,7 @@ export function AirlinesSlider() {
             {loopedAirlines.map((airline, index) => (
               <div
                 key={`${airline.name}-${index}`}
-                className="flex h-24 w-40 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                className="flex h-20 w-36 shrink-0 items-center justify-center rounded-xl border border-line bg-white px-4 py-3 transition hover:shadow-card"
               >
                 <Image
                   src={airline.src}

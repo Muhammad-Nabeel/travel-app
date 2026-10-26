@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Tag } from "lucide-react";
+import { CalendarDays, Tag } from "lucide-react";
 import Link from "next/link";
+
+import { SectionHeader } from "@/components/shared/section-header";
 
 type BlogPost = {
   id: string;
@@ -26,16 +28,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   news: "News",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  travel: "bg-teal-100 text-teal-700",
-  umrah: "bg-emerald-100 text-emerald-700",
-  flights: "bg-sky-100 text-sky-700",
-  hotels: "bg-violet-100 text-violet-700",
-  destinations: "bg-amber-100 text-amber-700",
-  tips: "bg-orange-100 text-orange-700",
-  news: "bg-slate-100 text-slate-600",
-};
-
 function formatDate(dateStr: string | null) {
   if (!dateStr) return null;
   return new Date(dateStr).toLocaleDateString("en-GB", {
@@ -47,7 +39,7 @@ function formatDate(dateStr: string | null) {
 
 function BlogSkeleton() {
   return (
-    <section className="section-shell py-10">
+    <section className="section-shell py-12 md:py-16">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <div className="h-8 w-44 animate-pulse rounded-lg bg-slate-200" />
@@ -62,9 +54,9 @@ function BlogSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="flex w-72 shrink-0 flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm sm:w-80"
+            className="flex w-[82%] shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-white sm:w-80"
           >
-            <div className="relative h-44 animate-pulse bg-slate-200">
+            <div className="relative aspect-video animate-pulse bg-slate-200">
               <div className="absolute left-3 top-3 h-5 w-16 animate-pulse rounded-full bg-slate-300" />
             </div>
             <div className="flex flex-1 flex-col gap-2 p-5">
@@ -130,65 +122,48 @@ export function BlogSlider() {
   if (!posts.length) return null;
 
   return (
-    <section className="section-shell py-10" aria-label="Latest from our blog">
-      {/* Header */}
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          {isDummy && (
-            <span className="mb-2 inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-700">
+    <section className="section-shell py-12 md:py-16" aria-label="Latest from our blog">
+      <SectionHeader
+        title="Travel inspiration"
+        subtitle="Guides, tips and destination ideas from our team"
+        href="/blog"
+        hrefLabel="Visit the blog"
+        badge={
+          isDummy ? (
+            <span className="inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-700">
               Sample content · add posts in Admin
             </span>
-          )}
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            From our blog
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Travel guides, tips, and destination inspiration
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => scroll("left")}
-            aria-label="Scroll blog left"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-teal-400 hover:text-teal-600"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            aria-label="Scroll blog right"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-teal-400 hover:text-teal-600"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+          ) : undefined
+        }
+        onPrev={() => scroll("left")}
+        onNext={() => scroll("right")}
+        scrollLabel="blog posts"
+      />
 
       {/* Slider track */}
       <div
         ref={trackRef}
-        className="flex gap-6 overflow-x-auto pb-2 scroll-smooth"
+        className="-mx-1 flex snap-x gap-5 overflow-x-auto px-1 pb-3 scroll-smooth"
         style={{ scrollbarWidth: "none" }}
       >
         {posts.map((post) => (
           <article
             key={post.id}
             data-card
-            className="group relative flex w-72 shrink-0 flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:w-80"
+            className="group relative flex w-[82%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised sm:w-80"
           >
             {/* Cover image */}
-            <div className="relative h-44 overflow-hidden bg-slate-100">
+            <div className="relative aspect-video overflow-hidden bg-subtle">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={post.coverImageUrl}
                 alt={post.title}
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                 loading="lazy"
               />
               {/* Category badge */}
               <span
-                className={`absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ${CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS.travel}`}
+                className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-foreground shadow-card"
               >
                 {CATEGORY_LABELS[post.category] ?? post.category}
               </span>
@@ -196,10 +171,10 @@ export function BlogSlider() {
 
             {/* Body */}
             <div className="flex flex-1 flex-col gap-2 p-5">
-              <h3 className="line-clamp-2 text-base font-bold leading-snug text-slate-900 group-hover:text-teal-700">
+              <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground group-hover:text-brand">
                 {post.title}
               </h3>
-              <p className="line-clamp-3 text-sm leading-relaxed text-slate-500">
+              <p className="line-clamp-3 text-sm leading-relaxed text-muted">
                 {post.excerpt}
               </p>
 
@@ -226,7 +201,7 @@ export function BlogSlider() {
                 </div>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="text-xs font-semibold text-teal-600 hover:text-teal-800"
+                  className="text-sm font-semibold text-brand after:absolute after:inset-0 hover:text-brand-strong"
                 >
                   Read more →
                 </Link>

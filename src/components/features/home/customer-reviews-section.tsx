@@ -84,23 +84,20 @@ export function CustomerReviewsSection() {
   }
 
   return (
-    <section className="section-shell py-6" aria-label="Customer reviews">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="section-shell py-12 md:py-16" aria-label="Customer reviews">
+      <div>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-              Customer Voices
-            </p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">
-              Verified traveler reviews
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+              What our travellers say
             </h2>
           </div>
         </div>
-        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3">
           {sliderReviews.map((review) => (
             <article
               key={review.id}
-              className="w-[17.5rem] shrink-0 snap-start rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 sm:w-[18.5rem]"
+              className="w-[17.5rem] shrink-0 snap-start rounded-2xl border border-line bg-white p-4 shadow-card sm:w-[18.5rem]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">

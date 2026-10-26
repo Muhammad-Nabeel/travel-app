@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Serif_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
 import Loading from "./loading";
@@ -21,11 +21,17 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
-const cormorantGaramond = Cormorant_Garamond({
-  variable: "--font-cormorant-garamond",
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-dm-serif-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "400",
 });
+
+// Public pages read packages, posts and SEO settings from the database. Without
+// this they would be prerendered once at build time and admin edits would not
+// appear until the next deploy. Re-render at most every 5 minutes (ISR);
+// the SEO settings route also revalidates on save.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -35,8 +41,14 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  alternates: {
-    canonical: "/",
+  // No root canonical: every indexable page sets its own via buildMetadata().
+  // A canonical here would be inherited by pages that forget to set one and
+  // tell Google they are duplicates of the homepage.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
   },
   keywords: [
     "Safar Umrah",
@@ -87,7 +99,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="corporate"
-      className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${dmSerifDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>

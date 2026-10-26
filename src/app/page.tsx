@@ -6,55 +6,55 @@ import { AirlinesSlider } from "@/components/features/home/airlines-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { CustomerReviewsSection } from "@/components/features/home/customer-reviews-section";
+import { PromoBanner } from "@/components/features/home/promo-banner";
+import { WhyBookSection } from "@/components/features/home/why-book-section";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
-  buildMetadata,
-  createOrganizationSchema,
-  createWebPageSchema,
-  createWebsiteSchema,
-} from "@/lib/seo";
+  buildOrganizationJsonLd,
+  buildStaticPageMetadata,
+  getStaticPageSeo,
+} from "@/lib/admin-settings/seo-settings";
+import { createWebPageSchema, createWebsiteSchema } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Flights, Umrah Packages and Travel Planning",
-  description:
-    "Search flights, discover destinations, compare activities, and plan Umrah travel from a cleaner booking and content experience.",
-  path: "/",
-  keywords: [
-    "flight search",
-    "Umrah travel",
-    "travel planning",
-    "destinations",
-    "travel activities",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return buildStaticPageMetadata("home");
+}
 
-export default function Home() {
+export default async function Home() {
+  const [seo, organizationJsonLd] = await Promise.all([
+    getStaticPageSeo("home"),
+    buildOrganizationJsonLd(),
+  ]);
+
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <StructuredData
         data={[
           createWebPageSchema({
-            title: "Flights, Umrah Packages and Travel Planning",
-            description:
-              "Search flights, discover destinations, compare activities, and plan Umrah travel from a cleaner booking and content experience.",
+            title: seo.title,
+            description: seo.description,
             path: "/",
           }),
           createWebsiteSchema(),
-          createOrganizationSchema(),
+          organizationJsonLd,
         ]}
       />
 
       <FlightSearchEngine />
 
-      <AirlinesSlider />
-
       <DestinationsSlider />
+
+      <PromoBanner />
 
       <ActivitiesSlider />
 
-      <BlogSlider />
+      <WhyBookSection />
 
       <CustomerReviewsSection />
-    </main>
+
+      <BlogSlider />
+
+      <AirlinesSlider />
+    </div>
   );
 }
