@@ -54,6 +54,7 @@
   --primary-hover: #0d4eaf;
   --primary-soft: #e8f0fd;
   --gold: #b8913a;
+  --gold-strong: #7a5f1f; /* gold text on light backgrounds (AA) */
   --deal: #d1173a;
   --success: #227950;
   --navy: #191e3b;
@@ -87,6 +88,7 @@
   --color-brand-soft: var(--primary-soft);
   --color-accent: var(--gold);
   --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
   --color-deal: var(--deal);
   --color-navy: var(--navy);
   --radius-card: var(--radius-lg);
@@ -111,9 +113,12 @@ body {
   font-family: var(--font-plus-jakarta-sans), sans-serif;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* In the base layer so utilities such as text-white on links still win. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 .display-font {
@@ -203,5 +208,12 @@ textarea:focus {
 @media (prefers-reduced-motion: reduce) {
   .airline-marquee {
     animation: none;
+  }
+}
+
+/* Keep the floating widgets clear of a detail page's mobile booking bar. */
+@media (max-width: 1023px) {
+  body:has([data-booking-bar]) .floating-widget-stack {
+    bottom: 5.5rem;
   }
 }

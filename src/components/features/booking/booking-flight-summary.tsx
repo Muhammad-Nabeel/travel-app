@@ -88,7 +88,7 @@ function LegRow({ leg, label, airline }: LegRowProps) {
       {/* Airline logo */}
       <div className="shrink-0">
         {logoSrc ? (
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-base-200 bg-white p-2 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-2">
             <Image
               src={logoSrc}
               alt={marketingCode}
@@ -99,7 +99,7 @@ function LegRow({ leg, label, airline }: LegRowProps) {
             />
           </div>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-subtle text-sm font-bold text-foreground">
             {code.slice(0, 2)}
           </div>
         )}
@@ -109,7 +109,7 @@ function LegRow({ leg, label, airline }: LegRowProps) {
       <div className="flex-1">
         {/* Label + direction icon */}
         <div className="mb-1.5 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-md bg-base-200/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
+          <span className="inline-flex items-center gap-1 rounded-md bg-subtle px-2 py-0.5 text-xs font-semibold text-muted">
             {!isReturnLabel ? (
               <Plane className="size-3" />
             ) : (
@@ -133,19 +133,19 @@ function LegRow({ leg, label, airline }: LegRowProps) {
 
           <div className="flex flex-col items-center gap-0.5">
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                 isMultiStop
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-emerald-100 text-emerald-700"
+                  ? "bg-subtle text-foreground"
+                  : "bg-success/10 text-success"
               }`}
             >
               {stopsLabel}
             </span>
             <div className="flex items-center gap-1">
-              <div className="h-px w-12 bg-base-300 sm:w-20" />
+              <div className="h-px w-12 bg-line sm:w-20" />
               <ArrowRight className="size-3 text-muted" />
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-muted">
+            <span className="flex items-center gap-1 text-xs text-muted">
               <Clock3 className="size-3" />
               {formatDuration(leg.durationMinutes)}
             </span>
@@ -198,19 +198,19 @@ export function BookingFlightSummary({
     offer.legs && offer.legs.length > 0 ? offer.legs : [fallbackLeg];
 
   return (
-    <div className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+    <div className="rounded-card border border-line bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-base-200 px-5 py-4">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4">
         <h2 className="text-base font-semibold text-foreground">
-          Your Selected Flight
+          Your flight
         </h2>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+        <span className="rounded-full bg-subtle px-3 py-1 text-xs font-semibold capitalize text-foreground">
           {offer.cabin}
         </span>
       </div>
 
       {/* Legs */}
-      <div className="divide-y divide-base-200">
+      <div className="divide-y divide-line">
         {summaryLegs.map((leg, index) => (
           <div
             key={`${leg.legIndex}-${leg.origin}-${leg.destination}-${leg.departure}-${index}`}
@@ -226,20 +226,20 @@ export function BookingFlightSummary({
       </div>
 
       {/* Price footer */}
-      <div className="flex items-center justify-between rounded-b-2xl border-t border-base-200 bg-base-200/40 px-5 py-4">
+      <div className="flex items-center justify-between rounded-b-card border-t border-line bg-subtle px-5 py-4">
         <div>
           <p className="text-xs text-muted">{getTotalLabel(tripType)}</p>
           <p className="text-2xl font-bold text-foreground">
             {formatMoney(overrideTotalPrice ?? offer.price, offer.currency)}
           </p>
-          <p className="text-[11px] text-muted">Taxes & fees included</p>
+          <p className="text-xs text-muted">Taxes & fees included</p>
         </div>
         {offer.refundable !== undefined && (
           <span
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
               offer.refundable
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-red-100 text-red-700"
+                ? "bg-success/10 text-success"
+                : "bg-white text-muted ring-1 ring-line"
             }`}
           >
             {offer.refundable ? "Refundable" : "Non-refundable"}

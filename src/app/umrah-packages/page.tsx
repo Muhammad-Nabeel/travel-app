@@ -14,6 +14,7 @@ import {
   getPublishedUmrahPackages,
   getUmrahPackagePath,
 } from "@/lib/umrah-packages";
+import { toDuration, toStarRating } from "@/lib/umrah-pricing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { isDummy } = await getPublishedUmrahPackages();
@@ -21,7 +22,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildStaticPageMetadata("umrahPackages", { noIndex: isDummy });
 }
 
-export default async function UmrahPackagesPage() {
+export default async function UmrahPackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  // Restores a configuration carried back from a package page.
+  const initial = {
+    duration: toDuration(sp.nights),
+    adults: Math.min(20, Math.max(1, Number(sp.adults) || 2)),
+    children: Math.min(12, Math.max(0, Number(sp.children) || 0)),
+    city: typeof sp.city === "string" ? sp.city : "All",
+    makkahStars: toStarRating(sp.makkahStars),
+    madinahStars: toStarRating(sp.madinahStars),
+  };
   const [{ packages, isDummy }, seo] = await Promise.all([
     getPublishedUmrahPackages(),
     getStaticPageSeo("umrahPackages"),
@@ -46,7 +61,11 @@ export default async function UmrahPackagesPage() {
           ),
         ]}
       />
-      <UmrahConfigurator packages={packages} isDummy={isDummy} />
+      <UmrahConfigurator
+        packages={packages}
+        isDummy={isDummy}
+        initial={initial}
+      />
     </>
   );
 }

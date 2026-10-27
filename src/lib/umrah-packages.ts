@@ -123,3 +123,11 @@ export function buildUmrahPackageSeo(pkg: PackageRow) {
             `${pkg.madinahNights} nights Madinah.${hotel} From ${price} per person. Departs ${departs}.`,
     };
 }
+
+/**
+ * Photos for the package page gallery. Add the IMAGE_ASSETS_BRIEF.md §5.8
+ * files here (e.g. /images/umrah/umrah-haram-exterior.jpg) once they exist.
+ */
+export const UMRAH_GALLERY: { src: string; alt: string }[] = [
+    { src: "/images/hero-madinah.jpg", alt: "Masjid an-Nabawi in Madinah" },
+];

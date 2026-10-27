@@ -100,19 +100,19 @@ export function UmrahEnquiryForm({
 
   if (status === "success") {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-10 text-center">
-        <CheckCircle className="h-12 w-12 text-emerald-500" />
+      <div className="flex flex-col items-center gap-4 rounded-card border border-success/20 bg-success/5 p-10 text-center">
+        <CheckCircle className="h-12 w-12 text-success" />
         <div>
-          <h3 className="display-font text-3xl font-semibold text-emerald-800">
+          <h3 className="text-2xl font-bold text-foreground">
             Enquiry submitted!
           </h3>
-          <p className="mt-1 text-sm text-emerald-700">
+          <p className="mt-1 text-sm text-foreground">
             Thank you,{" "}
             <span className="font-semibold">{form.customerName}</span>. Our team
             will contact you shortly.
           </p>
           {reference && (
-            <p className="mt-3 inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-semibold tracking-wide text-emerald-800">
+            <p className="mt-3 inline-block rounded-full bg-success/10 px-4 py-1 text-sm font-semibold tracking-wide text-foreground">
               Ref: {reference}
             </p>
           )}
@@ -127,9 +127,9 @@ export function UmrahEnquiryForm({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="customerName"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
-          Full name <span className="text-rose-500">*</span>
+          Full name <span className="text-deal">*</span>
         </label>
         <input
           id="customerName"
@@ -140,14 +140,14 @@ export function UmrahEnquiryForm({
             setForm((f) => ({ ...f, customerName: e.target.value }))
           }
           placeholder="e.g. Ahmed Khan"
-          className={`h-11 w-full rounded-xl border px-4 text-sm text-slate-800 placeholder-slate-300 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+          className={`h-12 w-full rounded-lg border px-4 text-sm text-foreground placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
             errors.customerName
-              ? "border-rose-400 bg-rose-50"
-              : "border-slate-200 bg-white"
+              ? "border-deal bg-white"
+              : "border-line bg-white"
           }`}
         />
         {errors.customerName && (
-          <p className="text-xs text-rose-500">{errors.customerName}</p>
+          <p className="text-[13px] text-deal">{errors.customerName}</p>
         )}
       </div>
 
@@ -155,9 +155,9 @@ export function UmrahEnquiryForm({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="customerEmail"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
-          Email address <span className="text-rose-500">*</span>
+          Email address <span className="text-deal">*</span>
         </label>
         <input
           id="customerEmail"
@@ -168,14 +168,14 @@ export function UmrahEnquiryForm({
             setForm((f) => ({ ...f, customerEmail: e.target.value }))
           }
           placeholder="e.g. ahmed@example.com"
-          className={`h-11 w-full rounded-xl border px-4 text-sm text-slate-800 placeholder-slate-300 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+          className={`h-12 w-full rounded-lg border px-4 text-sm text-foreground placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
             errors.customerEmail
-              ? "border-rose-400 bg-rose-50"
-              : "border-slate-200 bg-white"
+              ? "border-deal bg-white"
+              : "border-line bg-white"
           }`}
         />
         {errors.customerEmail && (
-          <p className="text-xs text-rose-500">{errors.customerEmail}</p>
+          <p className="text-[13px] text-deal">{errors.customerEmail}</p>
         )}
       </div>
 
@@ -183,9 +183,9 @@ export function UmrahEnquiryForm({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="customerPhone"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
-          Phone number <span className="text-rose-500">*</span>
+          Phone number <span className="text-deal">*</span>
         </label>
         <input
           id="customerPhone"
@@ -196,14 +196,14 @@ export function UmrahEnquiryForm({
             setForm((f) => ({ ...f, customerPhone: e.target.value }))
           }
           placeholder="e.g. +92 300 1234567"
-          className={`h-11 w-full rounded-xl border px-4 text-sm text-slate-800 placeholder-slate-300 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+          className={`h-12 w-full rounded-lg border px-4 text-sm text-foreground placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
             errors.customerPhone
-              ? "border-rose-400 bg-rose-50"
-              : "border-slate-200 bg-white"
+              ? "border-deal bg-white"
+              : "border-line bg-white"
           }`}
         />
         {errors.customerPhone && (
-          <p className="text-xs text-rose-500">{errors.customerPhone}</p>
+          <p className="text-[13px] text-deal">{errors.customerPhone}</p>
         )}
       </div>
 
@@ -211,10 +211,10 @@ export function UmrahEnquiryForm({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="message"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
           Additional message{" "}
-          <span className="text-xs font-normal text-slate-400">(optional)</span>
+          <span className="text-xs font-normal text-muted">(optional)</span>
         </label>
         <textarea
           id="message"
@@ -222,12 +222,12 @@ export function UmrahEnquiryForm({
           value={form.message}
           onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
           placeholder="Any special requests, preferred dates, or questions..."
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder-slate-300 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="w-full resize-none rounded-lg border border-line bg-white px-4 py-3 text-sm text-foreground placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
         />
       </div>
 
       {serverError && (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
           {serverError}
         </p>
       )}
@@ -235,7 +235,7 @@ export function UmrahEnquiryForm({
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-strong active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? (
           <>
@@ -250,7 +250,7 @@ export function UmrahEnquiryForm({
         )}
       </button>
 
-      <p className="text-center text-xs text-slate-400">
+      <p className="text-center text-xs text-muted">
         We typically respond within 24 hours.
       </p>
     </form>

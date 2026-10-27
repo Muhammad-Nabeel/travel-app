@@ -41,16 +41,16 @@ export function PaymentGatewayCard({
       aria-checked={selected}
       onClick={onSelect}
       className={[
-        "flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all duration-150",
+        "flex w-full items-center gap-4 rounded-card border p-4 text-left transition",
         selected
-          ? "border-primary bg-primary/5 shadow-md"
-          : "border-base-200 bg-base-100 hover:border-base-300 hover:shadow-sm",
+          ? "border-brand bg-brand-soft ring-1 ring-brand"
+          : "border-line bg-white hover:border-foreground/40",
       ].join(" ")}
     >
       {/* Logo badge */}
       <div
         className={[
-          "flex h-12 w-[3.75rem] shrink-0 items-center justify-center rounded-xl text-[13px] font-bold tracking-tight select-none",
+          "flex h-11 w-14 shrink-0 select-none items-center justify-center rounded-lg text-[13px] font-bold tracking-tight",
           badgeColor,
           badgeTextColor,
         ].join(" ")}
@@ -60,36 +60,27 @@ export function PaymentGatewayCard({
 
       {/* Name + tagline */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-foreground">{name}</span>
           {tag && (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
               {tag}
             </span>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-muted">{tagline}</p>
+        <p className="mt-0.5 text-sm text-muted">{tagline}</p>
       </div>
 
       {/* Radio indicator */}
-      <div
+      <span
+        aria-hidden
         className={[
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150",
-          selected
-            ? "border-primary bg-primary"
-            : "border-base-300 bg-base-100",
+          "flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition",
+          selected ? "border-brand" : "border-line",
         ].join(" ")}
       >
-        {selected && (
-          <svg viewBox="0 0 20 20" fill="white" className="h-3.5 w-3.5">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </div>
+        {selected ? <span className="size-2.5 rounded-full bg-brand" /> : null}
+      </span>
     </button>
   );
 }

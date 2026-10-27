@@ -1,11 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 
 import { BookingFlightSummary } from "@/components/features/booking/booking-flight-summary";
-import { ContactDetailsForm } from "@/components/features/booking/contact-details-form";
-import { PassengerForm } from "@/components/features/booking/passenger-form";
+import { BookingSteps } from "@/components/features/booking/booking-steps";
+import {
+  ContactDetailsForm,
+  validateEmail,
+  validatePhone,
+} from "@/components/features/booking/contact-details-form";
+import {
+  PassengerForm,
+  validatePassenger,
+} from "@/components/features/booking/passenger-form";
 import { trackGa4Event } from "@/lib/analytics/ga4-events";
 import type {
   BookingFormState,
@@ -62,6 +72,7 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
     contact: buildInitialContact(),
     passengers: buildInitialPassengers(query),
   });
+  const [showErrors, setShowErrors] = useState(false);
 
   function updatePassenger(index: number, updated: PassengerDetails) {
     setForm((prev) => {
@@ -75,8 +86,22 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
     setForm((prev) => ({ ...prev, contact }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const invalid =
+      validatePhone(form.contact.phone) !== null ||
+      validateEmail(form.contact.email) !== null ||
+      form.passengers.some((p) => Object.keys(validatePassenger(p)).length > 0);
+    if (invalid) {
+      setShowErrors(true);
+      const formEl = e.currentTarget;
+      // Wait for the error states to render, then focus the first one.
+      requestAnimationFrame(() => {
+        formEl.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+      });
+      return;
+    }
 
     const payload: BookingPayload = {
       offer,
@@ -107,31 +132,44 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
       passengerTypeOrder.indexOf(a.type) - passengerTypeOrder.indexOf(b.type),
   );
 
+  const travellerCount = form.passengers.length;
+
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_380px] lg:items-start">
+      <BookingSteps current={0} />
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         {/* ── Left column: contact + passengers ── */}
         <div className="flex flex-col gap-5">
-          {/* Section heading */}
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Passenger Details
+            <h1 className="text-[28px] font-bold leading-tight tracking-tight text-foreground">
+              Who&apos;s travelling?
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Please enter details exactly as they appear on each
-              passenger&apos;s passport.
+              Enter names exactly as they appear on each passport.
             </p>
           </div>
 
-          {/* Contact */}
-          <ContactDetailsForm contact={form.contact} onChange={updateContact} />
+          {showErrors ? (
+            <p
+              role="alert"
+              className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal"
+            >
+              Some details are missing. Check the highlighted fields.
+            </p>
+          ) : null}
 
-          {/* Passengers */}
+          <ContactDetailsForm
+            contact={form.contact}
+            onChange={updateContact}
+            showErrors={showErrors}
+          />
+
           {sortedPassengers.map((passenger, displayIdx) => (
             <PassengerForm
               key={`${passenger.type}-${passenger.index}`}
               passenger={passenger}
               displayNumber={displayIdx + 1}
+              showErrors={showErrors}
               onChange={(updated) => {
                 const globalIdx = form.passengers.findIndex(
                   (p) =>
@@ -143,30 +181,50 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
           ))}
         </div>
 
-        {/* ── Right column: flight summary + confirm ── */}
-        <div className="flex flex-col gap-5 lg:sticky lg:top-24">
+        {/* ── Right column: trip summary + continue ── */}
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-height)+1.5rem)]">
           <BookingFlightSummary offer={offer} tripType={query.tripType} />
 
-          {/* Confirm CTA */}
-          <button
-            type="submit"
-            className="btn btn-primary w-full rounded-xl py-3 text-base shadow"
-          >
-            Confirm & Proceed to Payment
-          </button>
+          <div className="rounded-card border border-line bg-white p-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-muted">
+                {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
+              </span>
+              <span className="text-xl font-bold tabular-nums text-foreground">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: offer.currency,
+                  maximumFractionDigits: 0,
+                }).format(offer.price)}
+              </span>
+            </div>
+            <p className="mt-0.5 text-right text-xs text-muted">
+              Service charges, if any, are shown on the next step
+            </p>
+            <button
+              type="submit"
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-brand text-base font-semibold text-white transition hover:bg-brand-strong"
+            >
+              Continue to payment
+            </button>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted">
+              <Lock className="size-3.5" />
+              Nothing is charged on this step
+            </p>
+          </div>
 
-          <p className="text-center text-[11px] text-muted">
-            By proceeding you agree to our{" "}
-            <a href="/terms" className="underline hover:text-foreground">
-              Terms of Service
-            </a>{" "}
+          <p className="text-center text-xs text-muted">
+            By continuing you agree to our{" "}
+            <Link href="/terms-conditions" className="underline hover:text-foreground">
+              Terms &amp; Conditions
+            </Link>{" "}
             and{" "}
-            <a href="/privacy" className="underline hover:text-foreground">
+            <Link href="/privacy-policy" className="underline hover:text-foreground">
               Privacy Policy
-            </a>
+            </Link>
             .
           </p>
-        </div>
+        </aside>
       </div>
     </form>
   );

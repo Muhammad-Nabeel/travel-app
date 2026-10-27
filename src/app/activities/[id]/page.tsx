@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Star } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import { cache } from "react";
 
+import { Breadcrumbs } from "@/components/features/detail/breadcrumbs";
+import {
+  BookingCard,
+  DetailLayout,
+  DetailPage,
+  DetailSection,
+  DetailTitle,
+  MobileBookingBar,
+  TrustNotes,
+} from "@/components/features/detail/detail-kit";
+import { PhotoGallery } from "@/components/features/detail/photo-gallery";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
   prisma,
@@ -52,6 +63,8 @@ const getActivityDetails = cache(async (id: string) => {
     return null;
   }
 });
+
+const BOOK_HREF = "/arrange-a-call";
 
 function formatCategory(category: string) {
   return category.split("-").join(" ");
@@ -111,7 +124,7 @@ export default async function ActivityDetailsPage({
   const { activity, destination } = data;
 
   return (
-    <div className="bg-slate-50 pb-16">
+    <DetailPage>
       <StructuredData
         data={[
           {
@@ -147,87 +160,94 @@ export default async function ActivityDetailsPage({
         ]}
       />
 
-      <section className="section-shell pt-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow ring-1 ring-slate-200 hover:bg-slate-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
+      <div className="section-shell">
+        <Breadcrumbs
+          items={[
+            { name: "Home", href: "/" },
+            { name: "Activities", href: "/activities" },
+            { name: activity.title },
+          ]}
+        />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="relative overflow-hidden rounded-3xl bg-slate-200">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={activity.imageUrl}
-              alt={activity.title}
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent" />
-            <span className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-800">
+        <DetailTitle
+          title={activity.title}
+          badge={
+            <span className="inline-flex rounded-full bg-subtle px-2.5 py-1 text-xs font-semibold capitalize text-foreground">
               {formatCategory(activity.category)}
             </span>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-              {activity.title}
-            </h1>
-            {activity.description ? (
-              <p className="mt-3 text-base leading-7 text-slate-600">
-                {activity.description}
-              </p>
-            ) : null}
-
-            <div className="mt-4 flex items-center gap-2 text-sm text-slate-600">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < Math.round(activity.reviews)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-slate-300"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="font-semibold text-slate-800">
-                {activity.reviews.toFixed(1)}
-              </span>
-              <span className="text-slate-500">
-                ({activity.reviewCount.toLocaleString()} reviews)
-              </span>
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-sm uppercase tracking-wide text-slate-500">
-                Starting from
-              </p>
-              <p className="text-2xl font-bold text-slate-900">
-                {activity.cost}
-              </p>
-              <p className="text-xs text-slate-500">per person</p>
-            </div>
-
-            {destination ? (
-              <div className="mt-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Destination
-                </p>
+          }
+          meta={
+            <>
+              {activity.reviewCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+                    {activity.reviews.toFixed(1)}
+                    <Star className="size-3 fill-white" />
+                  </span>
+                  <span className="text-muted">
+                    {activity.reviewCount.toLocaleString()} reviews
+                  </span>
+                </span>
+              ) : null}
+              {destination ? (
                 <Link
                   href={getDestinationHref(destination)}
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 hover:text-sky-800"
+                  className="inline-flex items-center gap-1.5 hover:text-brand hover:underline"
                 >
-                  <MapPin className="h-4 w-4" />
+                  <MapPin className="size-4 text-muted" />
                   {destination.city}, {destination.country}
                 </Link>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-    </div>
+              ) : null}
+            </>
+          }
+        />
+
+        <PhotoGallery photos={[{ src: activity.imageUrl, alt: activity.title }]} />
+
+        <DetailLayout
+          aside={
+            <BookingCard
+              price={{ label: "from", amount: activity.cost, note: "per person" }}
+              ctaLabel="Arrange a call"
+              ctaHref={BOOK_HREF}
+              footer={
+                <TrustNotes
+                  notes={[
+                    "No payment needed to ask",
+                    "An adviser books tickets and transfers for you",
+                  ]}
+                />
+              }
+            />
+          }
+        >
+          <DetailSection title="About this activity">
+            <p className="text-base leading-7 text-foreground">
+              {activity.description ??
+                `Discover ${activity.title} and book it with a Safar Umrah travel adviser.`}
+            </p>
+          </DetailSection>
+
+          {destination ? (
+            <DetailSection title="Where it is">
+              <Link
+                href={getDestinationHref(destination)}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-strong"
+              >
+                <MapPin className="size-4" />
+                More things to do in {destination.city}, {destination.country}
+              </Link>
+            </DetailSection>
+          ) : null}
+        </DetailLayout>
+      </div>
+
+      <MobileBookingBar
+        amount={activity.cost}
+        note="per person"
+        ctaLabel="Arrange a call"
+        ctaHref={BOOK_HREF}
+      />
+    </DetailPage>
   );
 }

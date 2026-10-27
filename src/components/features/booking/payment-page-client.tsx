@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Lock, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Loader2, Lock, ShieldCheck } from "lucide-react";
 
 import { BookingFlightSummary } from "@/components/features/booking/booking-flight-summary";
+import { BookingSteps } from "@/components/features/booking/booking-steps";
 import {
   PaymentGatewayCard,
   type Gateway,
@@ -130,6 +132,8 @@ function formatMoney(value: number, currency: string) {
   }).format(value);
 }
 
+const OFFLINE_GATEWAYS = new Set(["cash_on_delivery", "pay_at_branch"]);
+
 const PASSENGER_LABEL: Record<string, string> = {
   adult: "Adult",
   child: "Child",
@@ -156,7 +160,7 @@ export function PaymentPageClient() {
       return null;
     }
   });
-  const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
+  const [chosenGateway, setSelectedGateway] = useState<string | null>(null);
   const [serviceChargePercent, setServiceChargePercent] = useState(0);
   const [paymentSwitches, setPaymentSwitches] = useState(
     DEFAULT_PAYMENT_SWITCHES,
@@ -165,6 +169,11 @@ export function PaymentPageClient() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [confirmed, setConfirmed] = useState<{
+    reference: string | null;
+    method: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!payload) {
@@ -233,20 +242,16 @@ export function PaymentPageClient() {
     const toggleKey = GATEWAY_TOGGLE_KEY[gateway.id];
     return toggleKey ? paymentSwitches[toggleKey] : true;
   });
+  // A choice is dropped if the site settings later disable that gateway.
+  const selectedGateway = availableGateways.some((g) => g.id === chosenGateway)
+    ? chosenGateway
+    : null;
 
-  useEffect(() => {
-    if (
-      selectedGateway &&
-      !availableGateways.some((g) => g.id === selectedGateway)
-    ) {
-      setSelectedGateway(null);
-    }
-  }, [availableGateways, selectedGateway]);
 
   if (!payload) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
-        <span className="loading loading-spinner loading-lg text-primary" />
+        <Loader2 className="size-8 animate-spin text-brand" aria-label="Loading" />
       </div>
     );
   }
@@ -276,6 +281,7 @@ export function PaymentPageClient() {
     }
 
     setPaymentError("");
+    setNotice("");
 
     trackGa4Event("payment_submitted", {
       payment_method: selectedGateway,
@@ -323,10 +329,11 @@ export function PaymentPageClient() {
         }
 
         sessionStorage.removeItem("booking_payload");
-        alert(
-          `Booking request submitted successfully.\nReference: ${json.reference ?? "N/A"}`,
-        );
-        router.push("/flights");
+        setConfirmed({
+          reference: json.reference ?? null,
+          method: selected?.name ?? selectedGateway,
+        });
+        window.scrollTo({ top: 0 });
         return;
       } catch (error) {
         setPaymentError(
@@ -343,239 +350,268 @@ export function PaymentPageClient() {
 
     // TODO: integrate each gateway's SDK / redirect
     // The full `payload` object is available here and is database-ready.
-    alert(
-      `Gateway "${selected?.name}" integration coming soon.\n\nBooking payload is assembled and ready to save.`,
+    setNotice(
+      `Online payment with ${selected?.name ?? "this method"} is not available yet. Choose Cash on Delivery or Pay at Branch, or contact us to complete your booking.`,
+    );
+  }
+
+  const total = formatMoney(pricing.grandTotal, payload.offer.currency);
+  const isOffline = selectedGateway ? OFFLINE_GATEWAYS.has(selectedGateway) : false;
+
+  if (confirmed) {
+    return (
+      <>
+        <BookingSteps current={2} />
+        <div className="mx-auto w-full max-w-2xl px-4 py-12 text-center">
+          <CheckCircle2 className="mx-auto size-14 text-success" strokeWidth={1.75} />
+          <h1 className="mt-4 text-[28px] font-bold leading-tight tracking-tight text-foreground">
+            Booking request received
+          </h1>
+          <p className="mt-2 text-base text-muted">
+            A travel adviser will contact you on {payload.contact.phone}
+            {payload.contact.email ? ` or ${payload.contact.email}` : ""} to
+            confirm your seats and arrange payment ({confirmed.method}).
+          </p>
+          {confirmed.reference ? (
+            <p className="mt-6 inline-flex flex-col rounded-card border border-line px-6 py-4">
+              <span className="text-sm text-muted">Booking reference</span>
+              <span className="text-xl font-bold tracking-wide text-foreground">
+                {confirmed.reference}
+              </span>
+            </p>
+          ) : null}
+          <div className="mt-8 text-left">
+            <BookingFlightSummary
+              offer={payload.offer}
+              tripType={payload.query.tripType}
+              overrideTotalPrice={pricing.grandTotal}
+            />
+          </div>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              href="/"
+              className="flex h-12 items-center justify-center rounded-full bg-brand px-7 text-base font-semibold text-white transition hover:bg-brand-strong"
+            >
+              Back to home
+            </Link>
+            <Link
+              href="/flights"
+              className="flex h-12 items-center justify-center rounded-full border border-line px-7 text-base font-semibold text-foreground transition hover:bg-subtle"
+            >
+              Search more flights
+            </Link>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_380px] lg:items-start">
+    <>
+    <BookingSteps current={1} />
+    <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
       {/* ── Left column ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-6">
-        {/* Back button */}
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex w-fit items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
+          className="flex w-fit items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand-strong"
         >
           <ChevronLeft className="size-4" />
-          Back to passenger details
+          Edit traveller details
         </button>
 
-        {/* Heading */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Select Payment Method
+          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-foreground">
+            How would you like to pay?
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Your booking will be confirmed once payment is processed. All
-            transactions are secured and encrypted.
+            Your booking is confirmed once payment is received.
           </p>
-        </div>
-
-        {/* Passenger snapshot */}
-        <div className="rounded-2xl border border-base-200 bg-base-100 p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
-            Passengers ({totalPassengers})
-          </p>
-          <div className="flex flex-col gap-2">
-            {payload.passengers.map((p, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <User className="size-3.5 text-primary" />
-                </div>
-                <span className="flex-1 text-sm font-medium text-foreground">
-                  {p.firstName || "—"} {p.lastName || "—"}
-                </span>
-                <span className="rounded-full bg-base-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
-                  {PASSENGER_LABEL[p.type] ?? p.type}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 border-t border-base-200 pt-3">
-            <p className="text-xs text-muted">
-              <span className="font-medium text-foreground">Contact: </span>
-              {payload.contact.phone}
-              {payload.contact.email ? ` · ${payload.contact.email}` : ""}
-            </p>
-          </div>
         </div>
 
         {/* Gateway selection */}
-        <div>
-          <p className="mb-3 text-sm font-semibold text-foreground">
-            Payment Gateways
-          </p>
+        <section aria-labelledby="payment-methods-heading">
+          <h2 id="payment-methods-heading" className="mb-3 text-base font-semibold text-foreground">
+            Payment method
+          </h2>
           <div
             className="flex flex-col gap-3"
             role="radiogroup"
-            aria-label="Payment method"
+            aria-labelledby="payment-methods-heading"
           >
             {availableGateways.map((gw) => (
               <PaymentGatewayCard
                 key={gw.id}
                 gateway={gw}
                 selected={selectedGateway === gw.id}
-                onSelect={() => setSelectedGateway(gw.id)}
+                onSelect={() => {
+                  setSelectedGateway(gw.id);
+                  setNotice("");
+                  setPaymentError("");
+                }}
               />
             ))}
             {availableGateways.length === 0 && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                No payment methods are currently enabled. Please contact
-                support.
+              <p className="rounded-lg border border-line bg-subtle px-4 py-3 text-sm text-foreground">
+                No payment methods are available right now. Please contact
+                support to complete your booking.
               </p>
             )}
           </div>
 
           {selectedGateway === "pay_at_branch" && (
-            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-700">
-                Select Branch
-              </p>
-              <div className="mt-3 grid gap-2">
+            <fieldset className="mt-4 rounded-card border border-line p-4">
+              <legend className="px-1 text-sm font-semibold text-foreground">
+                Choose a branch
+              </legend>
+              <div className="mt-2 grid gap-2">
                 {branches.length === 0 ? (
-                  <p className="text-sm text-blue-800/80">
-                    No active branches are available right now.
+                  <p className="text-sm text-muted">
+                    No branches are available right now.
                   </p>
                 ) : (
                   branches.map((branch) => (
                     <label
                       key={branch.id}
-                      className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition ${
                         selectedBranchId === branch.id
-                          ? "border-blue-300 bg-white"
-                          : "border-blue-100 bg-white/70 hover:bg-white"
+                          ? "border-brand bg-brand-soft ring-1 ring-brand"
+                          : "border-line bg-white hover:border-foreground/40"
                       }`}
                     >
-                      <div className="flex items-start gap-2">
-                        <input
-                          type="radio"
-                          name="branch"
-                          checked={selectedBranchId === branch.id}
-                          onChange={() => setSelectedBranchId(branch.id)}
-                          className="mt-0.5 h-4 w-4 border-slate-300 text-blue-600"
-                        />
-                        <div>
-                          <p className="font-semibold text-slate-800">
-                            {branch.name} ({branch.city})
-                          </p>
-                          <p className="text-xs text-slate-600">
-                            {branch.address}
-                          </p>
-                          {branch.phone ? (
-                            <p className="text-xs text-slate-500">
-                              {branch.phone}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
+                      <input
+                        type="radio"
+                        name="branch"
+                        checked={selectedBranchId === branch.id}
+                        onChange={() => setSelectedBranchId(branch.id)}
+                        className="mt-0.5 size-4 accent-brand"
+                      />
+                      <span>
+                        <span className="block font-semibold text-foreground">
+                          {branch.name} ({branch.city})
+                        </span>
+                        <span className="block text-muted">{branch.address}</span>
+                        {branch.phone ? (
+                          <span className="block text-muted">{branch.phone}</span>
+                        ) : null}
+                      </span>
                     </label>
                   ))
                 )}
               </div>
-            </div>
+            </fieldset>
           )}
-        </div>
+        </section>
 
-        {/* Security note */}
-        <div className="flex items-start gap-2 rounded-xl bg-base-200/50 px-4 py-3 text-xs text-muted">
-          <Lock className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            Your payment information is encrypted with TLS 1.3 and never stored
-            on our servers. You will be redirected to the selected gateway to
-            complete the transaction.
-          </span>
-        </div>
+        {/* Traveller snapshot */}
+        <section className="rounded-card border border-line bg-white p-5">
+          <h2 className="text-base font-semibold text-foreground">
+            Travellers ({totalPassengers})
+          </h2>
+          <ul className="mt-3 divide-y divide-line">
+            {payload.passengers.map((p, i) => (
+              <li key={i} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <span className="font-medium text-foreground">
+                  {[p.firstName, p.lastName].filter(Boolean).join(" ") || "—"}
+                </span>
+                <span className="text-muted">{PASSENGER_LABEL[p.type] ?? p.type}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 border-t border-line pt-3 text-sm text-muted">
+            <span className="font-medium text-foreground">Contact: </span>
+            {payload.contact.phone}
+            {payload.contact.email ? ` · ${payload.contact.email}` : ""}
+          </p>
+        </section>
+
+        <p className="flex items-start gap-2 text-sm text-muted">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
+          Card payments are handled by the payment provider over an encrypted
+          connection. We never store your card details.
+        </p>
       </div>
 
-      {/* ── Right column: summary sidebar ───────────────────────────────── */}
-      <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-        {/* Flight summary card */}
+      {/* ── Right column: trip summary + pay ─────────────────────────────── */}
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-height)+1.5rem)]">
         <BookingFlightSummary
           offer={payload.offer}
           tripType={payload.query.tripType}
           overrideTotalPrice={pricing.grandTotal}
         />
 
-        {/* Price breakdown + Pay button */}
-        <div className="rounded-2xl border border-base-200 bg-base-100 p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
-            Price Breakdown
-          </p>
+        <section className="rounded-card border border-line bg-white p-5">
+          <h2 className="mb-3 text-base font-semibold text-foreground">Price details</h2>
 
-          {/* Per-type rows */}
-          {(["adult", "child", "infant"] as const).map((type) => {
-            const count = payload.passengers.filter(
-              (p) => p.type === type,
-            ).length;
-            if (!count) return null;
-            return (
-              <div
-                key={type}
-                className="flex items-center justify-between py-1 text-sm"
-              >
-                <span className="text-muted">
-                  {PASSENGER_LABEL[type]} × {count}
-                </span>
-                <span className="font-medium text-foreground">
-                  {formatMoney(
-                    payload.offer.price / totalPassengers,
-                    payload.offer.currency,
-                  )}
-                </span>
-              </div>
-            );
-          })}
+          <dl className="space-y-2 text-sm">
+            {(["adult", "child", "infant"] as const).map((type) => {
+              const count = payload.passengers.filter((p) => p.type === type).length;
+              if (!count) return null;
+              return (
+                <div key={type} className="flex items-center justify-between">
+                  <dt className="text-muted">
+                    {PASSENGER_LABEL[type]} × {count}
+                  </dt>
+                  <dd className="font-medium tabular-nums text-foreground">
+                    {formatMoney(
+                      (payload.offer.price / totalPassengers) * count,
+                      payload.offer.currency,
+                    )}
+                  </dd>
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-between">
+              <dt className="text-muted">Service charge ({serviceChargePercent}%)</dt>
+              <dd className="font-medium tabular-nums text-foreground">
+                {formatMoney(pricing.serviceChargeAmount, payload.offer.currency)}
+              </dd>
+            </div>
+          </dl>
 
-          <div className="flex items-center justify-between py-1 text-sm">
-            <span className="text-muted">
-              Service Charges ({serviceChargePercent}%)
-            </span>
-            <span className="font-medium text-foreground">
-              {formatMoney(pricing.serviceChargeAmount, payload.offer.currency)}
-            </span>
-          </div>
-
-          <div className="my-3 border-t border-base-200" />
-
-          <div className="flex items-center justify-between">
+          <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
             <span className="font-semibold text-foreground">Total</span>
-            <span className="text-xl font-bold text-foreground">
-              {formatMoney(pricing.grandTotal, payload.offer.currency)}
-            </span>
+            <span className="text-xl font-bold tabular-nums text-foreground">{total}</span>
           </div>
-          <p className="mt-0.5 text-right text-[11px] text-muted">
-            All taxes &amp; fees included
-          </p>
+          <p className="mt-0.5 text-right text-xs text-muted">Taxes and fees included</p>
 
-          {/* CTA */}
           <button
             type="button"
             disabled={!selectedGateway || submittingPayment}
             onClick={() => void handlePayNow()}
-            className="btn btn-primary mt-5 w-full rounded-xl py-3 text-base shadow disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-base font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submittingPayment
-              ? "Submitting request..."
-              : selected
-                ? `Pay with ${selected.name}`
-                : "Select a payment method"}
+            {submittingPayment ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Sending request…
+              </>
+            ) : !selected ? (
+              "Choose a payment method"
+            ) : isOffline ? (
+              `Request booking · ${total}`
+            ) : (
+              <>
+                <Lock className="size-4" />
+                Pay {total}
+              </>
+            )}
           </button>
 
-          {!selectedGateway && (
-            <p className="mt-2 text-center text-[11px] text-muted">
-              Please choose a payment gateway above to continue.
-            </p>
-          )}
-          {paymentError && (
-            <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-center text-xs text-rose-700">
+          {paymentError ? (
+            <p role="alert" className="mt-3 text-center text-[13px] text-deal">
               {paymentError}
             </p>
-          )}
-        </div>
-      </div>
+          ) : null}
+          {notice ? (
+            <p role="status" className="mt-3 rounded-lg bg-subtle px-3 py-2 text-[13px] text-foreground">
+              {notice}
+            </p>
+          ) : null}
+        </section>
+      </aside>
     </div>
+    </>
   );
 }
