@@ -69,6 +69,11 @@ function getDummyPosts() {
     .map(toRecord);
 }
 
+/** True for the local-development placeholder posts. */
+export function isDemoPost(post: Pick<BlogPostRecord, "id">) {
+  return DUMMY_BLOG_POSTS.some((demo) => demo.id === post.id);
+}
+
 export const getPublishedBlogPosts = cache(async () => {
   if (shouldBypassDatabase()) {
     return getDummyPosts();

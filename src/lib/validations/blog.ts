@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SITE_NAME } from "@/lib/seo";
 
 export const blogPostSchema = z.object({
     slug: z
@@ -22,7 +23,7 @@ export const blogPostSchema = z.object({
         .string()
         .url("Cover image must be a valid URL")
         .max(500, "URL too long"),
-    author: z.string().max(100).trim().default("Safar Umrah Travel Team"),
+    author: z.string().max(100).trim().default(`${SITE_NAME} Travel Team`),
     category: z
         .enum([
             "travel",

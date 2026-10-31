@@ -36,7 +36,6 @@ import {
 } from "@/lib/seo";
 import {
   UMRAH_GALLERY,
-  buildUmrahPackageSeo,
   getPublishedUmrahPackageBySlug,
   getPublishedUmrahPackages,
   getUmrahPackagePath,
@@ -130,10 +129,9 @@ export async function generateMetadata({
     });
 
   const { pkg, isDummy } = result;
-  const seo = buildUmrahPackageSeo(pkg);
   return buildMetadata({
-    title: seo.title,
-    description: seo.description,
+    title: pkg.seoTitle,
+    description: pkg.seoDescription,
     path: getUmrahPackagePath(pkg.slug),
     keywords: ["Umrah package", pkg.departureCity, "pilgrimage"],
     // Demo packages (no published rows in the database) must not be indexed.
@@ -160,7 +158,6 @@ export default async function UmrahPackageDetailPage({
   if (!result) notFound();
   const { pkg } = result;
   const packagePath = getUmrahPackagePath(pkg.slug);
-  const seo = buildUmrahPackageSeo(pkg);
 
   // Config from URL params (set by the configurator card link)
   const nights = Math.max(1, Number(sp.nights) || 14);
@@ -183,7 +180,7 @@ export default async function UmrahPackageDetailPage({
         data={[
           createTouristTripSchema({
             name: pkg.title,
-            description: seo.description,
+            description: pkg.seoDescription,
             path: packagePath,
             price: pkg.basePrice,
             currency: pkg.currency,

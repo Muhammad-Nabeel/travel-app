@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { blogPostSchema } from "@/lib/validations/blog";
+import { useBrand } from "@/components/shared/brand-provider";
+import { MediaUrlInput } from "@/components/admin/media-picker";
 
 type BlogPost = {
   id: string;
@@ -48,7 +50,7 @@ const EMPTY_FORM = {
   excerpt: "",
   content: "",
   coverImageUrl: "",
-  author: "Safar Umrah Travel Team",
+  author: "",
   category: "travel",
   tags: "",
   status: "DRAFT",
@@ -65,10 +67,12 @@ function slugify(text: string) {
 }
 
 export default function AdminBlogPage() {
+  const brand = useBrand();
+  const emptyForm = { ...EMPTY_FORM, author: `${brand.name} Travel Team` };
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isDummy, setIsDummy] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
@@ -93,7 +97,7 @@ export default function AdminBlogPage() {
   }, []);
 
   const openNew = () => {
-    setFormData(EMPTY_FORM);
+    setFormData(emptyForm);
     setEditingId(null);
     setError("");
     setShowForm(true);
@@ -340,32 +344,20 @@ export default function AdminBlogPage() {
 
               {/* Cover image */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Cover image URL *
-                </label>
-                <input
-                  className="input input-bordered input-sm"
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Cover image *
+                </span>
+                <MediaUrlInput
                   value={formData.coverImageUrl}
-                  onChange={(e) =>
-                    setFormData((f) => ({
-                      ...f,
-                      coverImageUrl: e.target.value,
-                    }))
+                  onChange={(url) =>
+                    setFormData((f) => ({ ...f, coverImageUrl: url }))
                   }
+                  folder="blog-media"
                   required
-                  placeholder="https://..."
                   type="url"
+                  placeholder="Choose from the library or paste a URL"
+                  inputClassName="input input-bordered input-sm"
                 />
-                {formData.coverImageUrl && (
-                  <div className="mt-1 h-24 w-40 overflow-hidden rounded-xl border border-slate-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={formData.coverImageUrl}
-                      alt="Cover preview"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Author / Category / Status / Sort */}
@@ -380,7 +372,7 @@ export default function AdminBlogPage() {
                     onChange={(e) =>
                       setFormData((f) => ({ ...f, author: e.target.value }))
                     }
-                    placeholder="Safar Umrah Travel Team"
+                    placeholder={`${brand.name} Travel Team`}
                   />
                 </div>
                 <div className="flex flex-col gap-1">

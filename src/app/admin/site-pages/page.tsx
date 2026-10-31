@@ -24,11 +24,8 @@ const EMPTY_PAGES_FORM: SitePagesSettings = {
     title: "",
     intro: "",
     phoneLabel: "",
-    phoneValue: "",
     locationLabel: "",
-    locationValue: "",
     emailLabel: "",
-    emailValue: "",
     fullNameLabel: "",
     fullNamePlaceholder: "",
     emailFieldLabel: "",
@@ -261,7 +258,12 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
           />
         </label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <p className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          The phone number, address and email shown on this page are edited in
+          Settings → Contact Details.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-slate-600">
               Phone Label
@@ -272,19 +274,6 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
             />
           </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              Phone Value
-            </span>
-            <input
-              value={value.phoneValue}
-              onChange={(event) => onChange("phoneValue", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-slate-600">
               Location Label
@@ -299,36 +288,11 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-slate-600">
-              Location Value
-            </span>
-            <input
-              value={value.locationValue}
-              onChange={(event) =>
-                onChange("locationValue", event.target.value)
-              }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
               Email Label
             </span>
             <input
               value={value.emailLabel}
               onChange={(event) => onChange("emailLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              Email Value
-            </span>
-            <input
-              value={value.emailValue}
-              onChange={(event) => onChange("emailValue", event.target.value)}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
             />
           </label>

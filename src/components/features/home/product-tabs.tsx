@@ -1,3 +1,6 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
 import {
   BedDouble,
@@ -9,8 +12,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { useBrand } from "@/components/shared/brand-provider";
+import type { BrandAssetSlot } from "@/lib/brand-assets";
+
 type Product = {
-  key: string;
+  key: BrandAssetSlot;
   href: string;
   label: string;
   icon: LucideIcon;
@@ -35,6 +41,8 @@ type ProductTabsProps = {
  * The active product is rendered in place; the others link to their pages.
  */
 export function ProductTabs({ active }: ProductTabsProps) {
+  const { assets } = useBrand();
+
   return (
     <nav
       aria-label="Choose what to book"
@@ -42,13 +50,24 @@ export function ProductTabs({ active }: ProductTabsProps) {
     >
       {products.map(({ key, href, label, icon: Icon, tint }) => {
         const isActive = key === active;
+        const iconUrl = assets[key];
         const content = (
           <>
-            <span
-              className={`flex size-11 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${tint}`}
-            >
-              <Icon className="size-5.5" strokeWidth={1.75} />
-            </span>
+            {iconUrl ? (
+              <Image
+                src={iconUrl}
+                alt=""
+                width={44}
+                height={44}
+                className="size-11 object-contain transition-transform group-hover:scale-105"
+              />
+            ) : (
+              <span
+                className={`flex size-11 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${tint}`}
+              >
+                <Icon className="size-5.5" strokeWidth={1.75} />
+              </span>
+            )}
             <span
               className={`text-sm ${isActive ? "font-semibold text-brand" : "font-medium text-foreground"}`}
             >

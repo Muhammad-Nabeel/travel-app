@@ -5,6 +5,16 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ZodError } from "zod";
 import { destinationSchema } from "@/lib/validations/destination";
+import { MediaUrlInput } from "@/components/admin/media-picker";
+import {
+  EMPTY_SEO_DRAFT,
+  SeoFields,
+  resolveSeoDraft,
+  seoDraftFrom,
+  seoTitleBudgetIssue,
+} from "@/components/admin/seo-fields";
+import { useBrand } from "@/components/shared/brand-provider";
+import { suggestDestinationSeo } from "@/lib/seo-suggestions";
 
 type Destination = {
   id: string;
@@ -27,6 +37,8 @@ type Destination = {
   gradient: string;
   sortOrder: number;
   isActive: boolean;
+  seoTitle: string;
+  seoDescription: string;
 };
 
 type CitySuggestion = {
@@ -82,6 +94,9 @@ export default function AdminDestinationsPage() {
   const [isDummyMode, setIsDummyMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [seoDraft, setSeoDraft] = useState(EMPTY_SEO_DRAFT);
+  const brand = useBrand();
+  const seoSuggestion = suggestDestinationSeo(formData, brand.name);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -159,6 +174,7 @@ export default function AdminDestinationsPage() {
       sortOrder: String(d.sortOrder),
       isActive: d.isActive,
     });
+    setSeoDraft(seoDraftFrom(d, suggestDestinationSeo(d, brand.name)));
     setCitySuggestions([]);
     setShowCitySuggestions(false);
     setCityLookupLoading(false);
@@ -168,6 +184,7 @@ export default function AdminDestinationsPage() {
   const cancelEdit = () => {
     setEditingId(null);
     setFormData(EMPTY_FORM);
+    setSeoDraft(EMPTY_SEO_DRAFT);
     setCitySuggestions([]);
     setShowCitySuggestions(false);
     setCityLookupLoading(false);
@@ -226,6 +243,13 @@ export default function AdminDestinationsPage() {
     setError("");
 
     try {
+      const seo = resolveSeoDraft(seoDraft, seoSuggestion);
+      const titleIssue = seoTitleBudgetIssue(seo.seoTitle, brand.name);
+      if (titleIssue) {
+        setError(titleIssue);
+        return;
+      }
+
       // Validate form data with Zod schema
       const validatedData = destinationSchema.parse({
         city: formData.city,
@@ -247,6 +271,7 @@ export default function AdminDestinationsPage() {
         gradient: formData.gradient,
         sortOrder: formData.sortOrder,
         isActive: formData.isActive,
+        ...seo,
       });
 
       const url =
@@ -348,6 +373,7 @@ export default function AdminDestinationsPage() {
               onClick={() => {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
+                setSeoDraft(EMPTY_SEO_DRAFT);
                 setCitySuggestions([]);
                 setShowCitySuggestions(false);
                 setCityLookupLoading(false);
@@ -580,17 +606,20 @@ export default function AdminDestinationsPage() {
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 lg:col-span-2">
+              <div className="flex flex-col gap-1.5 lg:col-span-2">
                 <span className="text-xs font-semibold text-slate-600">
-                  Image URL
+                  Image
                 </span>
-                <input
-                  {...field("imageUrl")}
-                  placeholder="/destinations/dubai.jpg or https://..."
+                <MediaUrlInput
+                  value={formData.imageUrl}
+                  onChange={(url) =>
+                    setFormData((prev) => ({ ...prev, imageUrl: url }))
+                  }
+                  folder="destination-images"
+                  placeholder="Choose from the library, or /destinations/dubai.jpg or https://..."
                   maxLength={500}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                 />
-              </label>
+              </div>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Sort Order
@@ -640,6 +669,18 @@ export default function AdminDestinationsPage() {
                   Active (visible on homepage)
                 </span>
               </label>
+            </div>
+
+            <div className="mt-5">
+              <SeoFields
+                draft={seoDraft}
+                suggestion={seoSuggestion}
+                onChange={setSeoDraft}
+                path={`/destinations/${formData.city
+                  .trim()
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")}`}
+              />
             </div>
 
             <div className="mt-5 flex gap-3">

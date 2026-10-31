@@ -170,7 +170,6 @@ export function FlightFiltersPanel({
                               className="h-full w-full object-contain"
                               width={24}
                               height={24}
-                              unoptimized
                             />
                           </div>
                         ) : (

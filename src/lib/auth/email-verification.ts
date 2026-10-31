@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from "node:crypto";
 import { Resend } from "resend";
 
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 import { prisma } from "@/lib/db";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -40,6 +41,7 @@ export async function sendVerificationEmail(to: string, token: string) {
     const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
     const verifyUrl = `${getBaseUrl()}/api/auth/verify-email?token=${token}`;
     const resend = new Resend(resendKey);
+    const { name: brandName } = await getStoredBrandSettings();
 
     await resend.emails.send({
         from,
@@ -47,7 +49,7 @@ export async function sendVerificationEmail(to: string, token: string) {
         subject: "Verify your email address",
         html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;max-width:560px;margin:0 auto;">
-        <h2 style="margin:0 0 12px;">Confirm your Safar account</h2>
+        <h2 style="margin:0 0 12px;">Confirm your ${brandName} account</h2>
         <p style="margin:0 0 16px;">Thanks for signing up. Please verify your email to activate login with email and password.</p>
         <p style="margin:0 0 20px;">
           <a href="${verifyUrl}" style="display:inline-block;background:#0284c7;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">

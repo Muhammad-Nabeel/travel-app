@@ -1,60 +1,13 @@
-"use client";
-
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
 
-type AirlineLogoEntry = {
-  id: string;
-  name: string;
-  src: string;
-  storagePath: string | null;
-  isActive: boolean;
-  sortOrder: number;
-};
+import { getStoredAirlineLogos } from "@/lib/admin-settings/airline-logo-settings";
 
-const FALLBACK_AIRLINES = [
-  { name: "Emirates", src: "/airlines/ek.gif" },
-  { name: "Qatar Airways", src: "/airlines/qr.gif" },
-  { name: "Etihad Airways", src: "/airlines/ey.gif" },
-  { name: "Turkish Airlines", src: "/airlines/tk.gif" },
-  { name: "British Airways", src: "/airlines/ba.gif" },
-  { name: "Saudi", src: "/airlines/sv.gif" },
-];
+export async function AirlinesSlider() {
+  const airlines = (await getStoredAirlineLogos()).filter((item) => item.isActive);
+  if (airlines.length === 0) return null;
 
-export function AirlinesSlider() {
-  const [airlines, setAirlines] = useState(FALLBACK_AIRLINES);
-
-  useEffect(() => {
-    async function loadLogos() {
-      try {
-        const res = await fetch("/api/admin/settings/airline-logos", {
-          cache: "no-store",
-        });
-        const json = (await res.json()) as { logos?: AirlineLogoEntry[] };
-        if (!res.ok || !Array.isArray(json.logos)) {
-          return;
-        }
-
-        const next = json.logos
-          .filter((item) => item.isActive)
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((item) => ({
-            name: item.name,
-            src: item.src,
-          }));
-
-        if (next.length > 0) {
-          setAirlines(next);
-        }
-      } catch {
-        // Keep fallback logos when settings API is unavailable.
-      }
-    }
-
-    void loadLogos();
-  }, []);
-
-  const loopedAirlines = useMemo(() => [...airlines, ...airlines], [airlines]);
+  // The list is rendered twice so the CSS marquee can loop seamlessly.
+  const loopedAirlines = [...airlines, ...airlines];
 
   return (
     <section className="section-shell py-12 md:py-16" aria-label="Leading airlines">
@@ -75,7 +28,8 @@ export function AirlinesSlider() {
           <div className="airline-marquee flex w-max items-center gap-4">
             {loopedAirlines.map((airline, index) => (
               <div
-                key={`${airline.name}-${index}`}
+                key={`${airline.id}-${index}`}
+                aria-hidden={index >= airlines.length || undefined}
                 className="flex h-20 w-36 shrink-0 items-center justify-center rounded-xl border border-line bg-white px-4 py-3 transition hover:shadow-card"
               >
                 <Image

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useBrand } from "@/components/shared/brand-provider";
 import {
   BookOpen,
   Compass,
@@ -39,6 +40,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
+  const brand = useBrand();
 
   return (
     <aside className="sticky top-0 h-screen w-full border-r border-blue-200/80 bg-white text-slate-800 lg:w-72">
@@ -48,7 +50,7 @@ export function AdminSidebar({ onToggle }: AdminSidebarProps) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-500">
               Admin Panel
             </p>
-            <h1 className="mt-2 text-2xl font-bold text-blue-900">Safar Ops</h1>
+            <h1 className="mt-2 text-2xl font-bold text-blue-900">{brand.name}</h1>
           </div>
           {onToggle && (
             <button

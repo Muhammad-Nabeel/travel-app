@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 // The page is a client component and cannot export metadata itself.
 export const metadata: Metadata = buildMetadata({
   title: "Create an Account",
-  description: "Create a Safar Umrah account to manage your Umrah, flight and holiday bookings in one place.",
+  description: "Create an account to manage your Umrah, flight and holiday bookings in one place.",
   path: "/signup",
   noIndex: true,
 });

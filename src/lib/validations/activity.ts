@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { seoFields } from "@/lib/validations/seo";
+
 export const activitySchema = z.object({
     destinationId: z
         .string()
@@ -39,6 +41,7 @@ export const activitySchema = z.object({
         .default(0),
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
+    ...seoFields,
 });
 
 export type ActivityInput = z.infer<typeof activitySchema>;

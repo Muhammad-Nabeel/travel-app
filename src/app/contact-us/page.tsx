@@ -6,6 +6,11 @@ import {
 } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
+import {
+  getPrimaryPhone,
+  getStoredSupportContactSettings,
+} from "@/lib/admin-settings/support-contact-settings";
+import { ContactForm } from "@/components/features/contact/contact-form";
 import { createWebPageSchema } from "@/lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 
@@ -24,12 +29,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactUsPage() {
-  const [pages, organizationJsonLd] = await Promise.all([
+  const [pages, contact, organizationJsonLd] = await Promise.all([
     getStoredSitePagesSettings(),
+    getStoredSupportContactSettings(),
     buildOrganizationJsonLd(),
   ]);
 
   const page = pages.contactUs;
+  const phone = getPrimaryPhone(contact);
 
   return (
     <div className="section-shell py-12 sm:py-16">
@@ -62,36 +69,40 @@ export default async function ContactUsPage() {
             </p>
 
             <div className="mt-10 space-y-6">
-              <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                  <Phone className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-base font-medium text-slate-800">
-                    {page.phoneLabel}
-                  </p>
-                  <a
-                    href={getTelHref(page.phoneValue)}
-                    className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-blue-600"
-                  >
-                    {page.phoneValue}
-                  </a>
+              {phone ? (
+                <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+                    <Phone className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-base font-medium text-slate-800">
+                      {page.phoneLabel}
+                    </p>
+                    <a
+                      href={getTelHref(phone)}
+                      className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-blue-600"
+                    >
+                      {phone}
+                    </a>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                  <MapPin className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-base font-medium text-slate-800">
-                    {page.locationLabel}
-                  </p>
-                  <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-                    {page.locationValue}
-                  </p>
+              {contact.address ? (
+                <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+                    <MapPin className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-base font-medium text-slate-800">
+                      {page.locationLabel}
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
+                      {contact.address}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
@@ -102,10 +113,10 @@ export default async function ContactUsPage() {
                     {page.emailLabel}
                   </p>
                   <a
-                    href={`mailto:${page.emailValue}`}
+                    href={`mailto:${contact.email}`}
                     className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-blue-600"
                   >
-                    {page.emailValue}
+                    {contact.email}
                   </a>
                 </div>
               </div>
@@ -113,48 +124,18 @@ export default async function ContactUsPage() {
           </div>
 
           <div>
-            <form className="grid gap-6" action="#">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="flex flex-col gap-2">
-                  <span className="text-base font-medium text-slate-900">
-                    {page.fullNameLabel}
-                  </span>
-                  <input
-                    type="text"
-                    placeholder={page.fullNamePlaceholder}
-                    className="h-14 rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-base font-medium text-slate-900">
-                    {page.emailFieldLabel}
-                  </span>
-                  <input
-                    type="email"
-                    placeholder={page.emailFieldPlaceholder}
-                    className="h-14 rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white"
-                  />
-                </label>
-              </div>
-
-              <label className="flex flex-col gap-2">
-                <span className="text-base font-medium text-slate-900">
-                  {page.messageLabel}
-                </span>
-                <textarea
-                  placeholder={page.messagePlaceholder}
-                  className="min-h-40 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white"
-                />
-              </label>
-
-              <button
-                type="button"
-                className="inline-flex h-14 items-center justify-center rounded-xl bg-[#1f57ae] px-6 text-lg font-semibold text-white transition hover:bg-[#194896]"
-              >
-                {page.submitLabel}
-              </button>
-            </form>
+            <ContactForm
+              labels={{
+                fullNameLabel: page.fullNameLabel,
+                fullNamePlaceholder: page.fullNamePlaceholder,
+                emailFieldLabel: page.emailFieldLabel,
+                emailFieldPlaceholder: page.emailFieldPlaceholder,
+                messageLabel: page.messageLabel,
+                messagePlaceholder: page.messagePlaceholder,
+                submitLabel: page.submitLabel,
+              }}
+              supportEmail={contact.email}
+            />
           </div>
         </div>
       </section>

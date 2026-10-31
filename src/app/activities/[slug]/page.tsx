@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { MapPin, Star } from "lucide-react";
 import { cache } from "react";
 
@@ -21,16 +21,16 @@ import {
   shouldBypassDatabase,
   markDatabaseUnavailable,
 } from "@/lib/db";
-import { fitTitle } from "@/lib/seo-copy";
 import {
   absoluteUrl,
   buildMetadata,
   createBreadcrumbSchema,
-  stripHtml,
 } from "@/lib/seo";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { getActivityHref } from "@/lib/activity-href";
 
 type ActivityPageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
 type DestinationSummary = {
@@ -40,14 +40,15 @@ type DestinationSummary = {
   country: string;
 };
 
-const getActivityDetails = cache(async (id: string) => {
+// Accepts the slug or, for links shared before slugs existed, the id.
+const getActivityDetails = cache(async (slugOrId: string) => {
   if (shouldBypassDatabase()) {
     return null;
   }
 
   try {
     const activity = await prisma.activity.findFirst({
-      where: { id, isActive: true },
+      where: { OR: [{ slug: slugOrId }, { id: slugOrId }], isActive: true },
     });
 
     if (!activity) return null;
@@ -74,34 +75,33 @@ function getDestinationHref(destination: DestinationSummary) {
   return `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`;
 }
 
+// Render each page on its first visit, then serve it from the ISR cache
+// (metadata lands in <head>; admin saves revalidate the site).
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: ActivityPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const data = await getActivityDetails(id);
+  const { slug } = await params;
+  const data = await getActivityDetails(slug);
 
   if (!data) {
     return buildMetadata({
       title: "Activity Not Found",
       description: "The requested activity could not be found.",
-      path: `/activities/${id}`,
+      path: `/activities/${slug}`,
       noIndex: true,
     });
   }
 
-  const { activity, destination } = data;
-  const firstSentence = activity.description
-    ? stripHtml(activity.description).split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, "")
-    : `Discover ${activity.title}${destination ? ` in ${destination.city}` : ""}`;
+  const { activity } = data;
 
   return buildMetadata({
-    title: fitTitle(
-      ...(destination ? [`${activity.title} in ${destination.city} – Tickets & Prices`] : []),
-      `${activity.title} – Tickets & Prices`,
-      activity.title,
-    ),
-    description: `${firstSentence}. From ${activity.cost}. Check what's included and book with a Safar Umrah travel adviser.`,
-    path: `/activities/${data.activity.id}`,
+    title: activity.seoTitle,
+    description: activity.seoDescription,
+    path: getActivityHref(data.activity),
     image: data.activity.imageUrl,
     keywords: [
       data.activity.category,
@@ -114,14 +114,21 @@ export async function generateMetadata({
 export default async function ActivityDetailsPage({
   params,
 }: ActivityPageProps) {
-  const { id } = await params;
-  const data = await getActivityDetails(id);
+  const { slug } = await params;
+  const data = await getActivityDetails(slug);
 
   if (!data) {
     notFound();
   }
 
   const { activity, destination } = data;
+  const activityHref = getActivityHref(activity);
+
+  // Old /activities/<id> links move permanently to the slug URL.
+  if (activityHref !== `/activities/${slug}`) {
+    permanentRedirect(activityHref);
+  }
+  const brand = await getStoredBrandSettings();
 
   return (
     <DetailPage>
@@ -133,8 +140,8 @@ export default async function ActivityDetailsPage({
             name: activity.title,
             description:
               activity.description ??
-              `Discover ${activity.title} and book it through Safar Umrah.`,
-            url: absoluteUrl(`/activities/${activity.id}`),
+              `Discover ${activity.title} and book it through ${brand.name}.`,
+            url: absoluteUrl(activityHref),
             image: activity.imageUrl,
             touristType: formatCategory(activity.category),
             containedInPlace: destination
@@ -155,7 +162,7 @@ export default async function ActivityDetailsPage({
           createBreadcrumbSchema([
             { name: "Home", path: "/" },
             { name: "Activities", path: "/activities" },
-            { name: activity.title, path: `/activities/${activity.id}` },
+            { name: activity.title, path: activityHref },
           ]),
         ]}
       />
@@ -224,7 +231,7 @@ export default async function ActivityDetailsPage({
           <DetailSection title="About this activity">
             <p className="text-base leading-7 text-foreground">
               {activity.description ??
-                `Discover ${activity.title} and book it with a Safar Umrah travel adviser.`}
+                `Discover ${activity.title} and book it with a ${brand.name} travel adviser.`}
             </p>
           </DetailSection>
 

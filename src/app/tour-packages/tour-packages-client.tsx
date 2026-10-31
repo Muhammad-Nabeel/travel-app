@@ -8,6 +8,7 @@ import {
 } from "@/components/features/home/package-search/package-search";
 import { TourPackageCard } from "@/components/features/tour/tour-package-card";
 import { tourPackageResults } from "@/lib/mock-data";
+import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 export function TourPackagesClient() {
   const [searchParams, setSearchParams] = useState<{
@@ -71,6 +72,7 @@ export function TourPackagesClient() {
 
         {filteredResults.length === 0 ? (
           <div className="rounded-2xl border border-line bg-subtle px-6 py-16 text-center">
+            <EmptyStateImage slot="emptyPackages" />
             <p className="text-lg font-semibold text-foreground">
               No packages match your search
             </p>

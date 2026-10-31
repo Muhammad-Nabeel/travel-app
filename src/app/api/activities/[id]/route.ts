@@ -3,6 +3,8 @@ import { ZodError } from "zod";
 
 import { prisma } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
+import { getUniqueActivitySlug } from "@/lib/activity-slug";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export async function PUT(
     request: NextRequest,
@@ -16,6 +18,11 @@ export async function PUT(
         const activity = await prisma.activity.update({
             where: { id },
             data: {
+                slug: await getUniqueActivitySlug(
+                    validatedData.title,
+                    validatedData.destinationId,
+                    id,
+                ),
                 destinationId: validatedData.destinationId,
                 title: validatedData.title,
                 category: validatedData.category,
@@ -26,8 +33,11 @@ export async function PUT(
                 reviewCount: validatedData.reviewCount,
                 sortOrder: validatedData.sortOrder,
                 isActive: validatedData.isActive,
+                seoTitle: validatedData.seoTitle,
+                seoDescription: validatedData.seoDescription,
             },
         });
+        revalidatePublicSite();
         return NextResponse.json(activity, { status: 200 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {
@@ -59,6 +69,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         await prisma.activity.delete({ where: { id } });
+        revalidatePublicSite();
         return NextResponse.json({ ok: true });
     } catch (err) {
         if (err instanceof Error) {

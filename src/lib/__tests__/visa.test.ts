@@ -14,6 +14,8 @@ const mockVisas: VisaCountryEntry[] = [
         code: "SA",
         isActive: true,
         sortOrder: 1,
+        seoTitle: "Visa from Pakistan – Requirements & Fees",
+        seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
     },
     {
         country: "United Arab Emirates",
@@ -26,6 +28,8 @@ const mockVisas: VisaCountryEntry[] = [
         code: "AE",
         isActive: true,
         sortOrder: 2,
+        seoTitle: "Visa from Pakistan – Requirements & Fees",
+        seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
     },
     {
         country: "Turkey",
@@ -38,6 +42,8 @@ const mockVisas: VisaCountryEntry[] = [
         code: "TR",
         isActive: false,
         sortOrder: 3,
+        seoTitle: "Visa from Pakistan – Requirements & Fees",
+        seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
     },
 ];
 

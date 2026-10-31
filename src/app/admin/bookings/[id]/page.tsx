@@ -158,27 +158,17 @@ function getAmenityTags(flight: FlightPayload | null): string[] {
 
 export default async function AdminBookingDetailsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const sourceParam = Array.isArray(resolvedSearchParams.source)
-    ? resolvedSearchParams.source[0]
-    : resolvedSearchParams.source;
-  const source =
-    sourceParam === "service_request" || sourceParam === "booking"
-      ? sourceParam
-      : undefined;
 
-  const booking = await getBookingById(id, source);
+  const booking = await getBookingById(id);
   if (!booking) {
     notFound();
   }
 
-  if ("reference" in booking && "payload" in booking) {
+  if (booking.channel === "SERVICE_REQUEST") {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-6">
         <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
@@ -212,8 +202,8 @@ export default async function AdminBookingDetailsPage({
               <p>
                 <span className="font-semibold text-slate-900">Amount:</span>{" "}
                 {formatMoney(
-                  booking.currency ?? "PKR",
-                  booking.amount?.toString() ?? "0",
+                  booking.currency,
+                  booking.totalAmount?.toString() ?? "0",
                 )}
               </p>
               <p>
@@ -261,7 +251,7 @@ export default async function AdminBookingDetailsPage({
     );
   }
 
-  const flight = asFlightPayload(booking.flightData);
+  const flight = asFlightPayload(booking.payload);
   const payment = asPaymentPayload(booking.paymentData);
   const amenities = getAmenityTags(flight);
 
@@ -284,7 +274,7 @@ export default async function AdminBookingDetailsPage({
           {booking.reference}
         </h1>
         <p className="mt-2 text-sm text-blue-800/80">
-          Provider: {booking.provider} · Status: {formatStatus(booking.status)}
+          Provider: {booking.provider ?? "-"} · Status: {formatStatus(booking.status)}
         </p>
       </section>
 
@@ -296,7 +286,7 @@ export default async function AdminBookingDetailsPage({
           <div className="mt-2 space-y-1 text-sm text-slate-700">
             <p>
               <span className="font-semibold text-slate-900">Amount:</span>{" "}
-              {formatMoney(booking.currency, booking.totalAmount.toString())}
+              {formatMoney(booking.currency, booking.totalAmount?.toString() ?? "0")}
             </p>
             <p>
               <span className="font-semibold text-slate-900">Created:</span>{" "}
@@ -308,7 +298,7 @@ export default async function AdminBookingDetailsPage({
             </p>
             <p>
               <span className="font-semibold text-slate-900">Customer:</span>{" "}
-              {booking.user.name} ({booking.user.email})
+              {booking.customerName ?? "N/A"} ({booking.customerEmail ?? "N/A"})
             </p>
           </div>
         </article>
@@ -337,7 +327,7 @@ export default async function AdminBookingDetailsPage({
             </p>
             <p>
               <span className="font-semibold text-slate-900">Grand Total:</span>{" "}
-              {(payment?.grandTotal ?? booking.totalAmount).toString()}
+              {(payment?.grandTotal ?? booking.totalAmount ?? 0).toString()}
             </p>
           </div>
         </article>
@@ -462,8 +452,7 @@ export default async function AdminBookingDetailsPage({
         <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
           {JSON.stringify(
             {
-              flightData: booking.flightData,
-              hotelData: booking.hotelData,
+              payload: booking.payload,
               paymentData: booking.paymentData,
             },
             null,
@@ -475,58 +464,13 @@ export default async function AdminBookingDetailsPage({
   );
 }
 
-async function getBookingById(
-  id: string,
-  source?: "service_request" | "booking",
-) {
+async function getBookingById(id: string) {
   if (shouldBypassDatabase()) {
     return null;
   }
 
   try {
-    if (source === "service_request") {
-      return await prisma.serviceRequest.findUnique({
-        where: { id },
-      });
-    }
-
-    if (source === "booking") {
-      return await prisma.booking.findUnique({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-      });
-    }
-
-    const fromBooking = await prisma.booking.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    if (fromBooking) {
-      return fromBooking;
-    }
-
-    return await prisma.serviceRequest.findUnique({
-      where: { id },
-    });
+    return await prisma.booking.findUnique({ where: { id } });
   } catch (err) {
     markDatabaseUnavailable(err);
     return null;

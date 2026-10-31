@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -13,10 +14,10 @@ import {
 } from "lucide-react";
 import { cache } from "react";
 
+import { getActivityHref } from "@/lib/activity-href";
 import { prisma } from "@/lib/db";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { StructuredData } from "@/components/shared/structured-data";
-import { fitTitle } from "@/lib/seo-copy";
 import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
 
 type DestinationPageProps = {
@@ -52,6 +53,7 @@ const getDestinationPageData = cache(async (slug: string) => {
 
   let activities: Array<{
     id: string;
+    slug: string | null;
     title: string;
     description: string | null;
     imageUrl: string;
@@ -66,6 +68,7 @@ const getDestinationPageData = cache(async (slug: string) => {
       orderBy: { sortOrder: "asc" },
       select: {
         id: true,
+        slug: true,
         title: true,
         description: true,
         imageUrl: true,
@@ -80,6 +83,12 @@ const getDestinationPageData = cache(async (slug: string) => {
 
   return { destination, activities };
 });
+
+// Render each page on its first visit, then serve it from the ISR cache
+// (metadata lands in <head>; admin saves revalidate the site).
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,
@@ -98,16 +107,9 @@ export async function generateMetadata({
 
   const { destination } = data;
 
-  const lead = (destination.tagline ?? `Plan your trip to ${destination.city}, ${destination.country}`).replace(/\.$/, "");
-  const fare = destination.fare ? ` Flights from Pakistan from ${destination.fare}.` : "";
-
   return buildMetadata({
-    title: fitTitle(
-      `${destination.city} Travel Guide – Best Time, Tips & Flights`,
-      `${destination.city} Travel Guide – Best Time & Tips`,
-      `${destination.city} Travel Guide`,
-    ),
-    description: `${lead}. Best time to visit ${destination.city}, how long to stay, local tips and things to do.${fare}`,
+    title: destination.seoTitle,
+    description: destination.seoDescription,
     path: `/destinations/${destination.slug?.trim() ? destination.slug : destination.id}`,
     image: destination.imageUrl ?? undefined,
     keywords: [
@@ -205,11 +207,13 @@ export default async function DestinationDetailsPage({
         }}
       >
         {destination.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={destination.imageUrl}
             alt={destination.city}
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            preload
+            sizes="100vw"
+            className="object-cover"
           />
         ) : null}
         <div className="absolute inset-0 bg-black/50" />
@@ -367,16 +371,16 @@ export default async function DestinationDetailsPage({
             {activities.map((activity) => (
               <Link
                 key={activity.id}
-                href={`/activities/${activity.id}`}
+                href={getActivityHref(activity)}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-lg"
               >
                 <div className="relative h-44 overflow-hidden bg-slate-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={activity.imageUrl}
                     alt={activity.title}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition duration-300 group-hover:scale-105"
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-4">

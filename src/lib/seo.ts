@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-export const SITE_NAME = "Safar Umrah";
+/** Fallback brand name; the live name is set in Admin → Settings → Brand. */
+export const SITE_NAME = "EasyTrip";
 export const SITE_TITLE_TEMPLATE = `%s | ${SITE_NAME}`;
 export const SITE_DESCRIPTION =
   "Search flights, compare destinations, book activities, and plan Umrah travel with clearer pricing and practical support.";
@@ -15,7 +16,7 @@ const SITE_URL =
 
 type MetadataOptions = {
   title: string;
-  /** Skip the root " | Safar Umrah" template (homepage, titles that already carry the brand). */
+  /** Skip the root " | <brand>" template (homepage, titles that already carry the brand). */
   absoluteTitle?: boolean;
   description: string;
   path: string;
@@ -25,6 +26,8 @@ type MetadataOptions = {
   type?: "website" | "article";
   publishedTime?: string;
   modifiedTime?: string;
+  /** Brand shown as the Open Graph site name. */
+  siteName?: string;
 };
 
 type BreadcrumbItem = {
@@ -61,6 +64,7 @@ type OrganizationBranch = {
 };
 
 type OrganizationSchemaOptions = {
+  name?: string;
   legalName?: string;
   logoUrl?: string;
   telephone?: string;
@@ -133,6 +137,7 @@ export function buildMetadata({
   type = "website",
   publishedTime,
   modifiedTime,
+  siteName = SITE_NAME,
 }: MetadataOptions): Metadata {
   const canonicalPath = normalizePath(path);
   const finalDescription = toMetaDescription(description);
@@ -150,14 +155,14 @@ export function buildMetadata({
       title,
       description: finalDescription,
       url: absoluteUrl(canonicalPath),
-      siteName: SITE_NAME,
+      siteName,
       locale: "en_GB",
       images: [
         {
           url: finalImage,
           width: 1200,
           height: 630,
-          alt: absoluteTitle ? title : `${title} | ${SITE_NAME}`,
+          alt: absoluteTitle ? title : `${title} | ${siteName}`,
         },
       ],
       ...(publishedTime ? { publishedTime } : {}),
@@ -268,6 +273,7 @@ export function createArticleSchema({
 }
 
 export function createOrganizationSchema({
+  name = SITE_NAME,
   legalName,
   logoUrl,
   telephone,
@@ -280,7 +286,7 @@ export function createOrganizationSchema({
     "@context": "https://schema.org",
     "@type": "TravelAgency",
     "@id": absoluteUrl("/#organization"),
-    name: SITE_NAME,
+    name,
     legalName: legalName || undefined,
     url: absoluteUrl("/"),
     logo: logoUrl || undefined,
@@ -367,11 +373,11 @@ export function createTouristTripSchema({
   };
 }
 
-export function createWebsiteSchema() {
+export function createWebsiteSchema(name = SITE_NAME) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: SITE_NAME,
+    name,
     url: absoluteUrl("/"),
     description: SITE_DESCRIPTION,
   };

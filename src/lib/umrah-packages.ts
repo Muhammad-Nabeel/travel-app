@@ -3,7 +3,6 @@ import type { UmrahPackage } from "@prisma/client";
 
 import { DUMMY_PACKAGES, type PackageRow } from "@/app/api/packages/route";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { fitTitle } from "@/lib/seo-copy";
 
 // Server-side reads for public Umrah pages. Pages call these directly rather
 // than fetching their own /api/packages over HTTP, and only PUBLISHED
@@ -34,6 +33,8 @@ export function toPackageRow(pkg: UmrahPackage): PackageRow {
         startDate: pkg.startDate.toISOString(),
         endDate: pkg.endDate.toISOString(),
         status: pkg.status as PackageRow["status"],
+        seoTitle: pkg.seoTitle,
+        seoDescription: pkg.seoDescription,
         createdAt: pkg.createdAt.toISOString(),
         updatedAt: pkg.updatedAt.toISOString(),
     };
@@ -98,36 +99,10 @@ export function getUmrahPackagePath(slug: string) {
     return `/umrah-packages/${slug}`;
 }
 
-/** SEO title/description from package fields (see SEO_AND_EXECUTION_PLAN.md C.2). */
-export function buildUmrahPackageSeo(pkg: PackageRow) {
-    const totalNights = pkg.makkahNights + pkg.madinahNights;
-    const departs = new Date(pkg.startDate).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-    });
-    const price = `${pkg.currency} ${Math.round(pkg.basePrice).toLocaleString("en-GB")}`;
-    const hotel = pkg.hotelSummary ? ` ${pkg.hotelSummary.replace(/\.$/, "")}.` : "";
-
-    return {
-        title: fitTitle(
-            `${pkg.title} – ${totalNights} Nights from ${pkg.departureCity}`,
-            /umrah/i.test(pkg.title)
-                ? `${pkg.title} – ${totalNights} Nights`
-                : `${pkg.title} – ${totalNights}-Night Umrah`,
-            pkg.title,
-        ),
-        description:
-            `${totalNights}-night Umrah from ${pkg.departureCity}: ${pkg.makkahNights} nights Makkah, ` +
-            `${pkg.madinahNights} nights Madinah.${hotel} From ${price} per person. Departs ${departs}.`,
-    };
-}
-
 /**
  * Photos for the package page gallery. Add the IMAGE_ASSETS_BRIEF.md §5.8
  * files here (e.g. /images/umrah/umrah-haram-exterior.jpg) once they exist.
  */
 export const UMRAH_GALLERY: { src: string; alt: string }[] = [
-    { src: "/images/hero-madinah.jpg", alt: "Masjid an-Nabawi in Madinah" },
+    { src: "/images/hero-madinah.webp", alt: "Masjid an-Nabawi in Madinah" },
 ];

@@ -1,104 +1,130 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Upload,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  Trash2,
-  Eye,
-  Download,
-  Settings,
-  Star,
+  BadgeCheck,
+  ChevronDown,
+  Compass,
   Copy,
-  Menu,
-  X,
+  Download,
+  ExternalLink,
+  ImageUp,
+  Loader2,
+  MapPin,
+  MoonStar,
+  Newspaper,
+  Palette,
+  Trash2,
+  type LucideIcon,
 } from "lucide-react";
 
-type MediaFile = {
-  key: string;
-  url: string;
-  size: number;
-  lastModified: Date;
-  mediaType:
-    | "website-logo"
-    | "blog-media"
-    | "umrah-images"
-    | "destination-images"
-    | "activities-images"
-    | "general";
-};
+import { BrandAssetsPanel } from "@/components/admin/brand-assets-panel";
 
 type MediaType =
   | "website-logo"
+  | "brand-assets"
   | "blog-media"
   | "umrah-images"
   | "destination-images"
   | "activities-images"
   | "general";
 
+type MediaFile = {
+  key: string;
+  url: string;
+  size: number;
+  lastModified: string;
+  mediaType: MediaType;
+};
+
 type MediaSection =
   | "logo-settings"
+  | "brand-assets"
   | "blog-images"
   | "umrah-images"
   | "destination-images"
   | "activities-images";
 
-type MediaSettings = {
-  websiteLogo: string | null;
+const MEDIA_SECTIONS: Record<
+  MediaSection,
+  { label: string; type: MediaType; icon: LucideIcon; description: string }
+> = {
+  "logo-settings": {
+    label: "Logo",
+    type: "website-logo",
+    icon: BadgeCheck,
+    description: "Upload logos and choose the one shown in the site header.",
+  },
+  "brand-assets": {
+    label: "Brand & Icons",
+    type: "brand-assets",
+    icon: Palette,
+    description:
+      "Favicon, service icons and empty-state images. Empty slots keep the built-in icons.",
+  },
+  "blog-images": {
+    label: "Blog Images",
+    type: "blog-media",
+    icon: Newspaper,
+    description: "Cover and inline images for blog posts.",
+  },
+  "umrah-images": {
+    label: "Umrah Images",
+    type: "umrah-images",
+    icon: MoonStar,
+    description: "Images for Umrah package pages.",
+  },
+  "destination-images": {
+    label: "Destination Images",
+    type: "destination-images",
+    icon: MapPin,
+    description: "Images for destination pages and promotional sections.",
+  },
+  "activities-images": {
+    label: "Activities Images",
+    type: "activities-images",
+    icon: Compass,
+    description: "Images for excursions, tours and experiences.",
+  },
 };
 
-const MEDIA_SECTIONS: Record<MediaSection, { label: string; type: MediaType }> =
-  {
-    "logo-settings": {
-      label: "Logo Settings",
-      type: "website-logo",
-    },
-    "blog-images": {
-      label: "Blog Images",
-      type: "blog-media",
-    },
-    "umrah-images": {
-      label: "Umrah Images",
-      type: "umrah-images",
-    },
-    "destination-images": {
-      label: "Destination Images",
-      type: "destination-images",
-    },
-    "activities-images": {
-      label: "Activities Images",
-      type: "activities-images",
-    },
-  };
+const SECTIONS = Object.keys(MEDIA_SECTIONS) as MediaSection[];
+const IMAGE_EXTENSION = /\.(avif|gif|jpe?g|png|svg|webp)$/i;
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function getFileNameFromKey(key: string): string {
+  return key.split("/").pop() || key;
+}
 
 export default function AdminMediaPage() {
-  const [activeSection, setActiveSection] =
-    useState<MediaSection>("logo-settings");
+  const [openSection, setOpenSection] = useState<MediaSection | null>(
+    "logo-settings",
+  );
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [settings, setSettings] = useState<MediaSettings>({
-    websiteLogo: null,
-  });
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(true);
+  const [websiteLogo, setWebsiteLogo] = useState<string | null>(null);
+  const [savingLogo, setSavingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function loadMedia(section: MediaSection = "logo-settings") {
+  // Every folder is loaded at once so each accordion row can show its count.
+  async function loadMedia() {
     setLoading(true);
     setError("");
 
     try {
-      const mediaType = MEDIA_SECTIONS[section].type;
-      const params = mediaType ? `?mediaType=${mediaType}` : "";
-      const res = await fetch(`/api/admin/media${params}`);
+      const res = await fetch("/api/admin/media", { cache: "no-store" });
       const json = await res.json();
 
       if (!res.ok) {
@@ -113,59 +139,79 @@ export default function AdminMediaPage() {
     }
   }
 
-  async function loadSettings() {
-    setSettingsLoading(true);
-
+  async function loadLogo() {
     try {
-      const res = await fetch("/api/admin/settings/media");
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error ?? "Unable to load settings.");
-      }
-
-      setSettings(
-        json.settings || {
-          websiteLogo: null,
-        },
-      );
+      // The header logo is the brand logo (Admin → Settings → Brand).
+      const res = await fetch("/api/admin/settings/brand");
+      const json = (await res.json()) as { logoUrl?: string | null };
+      if (res.ok) setWebsiteLogo(json.logoUrl ?? null);
     } catch (err) {
-      console.error("Failed to load media settings:", err);
-    } finally {
-      setSettingsLoading(false);
+      console.error("Failed to load the header logo:", err);
     }
   }
 
   useEffect(() => {
-    loadMedia(activeSection);
-    loadSettings();
-  }, [activeSection]);
+    void loadMedia();
+    void loadLogo();
+  }, []);
 
-  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const filesBySection = useMemo(() => {
+    const grouped = Object.fromEntries(
+      SECTIONS.map((section) => [section, [] as MediaFile[]]),
+    ) as Record<MediaSection, MediaFile[]>;
+
+    for (const file of files) {
+      const section = SECTIONS.find(
+        (s) => MEDIA_SECTIONS[s].type === file.mediaType,
+      );
+      if (section) grouped[section].push(file);
+    }
+    for (const section of SECTIONS) {
+      grouped[section].sort(
+        (a, b) =>
+          new Date(b.lastModified).getTime() -
+          new Date(a.lastModified).getTime(),
+      );
+    }
+    return grouped;
+  }, [files]);
+
+  function flash(text: string) {
+    setError("");
+    setMessage(text);
+    setTimeout(() => setMessage(""), 2500);
+  }
+
+  async function uploadFiles(section: MediaSection, selected: File[]) {
+    if (selected.length === 0) return;
 
     setUploading(true);
     setMessage("");
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("mediaType", MEDIA_SECTIONS[activeSection].type);
+      for (const file of selected) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("mediaType", MEDIA_SECTIONS[section].type);
 
-      const res = await fetch("/api/admin/media", {
-        method: "POST",
-        body: formData,
-      });
-      const json = await res.json();
+        const res = await fetch("/api/admin/media", {
+          method: "POST",
+          body: formData,
+        });
+        const json = await res.json();
 
-      if (!res.ok) {
-        throw new Error(json.error ?? "Upload failed.");
+        if (!res.ok) {
+          throw new Error(json.error ?? `Upload of ${file.name} failed.`);
+        }
       }
 
-      setMessage("File uploaded successfully.");
-      await loadMedia(activeSection);
+      flash(
+        selected.length === 1
+          ? "File uploaded."
+          : `${selected.length} files uploaded.`,
+      );
+      await loadMedia();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -176,17 +222,23 @@ export default function AdminMediaPage() {
     }
   }
 
-  async function handleDelete(fileKey: string) {
-    setDeletingKey(fileKey);
+  async function handleDelete(file: MediaFile) {
+    if (
+      !window.confirm(
+        `Delete ${getFileNameFromKey(file.key)}? Pages using this image will show a broken image.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingKey(file.key);
     setMessage("");
     setError("");
 
     try {
       const res = await fetch(
-        `/api/admin/media?fileKey=${encodeURIComponent(fileKey)}`,
-        {
-          method: "DELETE",
-        },
+        `/api/admin/media?fileKey=${encodeURIComponent(file.key)}`,
+        { method: "DELETE" },
       );
       const json = await res.json();
 
@@ -194,13 +246,11 @@ export default function AdminMediaPage() {
         throw new Error(json.error ?? "Delete failed.");
       }
 
-      setMessage("File deleted successfully.");
-      await loadMedia(activeSection);
-
-      const urlToRemove = files.find((f) => f.key === fileKey)?.url;
-      if (urlToRemove && settings.websiteLogo === urlToRemove) {
-        await updateSettings({ websiteLogo: null });
+      if (websiteLogo === file.url) {
+        await updateLogo(null);
       }
+      flash("File deleted.");
+      await loadMedia();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed.");
     } finally {
@@ -208,64 +258,38 @@ export default function AdminMediaPage() {
     }
   }
 
-  async function updateSettings(updates: Partial<MediaSettings>) {
-    setSavingSettings(true);
+  async function updateLogo(logoUrl: string | null) {
+    setSavingLogo(true);
 
     try {
-      const res = await fetch("/api/admin/settings/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...settings, ...updates }),
-      });
-      const json = await res.json();
+      const res = logoUrl
+        ? await fetch("/api/admin/settings/brand", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ logoUrl }),
+          })
+        : await fetch("/api/admin/settings/brand", { method: "DELETE" });
+      const json = (await res.json()) as {
+        logoUrl?: string | null;
+        error?: string;
+      };
 
       if (!res.ok) {
-        throw new Error(json.error ?? "Settings save failed.");
+        throw new Error(json.error ?? "Could not save the logo.");
       }
 
-      setSettings(json.settings);
-      setMessage("Settings saved successfully.");
+      setWebsiteLogo(json.logoUrl ?? null);
+      flash(logoUrl ? "Header logo updated." : "Header logo cleared.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Settings save failed.");
+      setError(err instanceof Error ? err.message : "Could not save the logo.");
     } finally {
-      setSavingSettings(false);
-    }
-  }
-
-  function formatFileSize(bytes: number): string {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
-
-  function getFileNameFromKey(key: string): string {
-    return key.split("/").pop() || key;
-  }
-
-  function getSectionDescription(section: MediaSection) {
-    switch (section) {
-      case "logo-settings":
-        return "Upload and select the website header logo. The selected logo is saved in the database and used on the public site header.";
-      case "blog-images":
-        return "Upload blog images and build a reusable media library for blog posts.";
-      case "umrah-images":
-        return "Add Umrah package images so your package pages can reference them directly from the media library.";
-      case "destination-images":
-        return "Upload destination images for location pages and promotional sections.";
-      case "activities-images":
-        return "Upload activities images for excursions, tours, and experience listings.";
-      default:
-        return "Upload media files for the selected library section.";
+      setSavingLogo(false);
     }
   }
 
   async function copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setMessage("URL copied to clipboard!");
-      setTimeout(() => setMessage(""), 2000);
     } catch {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
@@ -274,319 +298,300 @@ export default function AdminMediaPage() {
       textArea.select();
       document.execCommand("copy");
       document.body.removeChild(textArea);
-      setMessage("URL copied to clipboard!");
-      setTimeout(() => setMessage(""), 2000);
     }
+    flash("URL copied to clipboard.");
   }
 
-  const filteredFiles = files;
-  const sectionLabel = MEDIA_SECTIONS[activeSection].label;
-  const sectionDescription = getSectionDescription(activeSection);
-  const uploadTitle =
-    activeSection === "logo-settings"
-      ? "Upload Website Logo"
-      : `Upload ${sectionLabel}`;
-  const layoutClass = menuOpen ? "lg:grid-cols-[18rem_1fr]" : "lg:grid-cols-1";
+  function downloadFile(file: MediaFile) {
+    const link = document.createElement("a");
+    link.href = file.url;
+    link.download = getFileNameFromKey(file.key);
+    link.click();
+  }
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className={`grid gap-6 ${layoutClass}`}>
-        <aside
-          className={`rounded-3xl border border-blue-100 bg-white p-6 shadow-sm ${menuOpen ? "block" : "hidden"}`}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-              Media Library
-            </p>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:hidden"
-              aria-label="Close menu"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="mt-4 space-y-2">
-            {(Object.keys(MEDIA_SECTIONS) as MediaSection[]).map((section) => (
-              <button
-                key={section}
-                type="button"
-                onClick={() => setActiveSection(section)}
-                className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                  activeSection === section
-                    ? "border-blue-200 bg-blue-50 text-blue-700"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {MEDIA_SECTIONS[section].label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 w-full justify-center"
-            >
-              <Menu className="h-4 w-4" />
-              {menuOpen ? "Hide menu" : "Show menu"}
-            </button>
-          </div>
-        </aside>
+  function renderSectionBody(section: MediaSection) {
+    if (section === "brand-assets") {
+      return <BrandAssetsPanel />;
+    }
 
-        <section className="rounded-3xl border border-blue-100 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-blue-500">
-                <Settings className="h-4 w-4" />
-                <span>{sectionLabel}</span>
-              </div>
-              <h1 className="mt-4 text-3xl font-bold text-slate-950">
-                {sectionLabel}
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {sectionDescription}
+    const sectionFiles = filesBySection[section];
+    const isLogo = section === "logo-settings";
+
+    return (
+      <div className="space-y-5">
+        {isLogo ? (
+          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex h-14 w-28 items-center justify-center rounded-xl border border-slate-200 bg-white p-2">
+              {websiteLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element -- logo is hosted on R2
+                <img
+                  src={websiteLogo}
+                  alt="Current header logo"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-slate-400">None</span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900">
+                Current header logo
+              </p>
+              <p className="text-xs text-slate-500">
+                {websiteLogo
+                  ? "Pick another logo below to replace it."
+                  : "No logo selected. The brand name is shown instead."}
               </p>
             </div>
+            {websiteLogo ? (
+              <button
+                type="button"
+                onClick={() => updateLogo(null)}
+                disabled={savingLogo}
+                className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+              >
+                Clear logo
+              </button>
+            ) : null}
           </div>
-          <div className="mb-6">
-            <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-blue-500">
-              <Settings className="h-4 w-4" />
-              <span>{sectionLabel}</span>
-            </div>
-            <h1 className="mt-4 text-3xl font-bold text-slate-950">
-              {sectionLabel}
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {sectionDescription}
+        ) : null}
+
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            void uploadFiles(section, Array.from(event.dataTransfer.files));
+          }}
+          className={`flex flex-col items-center justify-between gap-3 rounded-2xl border-2 border-dashed px-5 py-4 text-center transition sm:flex-row sm:text-left ${
+            dragging
+              ? "border-blue-400 bg-blue-50"
+              : "border-slate-200 bg-slate-50/60"
+          }`}
+        >
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              Drop images here or upload from your computer
+            </p>
+            <p className="text-xs text-slate-500">
+              PNG, JPG, GIF or WebP, up to 50 MB each
             </p>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(event) =>
+              uploadFiles(section, Array.from(event.target.files ?? []))
+            }
+            disabled={uploading}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ImageUp className="h-4 w-4" />
+            )}
+            {uploading ? "Uploading..." : "Upload"}
+          </button>
+        </div>
 
-          {message && (
-            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700">
-              {message}
-            </div>
-          )}
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-7 w-7 animate-spin text-slate-400" />
+          </div>
+        ) : sectionFiles.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-500">
+            Nothing here yet. Uploaded images will appear in this gallery.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {sectionFiles.map((file) => {
+              const isCurrentLogo = isLogo && websiteLogo === file.url;
+              const name = getFileNameFromKey(file.key);
 
-          {error && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700">
-              {error}
-            </div>
-          )}
-
-          {activeSection === "logo-settings" && (
-            <div className="mb-8 bg-slate-50 rounded-3xl border border-slate-200 p-6">
-              {settingsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Selected Header Logo
-                    </label>
-                    {settings.websiteLogo ? (
-                      <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-3">
-                          <Image
-                            src={settings.websiteLogo}
-                            alt="Website Logo"
-                            width={48}
-                            height={48}
-                            className="object-contain"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900">
-                              Active header logo
-                            </p>
-                            <p className="text-xs text-slate-500 break-all">
-                              {settings.websiteLogo}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(settings.websiteLogo!)
-                            }
-                            className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                          >
-                            Copy URL
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateSettings({ websiteLogo: null })
-                            }
-                            className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                          >
-                            Clear logo
-                          </button>
-                        </div>
-                      </div>
+              return (
+                <div
+                  key={file.key}
+                  className={`group overflow-hidden rounded-2xl border bg-white transition hover:shadow-md ${
+                    isCurrentLogo
+                      ? "border-blue-400 ring-2 ring-blue-100"
+                      : "border-slate-200"
+                  }`}
+                >
+                  <div className="relative flex aspect-[4/3] items-center justify-center bg-slate-50">
+                    {IMAGE_EXTENSION.test(file.key) ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- image is hosted on R2
+                      <img
+                        src={file.url}
+                        alt={name}
+                        loading="lazy"
+                        className={`max-h-full max-w-full ${isLogo ? "object-contain p-3" : "h-full w-full object-cover"}`}
+                      />
                     ) : (
-                      <p className="text-sm text-slate-500">
-                        No logo selected yet. Upload and choose one from the
-                        list below.
-                      </p>
+                      <span className="text-xs font-medium uppercase text-slate-400">
+                        {name.split(".").pop()}
+                      </span>
                     )}
+
+                    {isCurrentLogo ? (
+                      <span className="absolute left-2 top-2 rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                        In use
+                      </span>
+                    ) : null}
+
+                    <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-slate-900/60 to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                      {[
+                        { label: "Copy URL", icon: Copy, onClick: () => copyToClipboard(file.url) },
+                        { label: "Open", icon: ExternalLink, onClick: () => window.open(file.url, "_blank") },
+                        { label: "Download", icon: Download, onClick: () => downloadFile(file) },
+                      ].map((action) => (
+                        <button
+                          key={action.label}
+                          type="button"
+                          onClick={action.onClick}
+                          title={action.label}
+                          aria-label={`${action.label}: ${name}`}
+                          className="rounded-lg bg-white/90 p-1.5 text-slate-700 hover:bg-white"
+                        >
+                          <action.icon className="h-3.5 w-3.5" />
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(file)}
+                        disabled={deletingKey === file.key}
+                        title="Delete"
+                        aria-label={`Delete ${name}`}
+                        className="rounded-lg bg-white/90 p-1.5 text-rose-600 hover:bg-white disabled:opacity-60"
+                      >
+                        {deletingKey === file.key ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-slate-700" title={name}>
+                        {name}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                    {isLogo && !isCurrentLogo ? (
+                      <button
+                        type="button"
+                        onClick={() => updateLogo(file.url)}
+                        disabled={savingLogo}
+                        className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                      >
+                        Use
+                      </button>
+                    ) : null}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
-          <div className="mb-8 border-2 border-dashed border-slate-300 rounded-3xl p-6">
-            <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-slate-400" />
-              <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="block text-sm font-medium text-slate-900">
-                    {uploadTitle}
+  return (
+    <div className="mx-auto max-w-5xl p-6">
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+          Media Library
+        </p>
+        <h1 className="mt-2 text-3xl font-bold text-slate-950">Media</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Images stored on Cloudflare R2. Anything uploaded here can be picked
+          from the &ldquo;Choose from library&rdquo; button on admin forms.
+        </p>
+      </div>
+
+      {message && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {SECTIONS.map((section) => {
+          const { label, description, icon: Icon } = MEDIA_SECTIONS[section];
+          const isOpen = openSection === section;
+          const count = filesBySection[section].length;
+
+          return (
+            <div
+              key={section}
+              className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                isOpen ? "border-blue-200" : "border-slate-200"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setOpenSection(isOpen ? null : section)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+              >
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    isOpen ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-slate-900">
+                    {label}
                   </span>
-                  <span className="mt-1 block text-sm text-slate-500">
-                    PNG, JPG, GIF, WebP up to 50MB
+                  <span className="block truncate text-xs text-slate-500">
+                    {description}
                   </span>
-                </label>
-                <input
-                  id="file-upload"
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                  className="hidden"
+                </span>
+                {section !== "brand-assets" && !loading ? (
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                    {count}
+                  </span>
+                ) : null}
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
                 />
-              </div>
-              {uploading && (
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                  <span className="text-sm text-slate-600">Uploading...</span>
+              </button>
+
+              {isOpen ? (
+                <div className="border-t border-slate-100 p-5">
+                  {renderSectionBody(section)}
                 </div>
-              )}
+              ) : null}
             </div>
-          </div>
-
-          <div className="space-y-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-              </div>
-            ) : filteredFiles.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-slate-400 mb-4">
-                  <Upload className="mx-auto h-12 w-12" />
-                </div>
-                <h3 className="text-sm font-medium text-slate-900 mb-1">
-                  No {sectionLabel.toLowerCase()} uploaded
-                </h3>
-                <p className="text-sm text-slate-500">
-                  Get started by uploading your first{" "}
-                  {sectionLabel.toLowerCase()}.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredFiles.map((file) => {
-                  const isSelectedWebsiteLogo =
-                    activeSection === "logo-settings" &&
-                    settings.websiteLogo === file.url;
-
-                  return (
-                    <div
-                      key={file.key}
-                      className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 overflow-hidden flex-shrink-0">
-                          {file.url.includes("image") ? (
-                            <Image
-                              src={file.url}
-                              alt={getFileNameFromKey(file.key)}
-                              width={64}
-                              height={64}
-                              className="object-cover"
-                            />
-                          ) : (
-                            <span className="text-2xl text-slate-400">📄</span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-shrink-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900 max-w-[120px] truncate">
-                              {getFileNameFromKey(file.key)}
-                            </p>
-                            {isSelectedWebsiteLogo && (
-                              <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700 flex-shrink-0">
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-2 w-full sm:w-auto sm:grid-cols-2 lg:grid-cols-3">
-                        {activeSection === "logo-settings" ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateSettings({ websiteLogo: file.url })
-                            }
-                            disabled={savingSettings}
-                            className={`rounded-2xl px-3 py-2 text-xs font-semibold transition ${
-                              isSelectedWebsiteLogo
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            }`}
-                          >
-                            {isSelectedWebsiteLogo ? "Selected" : "Set as Logo"}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(file.url)}
-                          className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                        >
-                          Copy URL
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => window.open(file.url, "_blank")}
-                          className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                        >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = file.url;
-                            link.download = getFileNameFromKey(file.key);
-                            link.click();
-                          }}
-                          className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-                        >
-                          Download
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(file.key)}
-                          disabled={deletingKey === file.key}
-                          className="rounded-2xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-70"
-                        >
-                          {deletingKey === file.key ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
+          );
+        })}
       </div>
     </div>
   );

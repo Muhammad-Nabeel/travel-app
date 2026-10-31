@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { BedDouble, Footprints, MapPin, Star } from "lucide-react";
 
 import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Mock hotels carry no photos yet; use a city photo where we have one.
 const CITY_IMAGES: Record<string, string> = {
-  Madinah: "/images/hero-madinah.jpg",
+  Madinah: "/images/hero-madinah.webp",
 };
 
 function StarRating({ stars }: { stars: number }) {
@@ -69,12 +70,12 @@ export default function HotelsPage() {
               >
                 <div className="relative aspect-video overflow-hidden bg-linear-to-br from-brand to-navy sm:aspect-auto sm:min-h-52">
                   {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={image}
                       alt={`${hotel.city} near ${hotel.name}`}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                      fill
+                      sizes="(min-width: 640px) 280px, 100vw"
+                      className="object-cover transition duration-300 group-hover:scale-[1.03]"
                     />
                   ) : (
                     <BedDouble className="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2 text-white/60" />

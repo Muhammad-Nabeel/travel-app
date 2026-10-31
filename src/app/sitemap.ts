@@ -4,6 +4,7 @@ import { getStoredVisaCountries } from "@/lib/admin-settings/visa-settings";
 import { getPublishedBlogPosts } from "@/lib/blog";
 import { BLOG_CATEGORIES, getBlogCategoryPath } from "@/lib/blog-categories";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { getActivityHref } from "@/lib/activity-href";
 import { absoluteUrl } from "@/lib/seo";
 import {
     CATALOG_INDEXING,
@@ -55,7 +56,7 @@ async function getDatabaseEntries(): Promise<SitemapEntry[]> {
             }),
             prisma.activity.findMany({
                 where: { isActive: true },
-                select: { id: true, updatedAt: true, imageUrl: true },
+                select: { id: true, slug: true, updatedAt: true, imageUrl: true },
             }),
         ]);
 
@@ -70,7 +71,7 @@ async function getDatabaseEntries(): Promise<SitemapEntry[]> {
                 images: destination.imageUrl ? [destination.imageUrl] : undefined,
             })),
             ...activities.map((activity) => ({
-                url: absoluteUrl(`/activities/${activity.id}`),
+                url: absoluteUrl(getActivityHref(activity)),
                 lastModified: activity.updatedAt,
                 changeFrequency: "monthly" as const,
                 priority: 0.6,

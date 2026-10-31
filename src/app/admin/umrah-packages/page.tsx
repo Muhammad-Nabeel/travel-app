@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { PackageRow } from "@/app/api/packages/route";
+import {
+  EMPTY_SEO_DRAFT,
+  SeoFields,
+  resolveSeoDraft,
+  seoDraftFrom,
+  seoTitleBudgetIssue,
+} from "@/components/admin/seo-fields";
+import { useBrand } from "@/components/shared/brand-provider";
+import { suggestUmrahPackageSeo } from "@/lib/seo-suggestions";
 
 const STATUS_COLORS: Record<string, string> = {
   PUBLISHED: "badge-success",
@@ -38,6 +47,18 @@ export default function AdminPackagesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [seoDraft, setSeoDraft] = useState(EMPTY_SEO_DRAFT);
+  const brand = useBrand();
+  const seoSuggestion = suggestUmrahPackageSeo(
+    {
+      ...formData,
+      makkahNights: parseInt(formData.makkahNights) || 0,
+      madinahNights: parseInt(formData.madinahNights) || 0,
+      basePrice: parseFloat(formData.basePrice) || 0,
+    },
+    brand.name,
+  );
+  const editingSlug = packages.find((p) => p.id === editingId)?.slug;
 
   const totalNights =
     (parseInt(formData.makkahNights) || 0) +
@@ -84,17 +105,27 @@ export default function AdminPackagesPage() {
       endDate: p.endDate.slice(0, 10),
       status: p.status,
     });
+    setSeoDraft(seoDraftFrom(p, suggestUmrahPackageSeo(p, brand.name)));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setFormData(EMPTY_FORM);
+    setSeoDraft(EMPTY_SEO_DRAFT);
     setError("");
   };
 
   const handleSubmit = async (publishNow = false) => {
     setSaving(true);
     setError("");
+
+    const seo = resolveSeoDraft(seoDraft, seoSuggestion);
+    const titleIssue = seoTitleBudgetIssue(seo.seoTitle, brand.name);
+    if (titleIssue) {
+      setError(titleIssue);
+      setSaving(false);
+      return;
+    }
 
     const payload = {
       title: formData.title,
@@ -121,6 +152,7 @@ export default function AdminPackagesPage() {
         : "",
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : "",
       status: publishNow ? "PUBLISHED" : formData.status,
+      ...seo,
     };
 
     try {
@@ -136,6 +168,7 @@ export default function AdminPackagesPage() {
         throw new Error(json.error ?? "Save failed");
       }
       setFormData(EMPTY_FORM);
+      setSeoDraft(EMPTY_SEO_DRAFT);
       setEditingId(null);
       await fetchPackages();
     } catch (e) {
@@ -373,6 +406,18 @@ export default function AdminPackagesPage() {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
+            />
+          </div>
+
+          <div className="mt-6">
+            <SeoFields
+              draft={seoDraft}
+              suggestion={seoSuggestion}
+              onChange={setSeoDraft}
+              path={`/umrah-packages/${
+                editingSlug ??
+                formData.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")
+              }`}
             />
           </div>
 

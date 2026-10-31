@@ -54,34 +54,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        let user = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { email },
             select: { id: true },
         });
-
-        if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    name: fullName,
-                    email,
-                    phone,
-                    role: "CUSTOMER",
-                },
-                select: { id: true },
-            });
-        }
 
         const reference = buildReference();
 
         const created = await prisma.booking.create({
             data: {
                 reference,
-                userId: user.id,
+                type: "FLIGHT",
+                channel: "CHATBOT",
                 status: "PENDING",
+                userId: user?.id ?? null,
+                customerName: fullName,
+                customerEmail: email,
+                customerPhone: phone,
                 provider: "INTERNAL",
                 totalAmount: new Prisma.Decimal(0),
                 currency: "PKR",
-                flightData: {
+                payload: {
                     request: {
                         departureCity,
                         destination,
@@ -89,18 +82,12 @@ export async function POST(request: NextRequest) {
                         passengers,
                         travelClass,
                     },
-                    contact: {
-                        fullName,
-                        phone,
-                        email,
-                    },
                 },
                 paymentData: {
                     method: "chatbot_request",
                     status: "REQUESTED",
                     requestedAt: new Date().toISOString(),
                 },
-                isChatbotRequest: true,
             },
             select: {
                 id: true,

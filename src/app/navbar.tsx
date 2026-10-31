@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
-import { useMediaSettings } from "@/lib/hooks/use-media-settings";
+import { useBrand } from "@/components/shared/brand-provider";
+import type { BrandAssetSlot } from "@/lib/brand-assets";
 import { CurrencySelector } from "@/components/shared/currency-selector";
 import {
   BedDouble,
@@ -24,13 +26,19 @@ import {
   X,
 } from "lucide-react";
 
-const links = [
-  { href: "/flights", label: "Flights", description: "Search and compare fares", icon: Plane },
-  { href: "/umrah-packages", label: "Umrah packages", description: "Makkah & Madinah stays", icon: MoonStar },
-  { href: "/tour-packages", label: "Tour packages", description: "Curated holidays", icon: Briefcase },
-  { href: "/hotels", label: "Hotels", description: "Stays near the Haram", icon: BedDouble },
-  { href: "/visa", label: "Visa", description: "Applications made simple", icon: FileCheck2 },
-  { href: "/activities", label: "Things to do", description: "Tours and experiences", icon: Ticket },
+const links: {
+  href: string;
+  label: string;
+  description: string;
+  icon: typeof Plane;
+  asset: BrandAssetSlot;
+}[] = [
+  { href: "/flights", label: "Flights", description: "Search and compare fares", icon: Plane, asset: "flights" },
+  { href: "/umrah-packages", label: "Umrah packages", description: "Makkah & Madinah stays", icon: MoonStar, asset: "umrah" },
+  { href: "/tour-packages", label: "Tour packages", description: "Curated holidays", icon: Briefcase, asset: "tours" },
+  { href: "/hotels", label: "Hotels", description: "Stays near the Haram", icon: BedDouble, asset: "hotels" },
+  { href: "/visa", label: "Visa", description: "Applications made simple", icon: FileCheck2, asset: "visa" },
+  { href: "/activities", label: "Things to do", description: "Tours and experiences", icon: Ticket, asset: "activities" },
 ];
 
 const NavBar = () => {
@@ -140,7 +148,7 @@ const NavBar = () => {
     };
   }, [mobileMenuOpen]);
 
-  const { settings, loading: settingsLoading } = useMediaSettings();
+  const brand = useBrand();
   const role = (session?.user as { role?: string } | undefined)?.role;
   const dashboardHref = role === "ADMIN" ? "/admin" : "/dashboard";
 
@@ -164,24 +172,25 @@ const NavBar = () => {
           <div className="flex items-center gap-6">
             <Link
               href="/"
-              aria-label="Safar home"
+              aria-label={`${brand.name} home`}
               className="flex items-center gap-2 transition hover:opacity-80"
             >
-              {settings.websiteLogo ? (
-                <img
-                  src={settings.websiteLogo}
-                  alt="Safar logo"
+              {brand.logoUrl ? (
+                <Image
+                  src={brand.logoUrl}
+                  alt={`${brand.name} logo`}
+                  width={160}
+                  height={36}
+                  preload
                   className="h-9 w-auto object-contain"
                 />
-              ) : settingsLoading ? (
-                <div className="h-8 w-24 animate-pulse rounded-md bg-subtle" />
               ) : (
                 <span className="flex items-center gap-2">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">
                     <PlaneTakeoff className="size-4" />
                   </span>
                   <span className="text-xl font-bold tracking-tight text-foreground">
-                    Safar
+                    {brand.name}
                   </span>
                 </span>
               )}
@@ -201,7 +210,7 @@ const NavBar = () => {
               </button>
               {shopMenuOpen && (
                 <div className="absolute left-0 top-full z-50 mt-2 w-80 rounded-2xl border border-line bg-white p-2 shadow-raised">
-                  {links.map(({ href, label, description, icon: Icon }) => (
+                  {links.map(({ href, label, description, icon: Icon, asset }) => (
                     <Link
                       key={href}
                       href={href}
@@ -210,9 +219,13 @@ const NavBar = () => {
                         isActive(href) ? "bg-brand-soft" : ""
                       }`}
                     >
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
-                        <Icon className="size-4.5" />
-                      </span>
+                      {brand.assets[asset] ? (
+                        <Image src={brand.assets[asset]} alt="" width={36} height={36} className="size-9 shrink-0 object-contain" />
+                      ) : (
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                          <Icon className="size-4.5" />
+                        </span>
+                      )}
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-foreground">
                           {label}
@@ -341,7 +354,7 @@ const NavBar = () => {
               <p className="px-3 pb-2 pt-1 text-xs font-semibold text-muted">
                 Shop travel
               </p>
-              {links.map(({ href, label, icon: Icon }) => (
+              {links.map(({ href, label, icon: Icon, asset }) => (
                 <Link
                   key={href}
                   href={href}
@@ -352,7 +365,11 @@ const NavBar = () => {
                       : "text-foreground hover:bg-subtle"
                   }`}
                 >
-                  <Icon className="size-5" />
+                  {brand.assets[asset] ? (
+                    <Image src={brand.assets[asset]} alt="" width={24} height={24} className="size-6 object-contain" />
+                  ) : (
+                    <Icon className="size-5" />
+                  )}
                   {label}
                 </Link>
               ))}

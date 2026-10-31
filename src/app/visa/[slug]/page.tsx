@@ -21,7 +21,6 @@ import {
   getStoredVisaCountries,
   type VisaCountryEntry,
 } from "@/lib/admin-settings/visa-settings";
-import { fitTitle } from "@/lib/seo-copy";
 import {
   absoluteUrl,
   buildMetadata,
@@ -29,6 +28,7 @@ import {
   createWebPageSchema,
 } from "@/lib/seo";
 import { findVisaBySlug, getVisaPath } from "@/lib/visa";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 
 type VisaDetailsPageProps = {
   params: Promise<{ slug: string }>;
@@ -48,22 +48,6 @@ function detailsTitle(visa: VisaCountryEntry) {
   return `${visa.country} ${visaLabel(visa.visaType)}`;
 }
 
-function searchTitle(visa: VisaCountryEntry) {
-  const label = visaLabel(visa.visaType);
-  return fitTitle(
-    `${visa.country} ${label} from Pakistan – Requirements & Fees`,
-    `${visa.country} Visa from Pakistan – Requirements & Fees`,
-    `${visa.country} ${label} – Requirements & Fees`,
-    detailsTitle(visa),
-  );
-}
-
-function searchDescription(visa: VisaCountryEntry) {
-  const cost = visa.netCost ? ` Fees from ${visa.netCost}.` : "";
-  const entry = /entry$/i.test(visa.entry) ? visa.entry.toLowerCase() : `${visa.entry} entry`;
-  return `Apply for a ${visa.country} ${visaLabel(visa.visaType)} from Pakistan: ${visa.duration} stay, ${entry}.${cost} Document checklist and expert help with your application.`;
-}
-
 function detailsDescription(visa: VisaCountryEntry) {
   return `Apply for a ${visa.duration} ${visaLabel(visa.visaType)} to ${visa.country} with guided support and transparent pricing.`;
 }
@@ -72,6 +56,12 @@ async function getVisaBySlug(slug: string) {
   const items = await getStoredVisaCountries();
   const activeItems = items.filter((item) => item.isActive);
   return findVisaBySlug(activeItems, slug);
+}
+
+// Render each page on its first visit, then serve it from the ISR cache
+// (metadata lands in <head>; admin saves revalidate the site).
+export async function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
@@ -90,8 +80,8 @@ export async function generateMetadata({
   }
 
   return buildMetadata({
-    title: searchTitle(visa),
-    description: searchDescription(visa),
+    title: visa.seoTitle,
+    description: visa.seoDescription,
     path: getVisaPath(visa.country, visa.visaType),
     keywords: [visa.country, visaLabel(visa.visaType), "visa assistance"],
   });
@@ -106,6 +96,8 @@ export default async function VisaDetailsPage({
   if (!visa) {
     notFound();
   }
+
+  const brand = await getStoredBrandSettings();
 
   const pagePath = getVisaPath(visa.country, visa.visaType);
 
@@ -130,7 +122,7 @@ export default async function VisaDetailsPage({
             description: detailsDescription(visa),
             provider: {
               "@type": "TravelAgency",
-              name: "Safar Umrah",
+              name: brand.name,
             },
             areaServed: visa.country,
             offers: {

@@ -14,10 +14,6 @@ const THUMB_LAYOUT: Record<number, string[]> = {
   4: ["", "", "", ""],
 };
 
-function isRemote(src: string) {
-  return /^https?:\/\//.test(src);
-}
-
 function Photo({
   photo,
   sizes,
@@ -35,7 +31,6 @@ function Photo({
       sizes={sizes}
       fetchPriority={lead ? "high" : undefined}
       loading={lead ? "eager" : "lazy"}
-      unoptimized={isRemote(photo.src)}
       className="object-cover transition duration-300 group-hover:scale-[1.03]"
     />
   );
@@ -147,7 +142,6 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 alt={photos[index].alt}
                 fill
                 sizes="(min-width: 1024px) 1024px, 100vw"
-                unoptimized={isRemote(photos[index].src)}
                 className="object-contain"
               />
             </div>

@@ -5,6 +5,16 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ZodError } from "zod";
 import { activitySchema } from "@/lib/validations/activity";
+import { MediaUrlInput } from "@/components/admin/media-picker";
+import {
+  EMPTY_SEO_DRAFT,
+  SeoFields,
+  resolveSeoDraft,
+  seoDraftFrom,
+  seoTitleBudgetIssue,
+} from "@/components/admin/seo-fields";
+import { useBrand } from "@/components/shared/brand-provider";
+import { suggestActivitySeo } from "@/lib/seo-suggestions";
 
 type Activity = {
   id: string;
@@ -18,6 +28,8 @@ type Activity = {
   reviewCount: number;
   sortOrder: number;
   isActive: boolean;
+  seoTitle: string;
+  seoDescription: string;
 };
 
 type Destination = {
@@ -54,9 +66,18 @@ export default function AdminActivitiesPage() {
   const [isActivitySourceDummy, setIsActivitySourceDummy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [seoDraft, setSeoDraft] = useState(EMPTY_SEO_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const brand = useBrand();
+
+  const cityOf = (destinationId: string) =>
+    destinations.find((d) => d.id === destinationId)?.city ?? null;
+  const seoSuggestion = suggestActivitySeo(
+    { ...formData, city: cityOf(formData.destinationId) },
+    brand.name,
+  );
 
   const fetchDestinations = async () => {
     try {
@@ -102,12 +123,22 @@ export default function AdminActivitiesPage() {
       sortOrder: String(activity.sortOrder),
       isActive: activity.isActive,
     });
+    setSeoDraft(
+      seoDraftFrom(
+        activity,
+        suggestActivitySeo(
+          { ...activity, city: cityOf(activity.destinationId) },
+          brand.name,
+        ),
+      ),
+    );
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setFormData(EMPTY_FORM);
+    setSeoDraft(EMPTY_SEO_DRAFT);
     setError("");
   };
 
@@ -116,6 +147,13 @@ export default function AdminActivitiesPage() {
     setError("");
 
     try {
+      const seo = resolveSeoDraft(seoDraft, seoSuggestion);
+      const titleIssue = seoTitleBudgetIssue(seo.seoTitle, brand.name);
+      if (titleIssue) {
+        setError(titleIssue);
+        return;
+      }
+
       const validatedData = activitySchema.parse({
         destinationId: formData.destinationId,
         title: formData.title,
@@ -127,6 +165,7 @@ export default function AdminActivitiesPage() {
         reviewCount: Number(formData.reviewCount),
         sortOrder: Number(formData.sortOrder),
         isActive: formData.isActive,
+        ...seo,
       });
 
       const url =
@@ -230,6 +269,7 @@ export default function AdminActivitiesPage() {
               onClick={() => {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
+                setSeoDraft(EMPTY_SEO_DRAFT);
               }}
               className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
@@ -303,17 +343,20 @@ export default function AdminActivitiesPage() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-1.5 lg:col-span-2">
+              <div className="flex flex-col gap-1.5 lg:col-span-2">
                 <span className="text-xs font-semibold text-slate-600">
-                  Image URL *
+                  Image *
                 </span>
-                <input
-                  {...field("imageUrl")}
+                <MediaUrlInput
+                  value={formData.imageUrl}
+                  onChange={(url) =>
+                    setFormData((prev) => ({ ...prev, imageUrl: url }))
+                  }
+                  folder="activities-images"
                   type="url"
-                  placeholder="https://example.com/image.jpg"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  placeholder="Choose from the library or paste a URL"
                 />
-              </label>
+              </div>
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
@@ -391,6 +434,18 @@ export default function AdminActivitiesPage() {
                   Active (visible on homepage)
                 </span>
               </label>
+            </div>
+
+            <div className="mt-5">
+              <SeoFields
+                draft={seoDraft}
+                suggestion={seoSuggestion}
+                onChange={setSeoDraft}
+                path={`/activities/${`${formData.title} ${cityOf(formData.destinationId) ?? ""}`
+                  .trim()
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")}`}
+              />
             </div>
 
             <div className="mt-5 flex gap-3">

@@ -11,7 +11,7 @@ import {
 
 type RecentBooking = {
   id: string;
-  type: "Flight" | "Hotel";
+  type: string;
   reference: string;
   status: string;
   amount: string;
@@ -226,36 +226,24 @@ async function getRecentBookings(): Promise<RecentBooking[]> {
       take: 6,
     });
 
-    return bookings.map(
-      (booking: {
-        id: string;
-        reference: string;
-        status: string;
-        totalAmount: unknown;
-        currency: string;
-        flightData: unknown;
-        hotelData: unknown;
-        createdAt: Date;
-      }) => {
-        const hasFlight = Boolean(booking.flightData);
-        const hasHotel = Boolean(booking.hotelData);
-        const type = hasFlight ? "Flight" : hasHotel ? "Hotel" : "Flight";
-        const totalAmount = booking.totalAmount?.toString() ?? "0";
+    return bookings.map((booking) => {
+      const type =
+        booking.type.charAt(0) + booking.type.slice(1).toLowerCase();
+      const totalAmount = booking.totalAmount?.toString() ?? "0";
 
-        return {
-          id: booking.id,
-          type,
-          reference: booking.reference,
-          status: booking.status,
-          amount: `${booking.currency} ${totalAmount}`,
-          createdAt: new Date(booking.createdAt).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-        };
-      },
-    );
+      return {
+        id: booking.id,
+        type,
+        reference: booking.reference,
+        status: booking.status,
+        amount: `${booking.currency} ${totalAmount}`,
+        createdAt: new Date(booking.createdAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+      };
+    });
   } catch (err) {
     markDatabaseUnavailable(err);
     return [];

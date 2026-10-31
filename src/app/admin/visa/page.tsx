@@ -3,10 +3,21 @@
 import { useEffect, useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
 
+import {
+  EMPTY_SEO_DRAFT,
+  SeoFields,
+  resolveSeoDraft,
+  seoDraftFrom,
+  seoTitleBudgetIssue,
+  type SeoDraft,
+} from "@/components/admin/seo-fields";
+import { useBrand } from "@/components/shared/brand-provider";
 import type {
   VisaCountryEntry,
   VisaType,
 } from "@/lib/admin-settings/visa-settings";
+import { suggestVisaSeo } from "@/lib/seo-suggestions";
+import { getVisaPath } from "@/lib/visa";
 
 const EMPTY_ENTRY: VisaCountryEntry = {
   country: "",
@@ -19,6 +30,8 @@ const EMPTY_ENTRY: VisaCountryEntry = {
   code: "",
   isActive: true,
   sortOrder: 0,
+  seoTitle: "",
+  seoDescription: "",
 };
 
 const VISA_TYPES: { value: VisaType; label: string }[] = [
@@ -58,6 +71,15 @@ function findPricingIssue(entries: VisaCountryEntry[]): string | null {
 
 export default function AdminVisaPage() {
   const [entries, setEntries] = useState<VisaCountryEntry[]>([]);
+  const [seoDrafts, setSeoDrafts] = useState<SeoDraft[]>([]);
+  const brand = useBrand();
+
+  const loadEntries = (items: VisaCountryEntry[]) => {
+    setEntries(items);
+    setSeoDrafts(
+      items.map((item) => seoDraftFrom(item, suggestVisaSeo(item, brand.name))),
+    );
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +91,7 @@ export default function AdminVisaPage() {
           cache: "no-store",
         });
         const data = await res.json();
-        setEntries(Array.isArray(data) ? data : []);
+        loadEntries(Array.isArray(data) ? data : []);
       } catch {
         setError("Unable to load visa countries.");
       } finally {
@@ -78,6 +100,8 @@ export default function AdminVisaPage() {
     };
 
     void fetchEntries();
+    // Loads once; the brand only shapes the initial SEO suggestions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateEntry = <K extends keyof VisaCountryEntry>(
@@ -101,11 +125,26 @@ export default function AdminVisaPage() {
       setSaving(false);
       return;
     }
+    const payload = entries.map((entry, index) => ({
+      ...entry,
+      ...resolveSeoDraft(
+        seoDrafts[index] ?? EMPTY_SEO_DRAFT,
+        suggestVisaSeo(entry, brand.name),
+      ),
+    }));
+    for (const entry of payload) {
+      const titleIssue = seoTitleBudgetIssue(entry.seoTitle, brand.name);
+      if (titleIssue) {
+        setError(`${entry.country || "New country"}: ${titleIssue}`);
+        setSaving(false);
+        return;
+      }
+    }
     try {
       const res = await fetch("/api/admin/settings/visa-countries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entries),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -114,7 +153,7 @@ export default function AdminVisaPage() {
       }
 
       const saved = (await res.json()) as VisaCountryEntry[];
-      setEntries(saved);
+      loadEntries(saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save changes.");
     } finally {
@@ -124,10 +163,12 @@ export default function AdminVisaPage() {
 
   const handleAdd = () => {
     setEntries((prev) => [...prev, { ...EMPTY_ENTRY }]);
+    setSeoDrafts((prev) => [...prev, EMPTY_SEO_DRAFT]);
   };
 
   const handleRemove = (index: number) => {
     setEntries((prev) => prev.filter((_, idx) => idx !== index));
+    setSeoDrafts((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   return (
@@ -351,6 +392,19 @@ export default function AdminVisaPage() {
                   />
                   Active
                 </label>
+              </div>
+
+              <div className="mt-4">
+                <SeoFields
+                  draft={seoDrafts[index] ?? EMPTY_SEO_DRAFT}
+                  suggestion={suggestVisaSeo(entry, brand.name)}
+                  onChange={(draft) =>
+                    setSeoDrafts((prev) =>
+                      prev.map((item, idx) => (idx === index ? draft : item)),
+                    )
+                  }
+                  path={getVisaPath(entry.country, entry.visaType)}
+                />
               </div>
             </section>
           ))}

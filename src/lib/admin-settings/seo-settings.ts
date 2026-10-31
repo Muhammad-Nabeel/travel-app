@@ -1,6 +1,11 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import {
+    getPrimaryPhone,
+    getStoredSupportContactSettings,
+} from "@/lib/admin-settings/support-contact-settings";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { buildMetadata, createOrganizationSchema } from "@/lib/seo";
 import {
@@ -131,15 +136,24 @@ export async function saveStoredSeoSettings(input: unknown): Promise<SeoSettings
 
 /** Resolved title/description for a static page: admin override, else default copy. */
 export async function getStaticPageSeo(key: StaticPageKey) {
-    const settings = await getStoredSeoSettings();
+    const [settings, brand] = await Promise.all([
+        getStoredSeoSettings(),
+        getStoredBrandSettings(),
+    ]);
     const defaults = STATIC_PAGE_SEO[key];
     const override = settings.pages[key];
+    const now = new Date();
 
     return {
         path: defaults.path,
         absolute: Boolean(defaults.absolute),
-        title: applySeoTokens(override.title || defaults.title),
-        description: applySeoTokens(override.description || defaults.description),
+        title: applySeoTokens(override.title || defaults.title, now, brand.name),
+        description: applySeoTokens(
+            override.description || defaults.description,
+            now,
+            brand.name,
+        ),
+        siteName: brand.name,
     };
 }
 
@@ -155,6 +169,7 @@ export async function buildStaticPageMetadata(
         description: seo.description,
         path: seo.path,
         noIndex: options.noIndex,
+        siteName: seo.siteName,
     });
 }
 
@@ -181,17 +196,20 @@ const getActiveBranches = cache(async () => {
  * placeholder contact details.
  */
 export async function buildOrganizationJsonLd() {
-    const [settings, branches] = await Promise.all([
+    const [settings, branches, contact, brand] = await Promise.all([
         getStoredSeoSettings(),
         getActiveBranches(),
+        getStoredSupportContactSettings(),
+        getStoredBrandSettings(),
     ]);
     const org = settings.organization;
 
     return createOrganizationSchema({
+        name: brand.name,
         legalName: org.legalName,
-        logoUrl: org.logoUrl,
-        telephone: org.telephone,
-        email: org.email,
+        logoUrl: org.logoUrl || brand.logoUrl || undefined,
+        telephone: org.telephone || getPrimaryPhone(contact),
+        email: org.email || contact.email,
         sameAs: org.sameAs,
         branches,
     });

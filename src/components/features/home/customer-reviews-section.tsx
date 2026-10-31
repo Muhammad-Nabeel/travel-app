@@ -1,20 +1,6 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import { Star } from "lucide-react";
-import type { CustomerReviewRow } from "@/app/api/reviews/route";
 
-type PublicReview = Pick<
-  CustomerReviewRow,
-  | "id"
-  | "customerName"
-  | "location"
-  | "rating"
-  | "title"
-  | "body"
-  | "tripType"
-  | "isVerified"
->;
+import { getPublishedReviews } from "@/lib/home-sections";
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -45,43 +31,9 @@ function initialsFromName(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
 
-export function CustomerReviewsSection() {
-  const [reviews, setReviews] = useState<PublicReview[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadReviews() {
-      try {
-        const res = await fetch("/api/reviews", { cache: "no-store" });
-        const json = (await res.json()) as PublicReview[];
-        if (!cancelled) {
-          setReviews(Array.isArray(json) ? json : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setReviews([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadReviews();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const sliderReviews = useMemo(() => reviews, [reviews]);
-
-  if (loading || sliderReviews.length === 0) {
-    return null;
-  }
+export async function CustomerReviewsSection() {
+  const reviews = await getPublishedReviews();
+  if (reviews.length === 0) return null;
 
   return (
     <section className="section-shell py-12 md:py-16" aria-label="Customer reviews">
@@ -94,7 +46,7 @@ export function CustomerReviewsSection() {
           </div>
         </div>
         <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3">
-          {sliderReviews.map((review) => (
+          {reviews.map((review) => (
             <article
               key={review.id}
               className="w-[17.5rem] shrink-0 snap-start rounded-2xl border border-line bg-white p-4 shadow-card sm:w-[18.5rem]"

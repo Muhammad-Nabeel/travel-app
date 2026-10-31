@@ -1,4 +1,7 @@
+import { z } from "zod";
+
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { seoFields } from "@/lib/validations/seo";
 
 export type VisaType = "e-visa" | "sticker-visa";
 
@@ -13,6 +16,8 @@ export type VisaCountryEntry = {
     code: string;
     isActive: boolean;
     sortOrder: number;
+    seoTitle: string;
+    seoDescription: string;
 };
 
 const VISA_COUNTRIES_KEY = "visa_countries";
@@ -59,6 +64,9 @@ export function defaultVisaCountries(): VisaCountryEntry[] {
             code: "MY",
             isActive: true,
             sortOrder: 1,
+            seoTitle: "Malaysia e-Visa from Pakistan – Fees & Documents",
+            seoDescription:
+                "Apply for a Malaysia e-Visa from Pakistan: 30-day stay, single entry. Fees from PKR 40,000. Document checklist and expert help with your application.",
         },
         {
             country: "UAE",
@@ -71,6 +79,9 @@ export function defaultVisaCountries(): VisaCountryEntry[] {
             code: "AE",
             isActive: true,
             sortOrder: 2,
+            seoTitle: "UAE Visa from Pakistan – Requirements & Fees",
+            seoDescription:
+                "Apply for a UAE sticker visa from Pakistan: 30-day stay, single entry. Fees from PKR 33,000. Document checklist and expert help with your application.",
         },
     ];
 }
@@ -97,6 +108,8 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
             const code = sanitizeText(entry.code);
             const isActive = normalizeBoolean(entry.isActive, true);
             const sortOrder = normalizeNumber(entry.sortOrder, 0);
+            const seoTitle = sanitizeText(entry.seoTitle);
+            const seoDescription = sanitizeText(entry.seoDescription);
 
             if (
                 !country ||
@@ -104,7 +117,9 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
                 !entryType ||
                 !perPersonCost ||
                 !serviceFee ||
-                !netCost
+                !netCost ||
+                !seoTitle ||
+                !seoDescription
             ) {
                 return null;
             }
@@ -120,11 +135,30 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
                 code,
                 isActive,
                 sortOrder,
+                seoTitle,
+                seoDescription,
             } satisfies VisaCountryEntry;
         })
         .filter((item): item is VisaCountryEntry => item !== null);
 
     return items.length > 0 ? items : defaultVisaCountries();
+}
+
+const visaSeoSchema = z.object(seoFields);
+
+/** First entry whose SEO title or description is missing or out of range, as a message for the admin. */
+export function findVisaSeoIssue(entries: Partial<VisaCountryEntry>[]): string | null {
+    for (const entry of entries) {
+        const result = visaSeoSchema.safeParse({
+            seoTitle: entry.seoTitle ?? "",
+            seoDescription: entry.seoDescription ?? "",
+        });
+        if (!result.success) {
+            const name = sanitizeText(entry.country) || "a visa country";
+            return `${name}: ${result.error.issues[0].message}`;
+        }
+    }
+    return null;
 }
 
 export async function getStoredVisaCountries(): Promise<VisaCountryEntry[]> {

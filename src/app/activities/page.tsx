@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Star, ArrowRight } from "lucide-react";
 
@@ -13,6 +14,8 @@ import {
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { getActivityHref } from "@/lib/activity-href";
 
 type DestinationSummary = {
   id: string;
@@ -23,6 +26,7 @@ type DestinationSummary = {
 
 type ActivitySummary = {
   id: string;
+  slug: string | null;
   destinationId: string;
   title: string;
   category: string;
@@ -151,6 +155,7 @@ export default async function ActivitiesPage({
   searchParams,
 }: ActivitiesPageProps) {
   const resolvedParams = (await searchParams) ?? {};
+  const brand = await getStoredBrandSettings();
   const category = toSingleValue(resolvedParams.category);
   const destinationId = toSingleValue(resolvedParams.destinationId);
   const search = toSingleValue(resolvedParams.search);
@@ -180,7 +185,7 @@ export default async function ActivitiesPage({
           createWebPageSchema({
             title: hasFilters ? "Filtered Activities" : "Travel Activities",
             description: hasFilters
-              ? "Browse filtered travel activities and curated experiences from Safar Umrah."
+              ? `Browse filtered travel activities and curated experiences from ${brand.name}.`
               : "Browse curated travel experiences, tours, and activities for your next trip.",
             path: "/activities",
             type: "CollectionPage",
@@ -188,7 +193,7 @@ export default async function ActivitiesPage({
           createItemListSchema(
             activities.map((activity) => ({
               name: activity.title,
-              path: `/activities/${activity.id}`,
+              path: getActivityHref(activity),
             })),
             "Travel activities",
           ),
@@ -309,16 +314,16 @@ export default async function ActivitiesPage({
               return (
                 <Link
                   key={activity.id}
-                  href={`/activities/${activity.id}`}
+                  href={getActivityHref(activity)}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-lg"
                 >
                   <div className="relative h-48 overflow-hidden bg-slate-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={activity.imageUrl}
                       alt={activity.title}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      loading="lazy"
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition duration-300 group-hover:scale-105"
                     />
                     <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-800">
                       {formatCategory(activity.category)}

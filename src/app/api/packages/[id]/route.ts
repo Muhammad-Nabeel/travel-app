@@ -44,6 +44,8 @@ export async function GET(
             startDate: pkg.startDate.toISOString(),
             endDate: pkg.endDate.toISOString(),
             status: pkg.status as PackageRow["status"],
+            seoTitle: pkg.seoTitle,
+            seoDescription: pkg.seoDescription,
             createdAt: pkg.createdAt.toISOString(),
             updatedAt: pkg.updatedAt.toISOString(),
         };
@@ -85,6 +87,8 @@ export async function PUT(
                 startDate: new Date(data.startDate),
                 endDate: new Date(data.endDate),
                 status: data.status,
+                seoTitle: data.seoTitle,
+                seoDescription: data.seoDescription,
             },
         });
 

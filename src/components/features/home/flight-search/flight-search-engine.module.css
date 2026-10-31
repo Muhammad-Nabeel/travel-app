@@ -4,22 +4,6 @@
   overflow: visible;
   z-index: 40;
   background-color: var(--bg);
-  background-image:
-    linear-gradient(
-      180deg,
-      transparent calc(100% - var(--hero-fade, 120px)),
-      var(--bg) calc(100% - var(--hero-fade, 120px))
-    ),
-    linear-gradient(
-      180deg,
-      rgba(12, 18, 40, 0.55) 0%,
-      rgba(12, 18, 40, 0.3) 55%,
-      rgba(12, 18, 40, 0.1) 100%
-    ),
-    url("/images/hero-madinah.jpg");
-  background-position: center, center, center 65%;
-  background-repeat: no-repeat;
-  background-size: cover;
 }
 
 .embeddedSearch {

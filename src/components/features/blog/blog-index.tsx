@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar } from "lucide-react";
 
@@ -146,12 +147,12 @@ export function BlogIndex({
                 className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-lg"
               >
                 <div className="relative h-48 overflow-hidden bg-slate-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={post.coverImageUrl}
                     alt={post.title}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition duration-300 group-hover:scale-105"
                   />
                   <span
                     className={`absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ${

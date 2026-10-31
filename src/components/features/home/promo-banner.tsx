@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { MoonStar } from "lucide-react";
 
@@ -7,9 +8,16 @@ export function PromoBanner() {
       <div className="relative overflow-hidden rounded-3xl bg-navy px-6 py-10 text-white sm:px-10 md:flex md:items-center md:justify-between md:gap-10 md:py-12">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-full bg-cover bg-center opacity-60 md:w-3/5"
-          style={{ backgroundImage: "url(/images/hero-madinah.jpg)" }}
-        />
+          className="pointer-events-none absolute inset-y-0 right-0 w-full opacity-60 md:w-3/5"
+        >
+          <Image
+            src="/images/hero-madinah.webp"
+            alt=""
+            fill
+            sizes="(min-width: 768px) 60vw, 100vw"
+            className="object-cover"
+          />
+        </div>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-linear-to-r from-navy via-navy/90 to-navy/30"

@@ -16,7 +16,6 @@ import {
 
 type BookingListItem = {
   id: string;
-  source: "BOOKING" | "SERVICE_REQUEST";
   reference: string;
   type: "Flight" | "Hotel" | "Umrah" | "Visa" | "Tour";
   status: string;
@@ -57,59 +56,7 @@ const PAYMENT_OPTIONS = [
 ];
 const TYPE_OPTIONS = ["flight", "hotel", "umrah", "visa", "tour"];
 
-function detectTypeFromPayload(raw: unknown): BookingListItem["type"] | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-
-  const text = JSON.stringify(raw).toLowerCase();
-
-  if (
-    text.includes("umrah") ||
-    text.includes("madinah") ||
-    text.includes("makkah")
-  ) {
-    return "Umrah";
-  }
-
-  if (text.includes("visa")) {
-    return "Visa";
-  }
-
-  if (
-    text.includes("tour") ||
-    text.includes("destination") ||
-    text.includes("activity")
-  ) {
-    return "Tour";
-  }
-
-  return null;
-}
-
-function inferBookingType(params: {
-  flightData: unknown;
-  hotelData: unknown;
-  paymentData: unknown;
-}): BookingListItem["type"] {
-  const { flightData, hotelData, paymentData } = params;
-
-  const fromPayment = detectTypeFromPayload(paymentData);
-  if (fromPayment) return fromPayment;
-
-  const fromFlight = detectTypeFromPayload(flightData);
-  if (fromFlight && fromFlight !== "Tour") return fromFlight;
-
-  const fromHotel = detectTypeFromPayload(hotelData);
-  if (fromHotel) return fromHotel;
-
-  if (flightData) return "Flight";
-  if (hotelData) return "Hotel";
-
-  return "Tour";
-}
-
-function mapServiceRequestType(type: string): BookingListItem["type"] {
+function formatBookingType(type: string): BookingListItem["type"] {
   if (type === "FLIGHT") return "Flight";
   if (type === "HOTEL") return "Hotel";
   if (type === "UMRAH") return "Umrah";
@@ -117,7 +64,7 @@ function mapServiceRequestType(type: string): BookingListItem["type"] {
   return "Tour";
 }
 
-function mapFilterTypeToServiceType(type: string) {
+function mapFilterTypeToBookingType(type: string) {
   if (type === "flight") return "FLIGHT";
   if (type === "hotel") return "HOTEL";
   if (type === "umrah") return "UMRAH";
@@ -453,7 +400,7 @@ export default async function AdminBookingsPage({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/admin/bookings/${booking.id}?source=${booking.source.toLowerCase()}`}
+                        href={`/admin/bookings/${booking.id}`}
                         className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
                       >
                         View
@@ -501,43 +448,37 @@ async function getBookings(
   }
 
   try {
-    const bookingWhere: Prisma.BookingWhereInput = {};
-    const serviceWhere: Prisma.ServiceRequestWhereInput = {};
+    const where: Prisma.BookingWhereInput = {};
 
     if (filters.reference) {
-      bookingWhere.reference = { contains: filters.reference };
-      serviceWhere.reference = { contains: filters.reference };
+      where.reference = { contains: filters.reference };
     }
 
     if (filters.status && STATUS_OPTIONS.includes(filters.status)) {
-      bookingWhere.status = filters.status as never;
-      serviceWhere.status = filters.status as never;
+      where.status = filters.status as never;
     }
 
     if (filters.provider && PROVIDER_OPTIONS.includes(filters.provider)) {
-      bookingWhere.provider = filters.provider as never;
+      where.provider = filters.provider as never;
     }
 
     if (filters.customer) {
-      bookingWhere.user = {
-        OR: [
-          { name: { contains: filters.customer } },
-          { email: { contains: filters.customer } },
-        ],
-      };
-
-      serviceWhere.OR = [
+      where.OR = [
         { customerName: { contains: filters.customer } },
         { customerEmail: { contains: filters.customer } },
       ];
     }
 
     if (filters.chatbot === "yes") {
-      bookingWhere.isChatbotRequest = true;
+      where.channel = "CHATBOT";
     }
 
     if (filters.chatbot === "no") {
-      bookingWhere.isChatbotRequest = false;
+      where.channel = { not: "CHATBOT" };
+    }
+
+    if (filters.paymentMethod) {
+      where.paymentData = { path: ["method"], equals: filters.paymentMethod };
     }
 
     if (filters.createdFrom || filters.createdTo) {
@@ -551,62 +492,21 @@ async function getBookings(
         createdAtFilter.lte = new Date(`${filters.createdTo}T23:59:59.999Z`);
       }
 
-      bookingWhere.createdAt = createdAtFilter;
-      serviceWhere.createdAt = createdAtFilter;
+      where.createdAt = createdAtFilter;
     }
 
-    const serviceTypeFilter = mapFilterTypeToServiceType(filters.type);
-    if (serviceTypeFilter) {
-      serviceWhere.type = serviceTypeFilter as never;
+    const bookingType = mapFilterTypeToBookingType(filters.type);
+    if (bookingType) {
+      where.type = bookingType as never;
     }
 
-    const [bookings, serviceRequests] = await Promise.all([
-      prisma.booking.findMany({
-        where: bookingWhere,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-        take: 200,
-      }),
-      prisma.serviceRequest.findMany({
-        where: serviceWhere,
-        orderBy: { createdAt: "desc" },
-        take: 200,
-      }),
-    ]);
+    const bookings = await prisma.booking.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
 
-    const typedBookings = bookings as Array<{
-      id: string;
-      reference: string;
-      status: string;
-      provider: string;
-      totalAmount: { toString: () => string };
-      currency: string;
-      flightData: unknown;
-      hotelData: unknown;
-      paymentData: unknown;
-      isChatbotRequest: boolean;
-      createdAt: Date;
-      user: {
-        name: string;
-        email: string;
-      };
-    }>;
-
-    const mappedBookings: BookingListItem[] = typedBookings.map((booking) => {
-      const type = inferBookingType({
-        flightData: booking.flightData,
-        hotelData: booking.hotelData,
-        paymentData: booking.paymentData,
-      });
+    return bookings.map((booking) => {
       const paymentMethod =
         booking.paymentData && typeof booking.paymentData === "object"
           ? String((booking.paymentData as { method?: string }).method ?? "N/A")
@@ -617,79 +517,20 @@ async function getBookings(
 
       return {
         id: booking.id,
-        source: "BOOKING",
         reference: booking.reference,
-        type,
+        type: formatBookingType(booking.type),
         status: booking.status,
-        provider: booking.provider,
-        totalAmount: booking.totalAmount.toString(),
+        provider: booking.provider ?? "SERVICE",
+        totalAmount: booking.totalAmount?.toString() ?? "0",
         currency: booking.currency,
-        customerName: booking.user.name,
-        customerEmail: booking.user.email,
+        customerName: booking.customerName ?? "N/A",
+        customerEmail: booking.customerEmail ?? "N/A",
         paymentMethod: formatStatus(paymentMethod),
-        isChatbotRequest: booking.isChatbotRequest,
+        isChatbotRequest: booking.channel === "CHATBOT",
         createdAtISO: booking.createdAt.toISOString(),
         createdDate: createdAtParts.date,
         createdTime: createdAtParts.time,
       };
-    });
-
-    const mappedServiceRequests: BookingListItem[] = serviceRequests.map(
-      (request) => {
-        const createdAtParts = formatDateTimeParts(
-          request.createdAt.toISOString(),
-        );
-
-        return {
-          id: request.id,
-          source: "SERVICE_REQUEST",
-          reference: request.reference,
-          type: mapServiceRequestType(request.type),
-          status: request.status,
-          provider: "SERVICE",
-          totalAmount: request.amount?.toString() ?? "0",
-          currency: request.currency ?? "PKR",
-          customerName: request.customerName ?? "N/A",
-          customerEmail: request.customerEmail ?? "N/A",
-          paymentMethod: "N/A",
-          isChatbotRequest: false,
-          createdAtISO: request.createdAt.toISOString(),
-          createdDate: createdAtParts.date,
-          createdTime: createdAtParts.time,
-        };
-      },
-    );
-
-    const mapped = [...mappedBookings, ...mappedServiceRequests].sort((a, b) =>
-      b.createdAtISO.localeCompare(a.createdAtISO),
-    );
-
-    return mapped.filter((booking) => {
-      if (filters.type === "flight" && booking.type !== "Flight") {
-        return false;
-      }
-
-      if (filters.type === "hotel" && booking.type !== "Hotel") {
-        return false;
-      }
-
-      if (filters.type === "umrah" && booking.type !== "Umrah") {
-        return false;
-      }
-
-      if (filters.type === "visa" && booking.type !== "Visa") {
-        return false;
-      }
-
-      if (filters.type === "tour" && booking.type !== "Tour") {
-        return false;
-      }
-
-      if (filters.paymentMethod) {
-        return booking.paymentMethod.toLowerCase() === filters.paymentMethod;
-      }
-
-      return true;
     });
   } catch (err) {
     markDatabaseUnavailable(err);

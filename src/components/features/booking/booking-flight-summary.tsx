@@ -95,7 +95,6 @@ function LegRow({ leg, label, airline }: LegRowProps) {
               className="h-full w-full object-contain"
               width={48}
               height={48}
-              unoptimized
             />
           </div>
         ) : (

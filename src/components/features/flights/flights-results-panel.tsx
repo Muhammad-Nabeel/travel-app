@@ -24,6 +24,7 @@ import {
   getAirlineCode,
   getAirlineLogoSrc,
 } from "@/lib/flights/airline-branding";
+import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 type FlightsResultsPanelProps = {
   offers: FlightOffer[];
@@ -614,6 +615,7 @@ export function FlightsResultsPanel({
 
           {filteredOffers.length === 0 ? (
             <div className="rounded-2xl border border-line bg-subtle p-10 text-center">
+              <EmptyStateImage slot="emptyFlights" />
               <p className="font-medium text-foreground">
                 No fares match your filters.
               </p>
@@ -783,7 +785,6 @@ function StickyLegPill({
               className="h-full w-full object-contain"
               width={40}
               height={40}
-              unoptimized
             />
           </div>
         ) : (

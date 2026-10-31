@@ -1,4 +1,5 @@
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 
 export type ManagedPageContent = {
     eyebrow: string;
@@ -14,11 +15,8 @@ export type ContactUsPageContent = {
     title: string;
     intro: string;
     phoneLabel: string;
-    phoneValue: string;
     locationLabel: string;
-    locationValue: string;
     emailLabel: string;
-    emailValue: string;
     fullNameLabel: string;
     fullNamePlaceholder: string;
     emailFieldLabel: string;
@@ -173,11 +171,8 @@ function sanitizeContactUsContent(
         title: sanitizeText(source.title) || fallback.title,
         intro: sanitizeText(source.intro) || fallback.intro,
         phoneLabel: sanitizeText(source.phoneLabel) || fallback.phoneLabel,
-        phoneValue: sanitizeText(source.phoneValue) || fallback.phoneValue,
         locationLabel: sanitizeText(source.locationLabel) || fallback.locationLabel,
-        locationValue: sanitizeText(source.locationValue) || fallback.locationValue,
         emailLabel: sanitizeText(source.emailLabel) || fallback.emailLabel,
-        emailValue: sanitizeText(source.emailValue) || fallback.emailValue,
         fullNameLabel: sanitizeText(source.fullNameLabel) || fallback.fullNameLabel,
         fullNamePlaceholder:
             sanitizeText(source.fullNamePlaceholder) || fallback.fullNamePlaceholder,
@@ -195,10 +190,10 @@ function sanitizeContactUsContent(
 export function defaultSitePagesSettings(): SitePagesSettings {
     return {
         aboutUs: {
-            eyebrow: "About Safar",
+            eyebrow: "About {brand}",
             title: "Travel guidance built around real people.",
             intro:
-                "Safar helps travellers book with confidence across flights, hotels, Umrah journeys, and curated tours.",
+                "{brand} helps travellers book with confidence across flights, hotels, Umrah journeys, and curated tours.",
             body:
                 "We focus on practical service, transparent pricing, and responsive support before and after booking. Our team works closely with travellers who need clear answers, dependable planning, and help when plans change.\n\nFrom family holidays to faith-based travel, we aim to keep the process simple and personal.",
             ctaLabel: "Explore packages",
@@ -209,11 +204,8 @@ export function defaultSitePagesSettings(): SitePagesSettings {
             title: "We'd love to hear from you",
             intro: "Our team is always here to answer your queries",
             phoneLabel: "Contact Us",
-            phoneValue: "042 111 266563",
             locationLabel: "Our Location",
-            locationValue: "1st Floor, NASTP, 69 Abid Majeed Road, Cantt",
             emailLabel: "Email Us",
-            emailValue: "contact@bookme.pk",
             fullNameLabel: "Full Name",
             fullNamePlaceholder: "Enter Full Name",
             emailFieldLabel: "Email Address",
@@ -257,7 +249,7 @@ export function defaultSitePagesSettings(): SitePagesSettings {
         },
         careers: {
             eyebrow: "Careers",
-            title: "Build the future of travel with Safar.",
+            title: "Build the future of travel with {brand}.",
             intro:
                 "We are looking for people who love problem solving, customer care, and travel.",
             body:
@@ -291,9 +283,9 @@ export function defaultSitePagesSettings(): SitePagesSettings {
             eyebrow: "Legal",
             title: "Terms and Conditions",
             intro:
-                "Review the terms that govern bookings, payments, cancellations, and use of Safar services.",
+                "Review the terms that govern bookings, payments, cancellations, and use of {brand} services.",
             body:
-                "These terms apply to all customers and cover eligibility, booking confirmations, fare and availability changes, supplier rules, and required traveler documents. Service fees, taxes, and surcharges may apply depending on product type and provider.\n\nYou are responsible for ensuring passport validity, visa requirements, and correct traveler information. Changes, cancellations, and no-show penalties are governed by supplier policies and may be non-refundable.\n\nSafar may update these terms to reflect regulatory, supplier, or operational changes. Continued use of the platform indicates acceptance of the updated terms.",
+                "These terms apply to all customers and cover eligibility, booking confirmations, fare and availability changes, supplier rules, and required traveler documents. Service fees, taxes, and surcharges may apply depending on product type and provider.\n\nYou are responsible for ensuring passport validity, visa requirements, and correct traveler information. Changes, cancellations, and no-show penalties are governed by supplier policies and may be non-refundable.\n\n{brand} may update these terms to reflect regulatory, supplier, or operational changes. Continued use of the platform indicates acceptance of the updated terms.",
             ctaLabel: "",
             ctaHref: "",
         },
@@ -301,7 +293,7 @@ export function defaultSitePagesSettings(): SitePagesSettings {
             eyebrow: "Legal",
             title: "Privacy Policy",
             intro:
-                "Learn how Safar collects, uses, stores, and protects customer information.",
+                "Learn how {brand} collects, uses, stores, and protects customer information.",
             body:
                 "We collect data needed to process bookings, verify identity, provide customer support, and meet legal or regulatory obligations. This may include contact details, traveler information, and payment identifiers.\n\nData is stored securely and shared only with relevant suppliers, payment processors, or authorities when required to fulfill your booking. We do not sell personal data.\n\nYou can request access, correction, or deletion of your data where permitted by law. Contact us for any privacy-related requests.",
             ctaLabel: "",
@@ -321,7 +313,7 @@ export function defaultSitePagesSettings(): SitePagesSettings {
             eyebrow: "Legal",
             title: "Cookie Policy",
             intro:
-                "Details on how Safar uses cookies and similar technologies.",
+                "Details on how {brand} uses cookies and similar technologies.",
             body:
                 "We use cookies to keep sessions secure, remember preferences, and improve performance. Analytics cookies help us understand site usage and improve the booking experience.\n\nYou can manage cookies in your browser settings. Disabling cookies may impact certain features or personalization.",
             ctaLabel: "",
@@ -330,7 +322,7 @@ export function defaultSitePagesSettings(): SitePagesSettings {
     };
 }
 
-export async function getStoredSitePagesSettings(): Promise<SitePagesSettings> {
+async function readSitePagesSettings(): Promise<SitePagesSettings> {
     const defaults = defaultSitePagesSettings();
 
     if (shouldBypassDatabase()) {
@@ -421,4 +413,28 @@ export async function saveStoredSitePagesSettings(
     });
 
     return payload;
+}
+
+function fillBrand<T>(value: T, brand: string): T {
+    if (typeof value === "string") {
+        return value.replace(/\{brand\}/g, brand) as T;
+    }
+    if (Array.isArray(value)) {
+        return value.map((item) => fillBrand(item, brand)) as T;
+    }
+    if (value && typeof value === "object") {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [key, fillBrand(item, brand)]),
+        ) as T;
+    }
+    return value;
+}
+
+/** Page content with `{brand}` replaced by the brand name from Admin → Settings → Brand. */
+export async function getStoredSitePagesSettings(): Promise<SitePagesSettings> {
+    const [settings, brand] = await Promise.all([
+        readSitePagesSettings(),
+        getStoredBrandSettings(),
+    ]);
+    return fillBrand(settings, brand.name);
 }

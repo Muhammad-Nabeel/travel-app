@@ -404,7 +404,6 @@ export function FlightResultCard({
                 className="h-full w-full object-contain"
                 width={48}
                 height={48}
-                unoptimized
               />
             </div>
           ) : (

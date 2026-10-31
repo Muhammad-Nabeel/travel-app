@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { BrandSettingsPanel } from "@/components/admin/brand-settings-panel";
+
 const EMPTY_FORM = {
   provider: "ga4" as "ga4" | "gtm",
   gtmContainerId: "",
@@ -26,8 +28,11 @@ const EMPTY_PAYMENT_FORM = {
 };
 
 const EMPTY_SUPPORT_FORM = {
+  email: "",
   mobileNumber: "",
   landlineNumber: "",
+  whatsappNumber: "",
+  address: "",
 };
 
 const EMPTY_BRANCH_FORM = {
@@ -65,6 +70,7 @@ type BranchRow = {
 };
 
 type SettingsPanel =
+  | "brand"
   | "ga4"
   | "pricing"
   | "payments"
@@ -171,10 +177,9 @@ export default function AdminSettingsPage() {
           enablePayAtBranch?: boolean;
         };
 
-        const supportJson = (await supportRes.json()) as {
-          mobileNumber?: string;
-          landlineNumber?: string;
-        };
+        const supportJson = (await supportRes.json()) as Partial<
+          typeof EMPTY_SUPPORT_FORM
+        >;
 
         const branchJson = (await branchRes.json()) as {
           branches?: BranchRow[];
@@ -198,10 +203,7 @@ export default function AdminSettingsPage() {
           enableCashOnDelivery: pricingJson.enableCashOnDelivery ?? true,
           enablePayAtBranch: pricingJson.enablePayAtBranch ?? true,
         });
-        setSupportForm({
-          mobileNumber: supportJson.mobileNumber ?? "",
-          landlineNumber: supportJson.landlineNumber ?? "",
-        });
+        setSupportForm({ ...EMPTY_SUPPORT_FORM, ...supportJson });
         setBranches(
           Array.isArray(branchJson.branches) ? branchJson.branches : [],
         );
@@ -377,16 +379,10 @@ export default function AdminSettingsPage() {
         throw new Error(json.error ?? "Failed to save support settings");
       }
 
-      const saved = (await res.json()) as {
-        mobileNumber?: string;
-        landlineNumber?: string;
-      };
+      const saved = (await res.json()) as Partial<typeof EMPTY_SUPPORT_FORM>;
 
-      setSupportForm({
-        mobileNumber: saved.mobileNumber ?? "",
-        landlineNumber: saved.landlineNumber ?? "",
-      });
-      setSupportMessage("Support contact settings saved successfully.");
+      setSupportForm({ ...EMPTY_SUPPORT_FORM, ...saved });
+      setSupportMessage("Contact details saved successfully.");
     } catch (err) {
       setSupportError(
         err instanceof Error ? err.message : "Failed to save support settings",
@@ -544,6 +540,17 @@ export default function AdminSettingsPage() {
           <div className="mt-3 space-y-2">
             <button
               type="button"
+              onClick={() => setActivePanel("brand")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "brand"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Brand
+            </button>
+            <button
+              type="button"
               onClick={() => setActivePanel("ga4")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "ga4"
@@ -595,7 +602,7 @@ export default function AdminSettingsPage() {
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
-              Support
+              Contact Details
             </button>
             <button
               type="button"
@@ -618,6 +625,8 @@ export default function AdminSettingsPage() {
             <p className="text-sm text-slate-500">
               Select any settings option from the left to start configuring.
             </p>
+          ) : activePanel === "brand" ? (
+            <BrandSettingsPanel />
           ) : activePanel === "ga4" ? (
             <div className="grid gap-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
@@ -1185,14 +1194,49 @@ export default function AdminSettingsPage() {
                 Support
               </p>
               <h2 className="mt-2 text-xl font-semibold text-blue-950">
-                Customer Support Contacts
+                Contact Details
               </h2>
               <p className="mt-1 text-sm text-blue-800/80">
-                Configure the single mobile and landline numbers shown in the
-                live support panel across the site.
+                Shown on the Contact Us page, the footer, the Arrange a Call
+                page and in search-engine business details.
               </p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Support Email
+                  </span>
+                  <input
+                    type="email"
+                    value={supportForm.email}
+                    onChange={(e) =>
+                      setSupportForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder="support@easytrip.com.pk"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">
+                    WhatsApp Number
+                  </span>
+                  <input
+                    value={supportForm.whatsappNumber}
+                    onChange={(e) =>
+                      setSupportForm((prev) => ({
+                        ...prev,
+                        whatsappNumber: e.target.value,
+                      }))
+                    }
+                    placeholder="+92 300 1234567"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                </label>
+
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-slate-600">
                     Mobile Number
@@ -1205,7 +1249,7 @@ export default function AdminSettingsPage() {
                         mobileNumber: e.target.value,
                       }))
                     }
-                    placeholder="+44 7933 837137"
+                    placeholder="+92 300 1234567"
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                   />
                 </label>
@@ -1223,6 +1267,23 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="+92 42 12345678"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1.5 sm:col-span-2">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Office Address
+                  </span>
+                  <input
+                    value={supportForm.address}
+                    onChange={(e) =>
+                      setSupportForm((prev) => ({
+                        ...prev,
+                        address: e.target.value,
+                      }))
+                    }
+                    placeholder="Office address shown on the Contact Us page"
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                   />
                 </label>
@@ -1246,7 +1307,7 @@ export default function AdminSettingsPage() {
                   disabled={supportSaving}
                   className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
                 >
-                  {supportSaving ? "Saving..." : "Save Support Contacts"}
+                  {supportSaving ? "Saving..." : "Save Contact Details"}
                 </button>
               </div>
             </div>

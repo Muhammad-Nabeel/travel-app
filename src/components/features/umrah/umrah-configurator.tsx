@@ -26,6 +26,7 @@ import {
   nightSplit,
   priceForConfig,
 } from "@/lib/umrah-pricing";
+import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -358,7 +359,7 @@ export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
       <section className="relative isolate" aria-label="Plan your Umrah">
         <div className="absolute inset-x-0 top-0 -z-10 h-[340px] overflow-hidden sm:h-[380px]">
           <Image
-            src="/images/hero-madinah.jpg"
+            src="/images/hero-madinah.webp"
             alt=""
             fill
             sizes="100vw"
@@ -648,6 +649,7 @@ export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
 
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-line bg-subtle px-6 py-16 text-center">
+            <EmptyStateImage slot="emptyPackages" />
             <p className="text-lg font-semibold text-foreground">No packages from this city yet</p>
             <p className="mt-1 text-sm text-muted">
               Try another departure city, or check back soon.

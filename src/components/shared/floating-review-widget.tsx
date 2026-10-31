@@ -4,6 +4,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import { MessageCircle, Star, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+import { useBrand } from "@/components/shared/brand-provider";
+
 const TRIP_TYPES = [
   "Umrah",
   "Family",
@@ -16,6 +18,7 @@ const TRIP_TYPES = [
 
 export function FloatingReviewWidget() {
   const pathname = usePathname();
+  const brand = useBrand();
   const [isOpen, setIsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -232,7 +235,7 @@ export function FloatingReviewWidget() {
         <div className="fixed bottom-24 right-4 z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">
-              Safar Travel Assistant
+              {brand.name} Travel Assistant
             </p>
             <button
               type="button"

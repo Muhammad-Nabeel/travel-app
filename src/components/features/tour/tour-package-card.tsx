@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Check, MapPin, Star } from "lucide-react";
 
@@ -21,12 +22,12 @@ export function TourPackageCard({
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised">
       <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-brand to-navy">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={pkg.image}
           alt={pkg.destination}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          fill
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition duration-300 group-hover:scale-[1.03]"
         />
         <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-foreground shadow-card">
           {pkg.tourType}

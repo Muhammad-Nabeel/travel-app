@@ -22,6 +22,8 @@ export type PackageRow = {
     startDate: string;
     endDate: string;
     status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+    seoTitle: string;
+    seoDescription: string;
     createdAt: string;
     updatedAt: string;
 };
@@ -53,6 +55,9 @@ export const DUMMY_PACKAGES: PackageRow[] = [
         startDate: "2026-04-10T00:00:00Z",
         endDate: "2026-04-20T00:00:00Z",
         status: "PUBLISHED",
+        seoTitle: "Ramadan Premium Umrah 2026 – 10 Nights",
+        seoDescription:
+            "10-night Ramadan Umrah from Lahore: 7 nights Makkah, 3 nights Madinah at Swissotel and Hilton. From SAR 8,950 per person. Departs 10 Apr 2026.",
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
     },
@@ -83,6 +88,9 @@ export const DUMMY_PACKAGES: PackageRow[] = [
         startDate: "2026-05-01T00:00:00Z",
         endDate: "2026-05-13T00:00:00Z",
         status: "PUBLISHED",
+        seoTitle: "Family Comfort Umrah 2026 – 12 Nights",
+        seoDescription:
+            "12-night family Umrah from Karachi: 8 nights Makkah, 4 nights Madinah at Mövenpick and Al Salam Royal. From SAR 7,200 per person. Departs 1 May 2026.",
         createdAt: "2026-01-05T00:00:00Z",
         updatedAt: "2026-01-05T00:00:00Z",
     },
@@ -116,6 +124,9 @@ export const DUMMY_PACKAGES: PackageRow[] = [
         startDate: "2026-04-25T00:00:00Z",
         endDate: "2026-05-02T00:00:00Z",
         status: "DRAFT",
+        seoTitle: "Economy Weekend Umrah – 7 Nights from Islamabad",
+        seoDescription:
+            "7-night Umrah from Islamabad: 5 nights Makkah, 2 nights Madinah at Dar Al Salam and Oberoi. From SAR 5,400 per person. Departs 25 Apr 2026.",
         createdAt: "2026-01-10T00:00:00Z",
         updatedAt: "2026-01-10T00:00:00Z",
     },
@@ -170,6 +181,8 @@ export async function GET(request: NextRequest) {
             startDate: r.startDate.toISOString(),
             endDate: r.endDate.toISOString(),
             status: r.status as PackageRow["status"],
+            seoTitle: r.seoTitle,
+            seoDescription: r.seoDescription,
             createdAt: r.createdAt.toISOString(),
             updatedAt: r.updatedAt.toISOString(),
         }));
@@ -221,6 +234,8 @@ export async function POST(request: NextRequest) {
                 startDate: new Date(data.startDate),
                 endDate: new Date(data.endDate),
                 status: data.status,
+                seoTitle: data.seoTitle,
+                seoDescription: data.seoDescription,
             },
         });
 

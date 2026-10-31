@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
@@ -28,6 +29,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   tips: "bg-orange-100 text-orange-700",
   news: "bg-slate-100 text-slate-600",
 };
+
+// Render each page on its first visit, then serve it from the ISR cache
+// (metadata lands in <head>; admin saves revalidate the site).
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,
@@ -168,12 +175,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             </div>
 
             <div className="relative overflow-hidden rounded-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={post.coverImageUrl}
                 alt={post.title}
-                className="w-full object-cover"
-                style={{ maxHeight: "400px" }}
+                width={1200}
+                height={630}
+                preload
+                sizes="(min-width: 1024px) 896px, 100vw"
+                className="h-auto max-h-100 w-full object-cover"
               />
             </div>
 

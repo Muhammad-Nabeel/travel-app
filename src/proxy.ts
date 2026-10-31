@@ -1,7 +1,46 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_ROLE = "ADMIN";
+
+// Public content APIs: anyone can read published items, only admins can change them.
+const ADMIN_CONTENT_APIS = [
+    "/api/packages",
+    "/api/destinations",
+    "/api/activities",
+    "/api/blog",
+    "/api/reviews",
+];
+
+function isContentApi(pathname: string) {
+    return ADMIN_CONTENT_APIS.some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
+}
+
+function requiresAdmin(req: NextRequest) {
+    const { pathname, searchParams } = req.nextUrl;
+
+    if (pathname.startsWith("/api/admin")) {
+        return true;
+    }
+
+    if (!isContentApi(pathname)) {
+        return false;
+    }
+
+    // Visitors submit reviews from the site widget; the route itself keeps them unpublished.
+    if (pathname === "/api/reviews" && req.method === "POST") {
+        return false;
+    }
+
+    if (req.method === "GET" || req.method === "HEAD") {
+        // `?all=true` includes drafts and unpublished items.
+        return searchParams.get("all") === "true";
+    }
+
+    return true;
+}
 
 export default withAuth(
     function proxy(req) {
@@ -9,13 +48,16 @@ export default withAuth(
         const token = req.nextauth.token;
         const role = typeof token?.role === "string" ? token.role : null;
 
-        const isAdminApi = pathname.startsWith("/api/admin");
+        const isApi = pathname.startsWith("/api/");
         const isAdminPage = pathname.startsWith("/admin");
 
         // API routes need JSON error responses instead of redirects.
-        // The authorized callback always returns true for /api/admin so the
+        // The authorized callback always returns true for /api so the
         // request reaches here even when unauthenticated.
-        if (isAdminApi) {
+        if (isApi) {
+            if (!requiresAdmin(req)) {
+                return NextResponse.next();
+            }
             if (!token) {
                 return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             }
@@ -34,11 +76,11 @@ export default withAuth(
     },
     {
         callbacks: {
-            // Pass API admin routes through unconditionally so the middleware
-            // function above can return the correct JSON error instead of a redirect.
+            // Pass API routes through unconditionally so the proxy function
+            // above can return the correct JSON error instead of a redirect.
             // All other protected routes require a valid JWT.
             authorized: ({ token, req }) =>
-                req.nextUrl.pathname.startsWith("/api/admin") ? true : !!token,
+                req.nextUrl.pathname.startsWith("/api/") ? true : !!token,
         },
         pages: {
             signIn: "/signin",
@@ -47,5 +89,14 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/admin/:path*", "/api/admin/:path*", "/dashboard/:path*"],
+    matcher: [
+        "/admin/:path*",
+        "/api/admin/:path*",
+        "/dashboard/:path*",
+        "/api/packages/:path*",
+        "/api/destinations/:path*",
+        "/api/activities/:path*",
+        "/api/blog/:path*",
+        "/api/reviews/:path*",
+    ],
 };

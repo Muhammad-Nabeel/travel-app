@@ -35,6 +35,7 @@ import {
   getTourPackageGallery,
   getTourPackagePath,
 } from "@/lib/tour-packages";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 
 type TourPackagePageProps = {
   params: Promise<{ id: string }>;
@@ -52,6 +53,12 @@ const TRUST_NOTES = [
 
 function packageDescription(pkg: TourPackage) {
   return `Explore ${pkg.destination} with our ${pkg.duration}-day ${pkg.title} itinerary featuring ${pkg.highlights.slice(0, 2).join(" and ")}.`;
+}
+
+// Render each page on its first visit, then serve it from the ISR cache
+// (metadata lands in <head>; admin saves revalidate the site).
+export async function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
@@ -94,6 +101,8 @@ export default async function TourPackageDetailsPage({
     notFound();
   }
 
+  const brand = await getStoredBrandSettings();
+
   const packagePath = getTourPackagePath(pkg.title);
   const fromPrice = `${pkg.currency} ${pkg.pricePerAdult.toLocaleString()}`;
   const related = tourPackageResults
@@ -126,7 +135,7 @@ export default async function TourPackageDetailsPage({
             itinerary: pkg.highlights,
             provider: {
               "@type": "TravelAgency",
-              name: "Safar Umrah",
+              name: brand.name,
             },
             offers: {
               "@type": "Offer",

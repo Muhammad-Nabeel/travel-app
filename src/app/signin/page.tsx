@@ -3,8 +3,10 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
+import { useBrand } from "@/components/shared/brand-provider";
 
 const DEFAULT_SIGN_IN_REDIRECT = "/auth/redirect";
 
@@ -17,6 +19,7 @@ function normalizeCallbackUrl(url: string | null): string {
 }
 
 function SignInForm() {
+  const brand = useBrand();
   const searchParams = useSearchParams();
   const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
   const verificationStatus = searchParams.get("verification");
@@ -68,10 +71,14 @@ function SignInForm() {
             href="/"
             className="flex items-center gap-2 text-black transition hover:opacity-80"
           >
-            <span className="rounded-full bg-sky-400 p-2.5 text-white shadow-sm">
-              <PlaneTakeoff className="size-5" />
-            </span>
-            <span className="display-font text-3xl leading-none">Safar</span>
+            {brand.assets.icon ? (
+              <Image src={brand.assets.icon} alt="" width={44} height={44} className="size-11 object-contain" />
+            ) : (
+              <span className="rounded-full bg-sky-400 p-2.5 text-white shadow-sm">
+                <PlaneTakeoff className="size-5" />
+              </span>
+            )}
+            <span className="display-font text-3xl leading-none">{brand.name}</span>
           </Link>
         </div>
 

@@ -184,6 +184,6 @@ export const tourPackageResults = [
         highlights: ["Shibuya crossing", "Mt. Fuji day trip", "Kyoto temples", "Hiroshima memorial"],
         rating: 4.9,
         reviews: 411,
-        image: "/tour-tokyo.jpg",
+        image: "/tour-tokyo.webp",
     },
 ];

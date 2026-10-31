@@ -23,11 +23,11 @@ const reasons = [
   },
 ];
 
-export function WhyBookSection() {
+export function WhyBookSection({ brandName }: { brandName: string }) {
   return (
-    <section className="section-shell py-12 md:py-16" aria-label="Why book with Safar">
+    <section className="section-shell py-12 md:py-16" aria-label={`Why book with ${brandName}`}>
       <h2 className="mb-8 text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
-        Why book with Safar
+        Why book with {brandName}
       </h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {reasons.map(({ icon: Icon, title, body }) => (

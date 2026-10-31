@@ -5,12 +5,14 @@ const { PrismaClient } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 
 const { Pool } = require("pg");
-const rawUrl = (process.env.DIRECT_URL || process.env.DATABASE_URL || "")
+const bcrypt = require("bcryptjs");
+const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || "";
+const rawUrl = connectionUrl
   .replace(/[?&]sslmode=[^&]*/g, "")
   .replace(/[?&]pgbouncer=true/g, "");
 const pool = new Pool({
   connectionString: rawUrl,
-  ssl: { rejectUnauthorized: false },
+  ssl: /[?&]sslmode=disable\b/.test(connectionUrl) ? false : { rejectUnauthorized: false },
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({
@@ -860,10 +862,123 @@ const UMRAH_PACKAGES_SEED = [
   },
 ];
 
+// Default admin login. Override with ADMIN_EMAIL / ADMIN_PASSWORD; change the password before go-live.
+const DEFAULT_ADMIN_EMAIL = "support@easytrip.com.pk";
+const DEFAULT_ADMIN_PASSWORD = "BOEING777100ER";
+
+async function ensureDefaultAdmin() {
+  const email = (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).toLowerCase().trim();
+  const password = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, passwordHash: true },
+  });
+
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        name: "EasyTrip Admin",
+        email,
+        passwordHash: await bcrypt.hash(password, 12),
+        role: "ADMIN",
+        emailVerifiedAt: new Date(),
+      },
+    });
+    console.log(`👤 Created admin ${email}`);
+    return;
+  }
+
+  // Never overwrite a password that was changed after the first seed.
+  await prisma.user.update({
+    where: { email },
+    data: {
+      role: "ADMIN",
+      emailVerifiedAt: new Date(),
+      ...(existing.passwordHash ? {} : { passwordHash: await bcrypt.hash(password, 12) }),
+    },
+  });
+  console.log(`👤 Ensured ${email} is an admin`);
+}
+
+// SEO copy for seeded rows. Same wording as src/lib/seo-suggestions.ts
+// (titles fit 60 characters with " | EasyTrip"; descriptions max 160).
+const SEO_TITLE_BUDGET = 60 - " | EasyTrip".length;
+const fitSeoTitle = (...candidates) =>
+  candidates.find((t) => t.length <= SEO_TITLE_BUDGET) ?? candidates[candidates.length - 1];
+const fitSeoDescription = (value) => {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length <= 160 ? compact : `${compact.slice(0, 159).trimEnd()}…`;
+};
+const stripStop = (value) => value.trim().replace(/[.!?]$/, "");
+
+function destinationSeo(d) {
+  const lead = d.tagline ? stripStop(d.tagline) : `Plan your trip to ${d.city}, ${d.country}`;
+  const fare = d.fare ? ` Flights from Pakistan from ${d.fare}.` : "";
+  return {
+    seoTitle: fitSeoTitle(
+      `${d.city} Travel Guide – Best Time, Tips & Flights`,
+      `${d.city} Travel Guide – Best Time & Tips`,
+      `${d.city} Travel Guide`,
+    ),
+    seoDescription: fitSeoDescription(
+      `${lead}. Best time to visit ${d.city}, how long to stay, local tips and things to do.${fare}`,
+    ),
+  };
+}
+
+function activitySeo(a, city) {
+  const first = a.description
+    ? stripStop(a.description.split(/(?<=[.!?])\s/)[0])
+    : `Discover ${a.title} in ${city}`;
+  return {
+    seoTitle: fitSeoTitle(`${a.title} in ${city} – Tickets & Prices`, `${a.title} – Tickets & Prices`, a.title),
+    seoDescription: fitSeoDescription(
+      `${first}. From ${a.cost}. Check what's included and book with a EasyTrip travel adviser.`,
+    ),
+  };
+}
+
+function umrahSeo(p) {
+  const nights = p.makkahNights + p.madinahNights;
+  const departs = p.startDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const hotel = p.hotelSummary ? ` ${stripStop(p.hotelSummary)}.` : "";
+  const price = ` From ${p.currency} ${Math.round(p.basePrice).toLocaleString("en-GB")} per person.`;
+  return {
+    seoTitle: fitSeoTitle(
+      `${p.title} – ${nights} Nights from ${p.departureCity}`,
+      /umrah/i.test(p.title) ? `${p.title} – ${nights} Nights` : `${p.title} – ${nights}-Night Umrah`,
+      p.title,
+    ),
+    seoDescription: fitSeoDescription(
+      `${nights}-night Umrah from ${p.departureCity}: ${p.makkahNights} nights Makkah, ` +
+        `${p.madinahNights} nights Madinah.${hotel}${price} Departs ${departs}.`,
+    ),
+  };
+}
+
 async function main() {
   console.log("🌱 Starting database seed...");
 
+  if (process.argv.includes("--admin-only")) {
+    try {
+      await ensureDefaultAdmin();
+    } catch (error) {
+      console.error("❌ Error creating admin:", error);
+      process.exit(1);
+    } finally {
+      await prisma.$disconnect();
+    }
+    return;
+  }
+
   try {
+    await ensureDefaultAdmin();
+
     // Clear existing blog posts
     await prisma.blogPost.deleteMany({});
     console.log("✨ Cleared existing blog posts");
@@ -877,7 +992,9 @@ async function main() {
 
     const destinationCount = await prisma.destination.count();
     if (destinationCount === 0) {
-      await prisma.destination.createMany({ data: DESTINATIONS_SEED });
+      await prisma.destination.createMany({
+        data: DESTINATIONS_SEED.map((d) => ({ ...d, ...destinationSeo(d) })),
+      });
       console.log("🧭 Seeded destinations");
     }
 
@@ -890,10 +1007,29 @@ async function main() {
         destinationRows.map((dest) => [dest.city, dest.id]),
       );
 
+      // Same slug rules as src/lib/activity-slug.ts.
+      const usedSlugs = new Set();
+      const activitySlug = (title, city) => {
+        const base =
+          `${title} ${city}`
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 80) || "activity";
+        let slug = base;
+        for (let n = 2; usedSlugs.has(slug); n += 1) slug = `${base}-${n}`;
+        usedSlugs.add(slug);
+        return slug;
+      };
+
       const activitiesToCreate = ACTIVITIES_SEED.map((activity) => {
         const destinationId = destinationMap.get(activity.destinationCity);
         if (!destinationId) return null;
         return {
+          slug: activitySlug(activity.title, activity.destinationCity),
           destinationId,
           title: activity.title,
           category: activity.category,
@@ -904,6 +1040,7 @@ async function main() {
           reviewCount: activity.reviewCount,
           sortOrder: activity.sortOrder,
           isActive: activity.isActive,
+          ...activitySeo(activity, activity.destinationCity),
         };
       }).filter(Boolean);
 
@@ -915,6 +1052,7 @@ async function main() {
 
     // Umrah packages — upsert so re-running seed is safe
     for (const pkg of UMRAH_PACKAGES_SEED) {
+      const seo = umrahSeo(pkg);
       await prisma.umrahPackage.upsert({
         where: { slug: pkg.slug },
         update: {
@@ -934,8 +1072,9 @@ async function main() {
           startDate: pkg.startDate,
           endDate: pkg.endDate,
           status: pkg.status,
+          ...seo,
         },
-        create: pkg,
+        create: { ...pkg, ...seo },
       });
     }
     console.log(`🕌 Seeded ${UMRAH_PACKAGES_SEED.length} umrah packages`);

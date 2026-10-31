@@ -29,41 +29,20 @@ export default async function UserDashboardPage() {
 
   const userId = sessionUser.id;
 
-  const [flightAndHotelBookings, packageBookings] = await Promise.all([
-    prisma.booking.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        reference: true,
-        status: true,
-        provider: true,
-        totalAmount: true,
-        currency: true,
-        createdAt: true,
-      },
-      take: 50,
-    }),
-    prisma.packageBooking.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        status: true,
-        totalAmount: true,
-        createdAt: true,
-        package: {
-          select: {
-            title: true,
-          },
-        },
-      },
-      take: 50,
-    }),
-  ]);
-
-  const hasBookings =
-    flightAndHotelBookings.length > 0 || packageBookings.length > 0;
+  const bookings = await prisma.booking.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      reference: true,
+      type: true,
+      status: true,
+      totalAmount: true,
+      currency: true,
+      createdAt: true,
+    },
+    take: 50,
+  });
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -79,7 +58,7 @@ export default async function UserDashboardPage() {
         </p>
       </section>
 
-      {!hasBookings ? (
+      {bookings.length === 0 ? (
         <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">
             No bookings yet
@@ -98,10 +77,10 @@ export default async function UserDashboardPage() {
         </section>
       ) : null}
 
-      {flightAndHotelBookings.length > 0 ? (
+      {bookings.length > 0 ? (
         <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">
-            Flight and Hotel Bookings
+            My Bookings
           </h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-170 text-left text-sm">
@@ -109,13 +88,13 @@ export default async function UserDashboardPage() {
                 <tr>
                   <th className="px-2 py-3 font-medium">Reference</th>
                   <th className="px-2 py-3 font-medium">Status</th>
-                  <th className="px-2 py-3 font-medium">Provider</th>
+                  <th className="px-2 py-3 font-medium">Type</th>
                   <th className="px-2 py-3 font-medium">Amount</th>
                   <th className="px-2 py-3 font-medium">Created</th>
                 </tr>
               </thead>
               <tbody>
-                {flightAndHotelBookings.map((booking) => (
+                {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-slate-100">
                     <td className="px-2 py-3 font-medium text-slate-900">
                       {booking.reference}
@@ -124,10 +103,10 @@ export default async function UserDashboardPage() {
                       {booking.status}
                     </td>
                     <td className="px-2 py-3 text-slate-700">
-                      {booking.provider}
+                      {booking.type}
                     </td>
                     <td className="px-2 py-3 text-slate-700">
-                      {booking.totalAmount.toString()} {booking.currency}
+                      {booking.totalAmount?.toString() ?? "-"} {booking.currency}
                     </td>
                     <td className="px-2 py-3 text-slate-700">
                       {booking.createdAt.toLocaleString()}
@@ -140,43 +119,6 @@ export default async function UserDashboardPage() {
         </section>
       ) : null}
 
-      {packageBookings.length > 0 ? (
-        <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Package Bookings
-          </h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-170 text-left text-sm">
-              <thead className="border-b border-slate-200 text-slate-500">
-                <tr>
-                  <th className="px-2 py-3 font-medium">Package</th>
-                  <th className="px-2 py-3 font-medium">Status</th>
-                  <th className="px-2 py-3 font-medium">Amount</th>
-                  <th className="px-2 py-3 font-medium">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {packageBookings.map((booking) => (
-                  <tr key={booking.id} className="border-b border-slate-100">
-                    <td className="px-2 py-3 font-medium text-slate-900">
-                      {booking.package.title}
-                    </td>
-                    <td className="px-2 py-3 text-slate-700">
-                      {booking.status}
-                    </td>
-                    <td className="px-2 py-3 text-slate-700">
-                      {booking.totalAmount.toString()} SAR
-                    </td>
-                    <td className="px-2 py-3 text-slate-700">
-                      {booking.createdAt.toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

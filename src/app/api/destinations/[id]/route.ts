@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { prisma } from "@/lib/db";
 import { destinationSchema } from "@/lib/validations/destination";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 function toSlug(value: string) {
     return value
@@ -95,8 +96,11 @@ export async function PUT(
                 gradient: validatedData.gradient,
                 sortOrder: validatedData.sortOrder,
                 isActive: validatedData.isActive,
+                seoTitle: validatedData.seoTitle,
+                seoDescription: validatedData.seoDescription,
             },
         });
+        revalidatePublicSite();
         return NextResponse.json(destination, { status: 200 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {
@@ -128,6 +132,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         await prisma.destination.delete({ where: { id } });
+        revalidatePublicSite();
         return NextResponse.json({ ok: true });
     } catch (err) {
         if (err instanceof Error) {

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import type { SeoSettings } from "@/lib/admin-settings/seo-settings";
+import { useBrand } from "@/components/shared/brand-provider";
+import { MediaUrlInput } from "@/components/admin/media-picker";
 import {
   applySeoTokens,
   fullTitleLength,
@@ -57,11 +59,16 @@ function SeoPageCard({
   value: SeoSettings["pages"][StaticPageKey];
   onChange: (field: "title" | "description", nextValue: string) => void;
 }) {
+  const { name: brandName } = useBrand();
   const defaults = STATIC_PAGE_SEO[pageKey];
   const absolute = Boolean(defaults.absolute);
-  const title = applySeoTokens(value.title || defaults.title);
-  const description = applySeoTokens(value.description || defaults.description);
-  const shownTitle = absolute ? title : `${title} | Safar Umrah`;
+  const title = applySeoTokens(value.title || defaults.title, new Date(), brandName);
+  const description = applySeoTokens(
+    value.description || defaults.description,
+    new Date(),
+    brandName,
+  );
+  const shownTitle = absolute ? title : `${title} | ${brandName}`;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -77,7 +84,7 @@ function SeoPageCard({
           <span className="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span>
               Search title{" "}
-              {absolute ? "(shown exactly)" : "(“ | Safar Umrah” is added)"}
+              {absolute ? "(shown exactly)" : `(“ | ${brandName}” is added)`}
             </span>
             <LengthHint
               length={fullTitleLength(title, absolute)}
@@ -255,18 +262,17 @@ export default function AdminSeoPage() {
                   className={inputClass}
                 />
               </label>
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Logo URL (https)
                 </span>
-                <input
+                <MediaUrlInput
                   value={form.organization.logoUrl}
-                  onChange={(event) =>
-                    updateOrganization("logoUrl", event.target.value)
-                  }
-                  className={inputClass}
+                  onChange={(url) => updateOrganization("logoUrl", url)}
+                  folder="website-logo"
+                  inputClassName={inputClass}
                 />
-              </label>
+              </div>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-slate-600">
                   Customer service phone

@@ -1,5 +1,7 @@
+import { SITE_NAME } from "@/lib/seo";
+
 // Default search titles and descriptions for every static route.
-// Titles are the page part only; the root layout appends " | Safar Umrah"
+// Titles are the page part only; the root layout appends " | <brand>"
 // unless `absolute` is set. Keep titles <= 60 characters including that
 // suffix and descriptions between 120 and 160 characters (enforced by
 // src/lib/__tests__/seo-copy.test.ts). Admins can override any entry from
@@ -41,7 +43,7 @@ export const STATIC_PAGE_SEO: Record<StaticPageKey, StaticPageSeo> = {
     home: {
         label: "Homepage",
         path: "/",
-        title: "Safar Umrah | Umrah Packages, Flights & Visas from Pakistan",
+        title: "{brand} | Umrah Packages, Flights & Visas from Pakistan",
         description:
             "Book Umrah packages, cheap flights and visa services from Pakistan. Compare hotels near the Haram, pay in instalments or at a branch, and get expert support.",
         absolute: true,
@@ -100,21 +102,21 @@ export const STATIC_PAGE_SEO: Record<StaticPageKey, StaticPageSeo> = {
         path: "/about-us",
         title: "About Us – Trusted Umrah & Travel Agency",
         description:
-            "Meet the team behind Safar Umrah. We help pilgrims, families and holidaymakers plan flights, Umrah packages, visas and tours with clear, honest advice.",
+            "Meet the team behind {brand}. We help pilgrims, families and holidaymakers plan flights, Umrah packages, visas and tours with clear, honest advice.",
     },
     contactUs: {
         label: "Contact Us",
         path: "/contact-us",
         title: "Contact Us – Call, WhatsApp or Visit a Branch",
         description:
-            "Speak to a travel adviser by phone or WhatsApp, email us, or visit a branch. See opening hours and addresses for every Safar Umrah office.",
+            "Speak to a travel adviser by phone or WhatsApp, email us, or visit a branch. See opening hours and addresses for every {brand} office.",
     },
     arrangeCall: {
         label: "Arrange a Call",
         path: "/arrange-a-call",
         title: "Request a Callback from a Travel Expert",
         description:
-            "Leave your number and a Safar Umrah adviser will call you back to plan your Umrah, flights or holiday. Free advice with no obligation to book.",
+            "Leave your number and a {brand} adviser will call you back to plan your Umrah, flights or holiday. Free advice with no obligation to book.",
     },
     faq: {
         label: "FAQ",
@@ -128,39 +130,39 @@ export const STATIC_PAGE_SEO: Record<StaticPageKey, StaticPageSeo> = {
         path: "/careers",
         title: "Careers – Join Our Travel Team",
         description:
-            "Explore open roles at Safar Umrah, from travel consultants to operations. Help pilgrims and travellers plan journeys that matter.",
+            "Explore open roles at {brand}, from travel consultants to operations. Help pilgrims and travellers plan journeys that matter.",
     },
     termsConditions: {
         label: "Terms & Conditions",
         path: "/terms-conditions",
         title: "Terms & Conditions",
         description:
-            "Booking terms for flights, Umrah packages, visas and tours with Safar Umrah, including payments, changes, liability and passenger responsibilities.",
+            "Booking terms for flights, Umrah packages, visas and tours with {brand}, including payments, changes, liability and passenger responsibilities.",
     },
     privacyPolicy: {
         label: "Privacy Policy",
         path: "/privacy-policy",
         title: "Privacy Policy",
         description:
-            "How Safar Umrah collects, uses and protects your personal data, including passport details, payment information and marketing preferences.",
+            "How {brand} collects, uses and protects your personal data, including passport details, payment information and marketing preferences.",
     },
     refundPolicy: {
         label: "Refund Policy",
         path: "/refund-policy",
         title: "Refund & Cancellation Policy",
         description:
-            "Cancellation charges, refund timelines and airline or hotel rules that apply to Safar Umrah flights, Umrah packages, visas and tours.",
+            "Cancellation charges, refund timelines and airline or hotel rules that apply to {brand} flights, Umrah packages, visas and tours.",
     },
     cookiePolicy: {
         label: "Cookie Policy",
         path: "/cookie-policy",
         title: "Cookie Policy",
         description:
-            "Which cookies Safar Umrah uses for analytics, preferences and essential site functions, and how to manage or withdraw your consent.",
+            "Which cookies {brand} uses for analytics, preferences and essential site functions, and how to manage or withdraw your consent.",
     },
 };
 
-export const TITLE_SUFFIX_LENGTH = " | Safar Umrah".length;
+export const TITLE_SUFFIX_LENGTH = ` | ${SITE_NAME}`.length;
 export const MAX_TITLE_LENGTH = 60;
 export const MIN_DESCRIPTION_LENGTH = 120;
 export const MAX_DESCRIPTION_LENGTH = 160;
@@ -174,8 +176,11 @@ export function seasonYear(now = new Date()) {
     return now.getUTCMonth() >= 10 ? year + 1 : year;
 }
 
-export function applySeoTokens(value: string, now = new Date()) {
-    return value.replace(/\{year\}/g, String(seasonYear(now)));
+/** Replaces `{year}` with the booking season and `{brand}` with the brand name. */
+export function applySeoTokens(value: string, now = new Date(), brand = SITE_NAME) {
+    return value
+        .replace(/\{year\}/g, String(seasonYear(now)))
+        .replace(/\{brand\}/g, brand);
 }
 
 export function fullTitleLength(title: string, absolute = false) {

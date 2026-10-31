@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { destinationSchema } from "@/lib/validations/destination";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export type DestinationRow = {
     id: string;
@@ -26,6 +27,8 @@ export type DestinationRow = {
     gradient: string;
     sortOrder: number;
     isActive: boolean;
+    seoTitle: string;
+    seoDescription: string;
 };
 
 function toSlug(value: string) {
@@ -118,8 +121,11 @@ export async function POST(request: NextRequest) {
                 gradient: validatedData.gradient,
                 sortOrder: validatedData.sortOrder,
                 isActive: validatedData.isActive,
+                seoTitle: validatedData.seoTitle,
+                seoDescription: validatedData.seoDescription,
             },
         });
+        revalidatePublicSite();
         return NextResponse.json(destination, { status: 201 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {

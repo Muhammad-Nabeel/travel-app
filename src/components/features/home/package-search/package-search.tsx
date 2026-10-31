@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { HeroBackdrop } from "@/components/shared/hero-backdrop";
 import styles from "./package-search.module.css";
 
 export type TourType =
@@ -264,6 +265,7 @@ export function PackageSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Tour package search engine"
     >
+      {isHero ? <HeroBackdrop src="/images/hero-flight.webp" /> : null}
 
       <div
         className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}

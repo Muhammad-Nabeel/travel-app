@@ -22,7 +22,7 @@ function toNumber(value: unknown, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function buildUserName(payload: BookingPayload) {
+function buildCustomerName(payload: BookingPayload) {
     const firstPassenger = payload.passengers?.[0];
     const first = firstPassenger?.firstName?.trim() ?? "";
     const last = firstPassenger?.lastName?.trim() ?? "";
@@ -121,28 +121,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const contactEmail = payload.contact.email?.trim();
-        const safeEmail =
-            contactEmail && contactEmail.includes("@")
-                ? contactEmail
-                : `guest.${Date.now()}@aim.local`;
-
-        let user = await prisma.user.findUnique({
-            where: { email: safeEmail },
-            select: { id: true },
-        });
-
-        if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    name: buildUserName(payload),
-                    email: safeEmail,
-                    phone: payload.contact.phone?.trim() || null,
-                    role: "CUSTOMER",
-                },
+        const trimmedEmail = payload.contact.email?.trim();
+        const contactEmail =
+            trimmedEmail && trimmedEmail.includes("@") ? trimmedEmail : null;
+        const user = contactEmail
+            ? await prisma.user.findUnique({
+                where: { email: contactEmail },
                 select: { id: true },
-            });
-        }
+            })
+            : null;
 
         let selectedBranch:
             | {
@@ -202,12 +189,17 @@ export async function POST(request: NextRequest) {
         const created = await prisma.booking.create({
             data: {
                 reference,
-                userId: user.id,
+                type: "FLIGHT",
+                channel: "CHECKOUT",
                 status: "PENDING",
+                userId: user?.id ?? null,
+                customerName: buildCustomerName(payload),
+                customerEmail: contactEmail,
+                customerPhone: payload.contact.phone?.trim() || null,
                 provider: "INTERNAL",
                 totalAmount: new Prisma.Decimal(totalAmount),
                 currency: payload.offer.currency || "PKR",
-                flightData: {
+                payload: {
                     offer: payload.offer,
                     query: payload.query,
                     passengers: payload.passengers,

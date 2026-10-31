@@ -35,7 +35,7 @@ export default async function Home() {
             description: seo.description,
             path: "/",
           }),
-          createWebsiteSchema(),
+          createWebsiteSchema(seo.siteName),
           organizationJsonLd,
         ]}
       />
@@ -48,7 +48,7 @@ export default async function Home() {
 
       <ActivitiesSlider />
 
-      <WhyBookSection />
+      <WhyBookSection brandName={seo.siteName} />
 
       <CustomerReviewsSection />
 

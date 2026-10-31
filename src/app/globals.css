@@ -135,6 +135,22 @@ body {
   width: min(1200px, calc(100% - 2rem));
 }
 
+/* Darkens the hero photo for legible text and fades its bottom edge into the page. */
+.hero-backdrop-overlay {
+  background-image:
+    linear-gradient(
+      180deg,
+      transparent calc(100% - var(--hero-fade, 120px)),
+      var(--bg) calc(100% - var(--hero-fade, 120px))
+    ),
+    linear-gradient(
+      180deg,
+      rgba(12, 18, 40, 0.55) 0%,
+      rgba(12, 18, 40, 0.3) 55%,
+      rgba(12, 18, 40, 0.1) 100%
+    );
+}
+
 .hero-grid {
   background-image:
     linear-gradient(rgba(22, 104, 227, 0.06) 1px, transparent 1px),
