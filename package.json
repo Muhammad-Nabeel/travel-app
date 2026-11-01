@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3004",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "next start --port 3004",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:restart": "npm run docker:down && npm run docker:up",
@@ -18,7 +18,10 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "db:admin": "node prisma/seed.js --admin-only",
+    "package:webhostmost": "bash scripts/package-webhostmost.sh",
+    "package:webhostmost:npm": "bash scripts/package-webhostmost-npm.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1030.0",
@@ -40,6 +43,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.10.0",
+    "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

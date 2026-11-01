@@ -69,7 +69,7 @@ npm run prisma:deploy
 npm run dev
 ```
 
-7. Open http://localhost:3000 in your browser.
+7. Open http://localhost:3004 in your browser.
 
 ## Logo Management (Firebase)
 

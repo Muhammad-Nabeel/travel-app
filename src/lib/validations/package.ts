@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { seoFields } from "@/lib/validations/seo";
+
 export const packageSchema = z.object({
     title: z
         .string()
@@ -63,6 +65,7 @@ export const packageSchema = z.object({
     status: z
         .enum(["DRAFT", "PUBLISHED", "ARCHIVED"])
         .default("DRAFT"),
+    ...seoFields,
 });
 
 export type PackageInput = z.infer<typeof packageSchema>;

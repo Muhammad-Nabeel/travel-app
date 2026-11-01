@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Serif_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Suspense } from "react";
-import Loading from "./loading";
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
+import { SiteFooter } from "@/components/shared/site-footer";
+import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
+import { getPublicBrand } from "@/lib/admin-settings/brand-settings";
+import { BrandProvider } from "@/components/shared/brand-provider";
+import { LiveFaresProvider } from "@/components/shared/live-fares-provider";
+import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 import { Ga4Loader } from "@/components/analytics/ga4-loader";
 import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
@@ -12,8 +16,6 @@ import {
   getSiteUrl,
   resolveImageUrl,
   SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_TITLE_TEMPLATE,
 } from "@/lib/seo";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -21,25 +23,43 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
-const cormorantGaramond = Cormorant_Garamond({
-  variable: "--font-cormorant-garamond",
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-dm-serif-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "400",
 });
 
-export const metadata: Metadata = {
+// Public pages read packages, posts and SEO settings from the database. Without
+// this they would be prerendered once at build time and admin edits would not
+// appear until the next deploy. Re-render at most every 5 minutes (ISR);
+// the SEO settings route also revalidates on save.
+export const revalidate = 300;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { name, assets } = await getPublicBrand();
+  // Favicon uploaded in Admin → Media → Brand & Icons, else public/favicon.ico.
+  const icon = assets.icon ?? "/favicon.ico";
+
+  return {
   metadataBase: getSiteUrl(),
+  icons: { icon, apple: assets.icon },
   title: {
-    default: SITE_NAME,
-    template: SITE_TITLE_TEMPLATE,
+    default: name,
+    template: `%s | ${name}`,
   },
   description: SITE_DESCRIPTION,
-  applicationName: SITE_NAME,
-  alternates: {
-    canonical: "/",
+  applicationName: name,
+  // No root canonical: every indexable page sets its own via buildMetadata().
+  // A canonical here would be inherited by pages that forget to set one and
+  // tell Google they are duplicates of the homepage.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
   },
   keywords: [
-    "Safar Umrah",
+    name,
     "Umrah packages",
     "flight booking",
     "travel planning",
@@ -48,9 +68,9 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    title: SITE_NAME,
+    title: name,
     description: SITE_DESCRIPTION,
-    siteName: SITE_NAME,
+    siteName: name,
     locale: "en_GB",
     url: "/",
     images: [
@@ -58,13 +78,13 @@ export const metadata: Metadata = {
         url: resolveImageUrl(),
         width: 1200,
         height: 630,
-        alt: SITE_NAME,
+        alt: name,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: name,
     description: SITE_DESCRIPTION,
     images: [resolveImageUrl()],
   },
@@ -76,28 +96,42 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
-};
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [brand, contact, sabreSettings] = await Promise.all([
+    getPublicBrand(),
+    getStoredSupportContactSettings(),
+    getActiveSabreSettings(),
+  ]);
+
   return (
     <html
       lang="en"
       data-theme="corporate"
-      className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${dmSerifDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>
+          <BrandProvider brand={brand}>
+          <LiveFaresProvider enabled={sabreSettings !== null}>
           <Ga4Loader />
           <ConditionalNavbar />
-          <main className="w-full flex-1">
-            <Suspense fallback={<Loading />}>{children}</Suspense>
-          </main>
+          {/* No root Suspense/loading.tsx: a spinner fallback let the footer paint
+              first and then jump down when the page streamed in (CLS ~0.8).
+              Slow routes add their own page-shaped loading.tsx instead. */}
+          <main className="w-full flex-1">{children}</main>
           <FloatingReviewWidget />
-          <ConditionalFooter />
+          <ConditionalFooter>
+            <SiteFooter brand={brand} contact={contact} />
+          </ConditionalFooter>
+          </LiveFaresProvider>
+          </BrandProvider>
         </AuthSessionProvider>
       </body>
     </html>

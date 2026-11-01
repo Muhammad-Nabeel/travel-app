@@ -17,9 +17,11 @@ export type SourceBreakdown = {
 
 export type AdminAnalyticsData = {
     configured: boolean;
-    source: "ga4" | "fallback";
+    source: "ga4" | "unavailable";
+    /** Bar heights in percent per hour; empty when GA4 data is unavailable. */
     durationBars: number[];
-    kpis: AdminKpis;
+    /** Null when GA4 data is unavailable. */
+    kpis: AdminKpis | null;
     sources: SourceBreakdown[];
     errorReason?: string;
 };
@@ -38,25 +40,13 @@ type ResolvedGa4Config = {
 
 type Ga4ConnectionOverrides = Partial<ResolvedGa4Config>;
 
-function fallbackAnalyticsData(errorReason?: string): AdminAnalyticsData {
+export function unavailableAnalyticsData(errorReason: string): AdminAnalyticsData {
     return {
         configured: false,
-        source: "fallback",
-        durationBars: Array.from({ length: 30 }, (_, i) =>
-            Math.max(12, 92 - i * 2),
-        ),
-        kpis: {
-            visitors: 43883,
-            sessions: 61520,
-            uniqueVisitors: 36740,
-            avgSessionTime: "04:12",
-        },
-        sources: [
-            { label: "Direct", color: "#17c8b5", percent: 48 },
-            { label: "Social", color: "#9f36f2", percent: 26 },
-            { label: "Search", color: "#3b43ff", percent: 16 },
-            { label: "Email", color: "#f4b83f", percent: 10 },
-        ],
+        source: "unavailable",
+        durationBars: [],
+        kpis: null,
+        sources: [],
         errorReason,
     };
 }
@@ -176,12 +166,13 @@ async function fetchGa4AnalyticsData(
             row.metricValues?.[0]?.value ?? "0",
         );
     });
-    const maxBucket = Math.max(...durationBuckets, 1);
-    const durationBars = durationBuckets.map((value) =>
-        Math.max(12, Math.round((value / maxBucket) * 86)),
-    );
+    const maxBucket = Math.max(...durationBuckets);
+    const durationBars =
+        maxBucket > 0
+            ? durationBuckets.map((value) => Math.round((value / maxBucket) * 100))
+            : [];
 
-    const sourceColors = ["#17c8b5", "#9f36f2", "#3b43ff", "#f4b83f"];
+    const sourceColors = ["#1e426f", "#191e3b", "#b8913a", "#227950"];
     const sourceRows = sourceResponse.data.rows ?? [];
     const totalSourceSessions = sourceRows.reduce(
         (acc, row) => acc + parseNumber(row.metricValues?.[0]?.value ?? "0"),
@@ -189,21 +180,21 @@ async function fetchGa4AnalyticsData(
     );
 
     const sources =
-        sourceRows.length > 0 && totalSourceSessions > 0
+        totalSourceSessions > 0
             ? sourceRows.map((row, index) => {
                 const sessionsForSource = parseNumber(row.metricValues?.[0]?.value ?? "0");
                 const source = row.dimensionValues?.[0]?.value || "Unknown";
                 const medium = row.dimensionValues?.[1]?.value || "";
                 return {
                     label: `${source}${medium ? ` / ${medium}` : ""}`,
-                    color: sourceColors[index] ?? "#9ca3af",
+                    color: sourceColors[index] ?? "#5f6377",
                     percent: Math.max(
                         1,
                         Math.round((sessionsForSource / totalSourceSessions) * 100),
                     ),
                 };
             })
-            : fallbackAnalyticsData().sources;
+            : [];
 
     const minutes = Math.floor(avgSessionSeconds / 60);
     const seconds = Math.floor(avgSessionSeconds % 60)
@@ -213,7 +204,7 @@ async function fetchGa4AnalyticsData(
     return {
         configured: true,
         source: "ga4",
-        durationBars: durationBars.length > 0 ? durationBars : fallbackAnalyticsData().durationBars,
+        durationBars,
         kpis: {
             visitors,
             sessions,
@@ -270,8 +261,8 @@ export async function getAdminAnalyticsData(): Promise<AdminAnalyticsData> {
     const configured = hasRequiredGa4Config(config);
 
     if (!configured) {
-        return fallbackAnalyticsData(
-            "GA4 credentials are incomplete. Showing fallback analytics.",
+        return unavailableAnalyticsData(
+            "GA4 is not connected. Add the Property ID, Service Account Email and Private Key in Settings to see analytics.",
         );
     }
 
@@ -279,8 +270,6 @@ export async function getAdminAnalyticsData(): Promise<AdminAnalyticsData> {
         return await fetchGa4AnalyticsData(config);
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown GA4 fetch error.";
-        return fallbackAnalyticsData(
-            `GA4 request failed: ${message}. Showing fallback analytics.`,
-        );
+        return unavailableAnalyticsData(`GA4 request failed: ${message}`);
     }
 }

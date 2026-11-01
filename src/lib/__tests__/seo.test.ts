@@ -52,20 +52,20 @@ describe("toMetaDescription", () => {
         expect(toMetaDescription(text)).toBe("Short description.");
     });
 
-    it("truncates and appends ... when over the default 160 char limit", () => {
+    it("truncates to exactly the default 160 char limit with an ellipsis", () => {
         const long = "a".repeat(200);
         const result = toMetaDescription(long);
-        // slice(0, 159).trimEnd() + "..." = 159 + 3 = 162
-        expect(result.length).toBe(162);
-        expect(result.endsWith("...")).toBe(true);
+        // slice(0, 159).trimEnd() + "…" = 159 + 1 = 160
+        expect(result.length).toBe(160);
+        expect(result.endsWith("…")).toBe(true);
     });
 
     it("respects a custom maxLength", () => {
         const long = "a".repeat(100);
         const result = toMetaDescription(long, 50);
-        // slice(0, 49).trimEnd() + "..." = 49 + 3 = 52
-        expect(result.length).toBe(52);
-        expect(result.endsWith("...")).toBe(true);
+        // slice(0, 49).trimEnd() + "…" = 49 + 1 = 50
+        expect(result.length).toBe(50);
+        expect(result.endsWith("…")).toBe(true);
     });
 
     it("collapses internal whitespace before measuring length", () => {

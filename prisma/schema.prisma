@@ -25,12 +25,18 @@ enum BookingStatus {
   FAILED
 }
 
-enum RequestType {
+enum BookingType {
   FLIGHT
   HOTEL
   UMRAH
   VISA
   TOUR
+}
+
+enum BookingChannel {
+  CHECKOUT
+  SERVICE_REQUEST
+  CHATBOT
 }
 
 enum SearchProvider {
@@ -55,7 +61,6 @@ model User {
   bookings       Booking[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  packageOrders  PackageBooking[]
   emailVerificationTokens EmailVerificationToken[]
 }
 
@@ -90,9 +95,10 @@ model UmrahPackage {
   startDate         DateTime
   endDate           DateTime
   status            PackageStatus    @default(DRAFT)
+  seoTitle          String
+  seoDescription    String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-  packageBookings   PackageBooking[]
 }
 
 model FlightSearchLog {
@@ -111,54 +117,31 @@ model FlightSearchLog {
   searchedAt      DateTime       @default(now())
 }
 
-model HotelSearchLog {
-  id              String         @id @default(cuid())
-  cityCode        String
-  checkInDate     DateTime
-  checkOutDate    DateTime
-  guests          Int            @default(1)
-  rooms           Int            @default(1)
-  provider        SearchProvider
-  requestPayload  Json
-  responsePayload Json?
-  searchedAt      DateTime       @default(now())
-}
-
+// Every customer request: checkout bookings, service request forms and chatbot leads.
 model Booking {
-  id               String          @id @default(cuid())
-  reference        String          @unique
-  userId           String
-  user             User            @relation(fields: [userId], references: [id])
-  status           BookingStatus   @default(PENDING)
-  provider         SearchProvider
-  providerRecord   String?
-  totalAmount      Decimal         @db.Decimal(10, 2)
-  currency         String          @default("SAR")
-  flightData       Json?
-  hotelData        Json?
-  paymentData      Json?
-  isChatbotRequest Boolean         @default(false)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-}
-
-model ServiceRequest {
-  id            String        @id @default(cuid())
-  reference     String        @unique
-  type          RequestType
-  status        BookingStatus @default(PENDING)
-  customerName  String?
-  customerEmail String?
-  customerPhone String?
-  title         String?
-  amount        Decimal?      @db.Decimal(10, 2)
-  currency      String?
-  payload       Json
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String          @id @default(cuid())
+  reference      String          @unique
+  type           BookingType
+  channel        BookingChannel  @default(CHECKOUT)
+  status         BookingStatus   @default(PENDING)
+  userId         String?
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName   String?
+  customerEmail  String?
+  customerPhone  String?
+  title          String?
+  provider       SearchProvider?
+  providerRecord String?
+  totalAmount    Decimal?        @db.Decimal(10, 2)
+  currency       String          @default("PKR")
+  payload        Json
+  paymentData    Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([type, createdAt])
   @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Destination {
@@ -183,13 +166,18 @@ model Destination {
   gradient    String   @default("blue")
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
+  seoTitle    String
+  seoDescription String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  activities  Activity[]
 }
 
 model Activity {
   id             String   @id @default(cuid())
+  slug           String?  @unique
   destinationId  String
+  destination    Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   title          String
   category       String   @default("tourist-attraction")
   description    String?  @db.Text
@@ -199,51 +187,43 @@ model Activity {
   reviewCount    Int      @default(0)
   sortOrder      Int      @default(0)
   isActive       Boolean  @default(true)
+  seoTitle       String
+  seoDescription String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([destinationId])
 }
 
-model PackageBooking {
-  id             String         @id @default(cuid())
-  packageId      String
-  package        UmrahPackage   @relation(fields: [packageId], references: [id])
-  userId         String
-  user           User           @relation(fields: [userId], references: [id])
-  travelers      Int            @default(1)
-  status         BookingStatus  @default(PENDING)
-  totalAmount    Decimal        @db.Decimal(10, 2)
-  notes          String?        @db.Text
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+model TourPackage {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  destination    String
+  tourType       String   @default("cultural")
+  duration       Int
+  description    String   @db.Text
+  highlights     Json
+  imageUrl       String   @db.Text
+  pricePerAdult  Decimal  @db.Decimal(10, 2)
+  pricePerChild  Decimal  @db.Decimal(10, 2)
+  currency       String   @default("USD")
+  rating         Float    @default(4.5)
+  reviewCount    Int      @default(0)
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  seoTitle       String
+  seoDescription String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }
 
 enum BlogStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-}
-
-model TourPackage {
-  id             String        @id @default(cuid())
-  slug           String        @unique
-  title          String
-  subtitle       String?
-  destination    String
-  country        String
-  description    String        @db.Text
-  durationDays   Int
-  departureCity  String
-  highlights     Json          @default("[]")
-  inclusions     Json
-  exclusions     Json
-  basePrice      Decimal       @db.Decimal(10, 2)
-  currency       String        @default("PKR")
-  seatsAvailable Int           @default(0)
-  imageUrl       String?
-  status         PackageStatus @default(DRAFT)
-  sortOrder      Int           @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
 }
 
 model BlogPost {
@@ -261,6 +241,21 @@ model BlogPost {
   sortOrder      Int        @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model JobOpening {
+  id             String   @id @default(cuid())
+  title          String
+  team           String
+  location       String
+  employmentType String
+  summary        String   @db.Text
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }
 
 model AdminSetting {
@@ -284,20 +279,6 @@ model CustomerReview {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
-
-model PaymentSetting {
-  id                   String   @id @default(cuid())
-  serviceChargePercent Decimal  @default(0) @db.Decimal(5, 2)
-  enableWise           Boolean  @default(true)
-  enableStripe         Boolean  @default(true)
-  enablePaypal         Boolean  @default(true)
-  enableSumup          Boolean  @default(true)
-  enablePaymob         Boolean  @default(true)
-  enableCashOnDelivery Boolean  @default(true)
-  enablePayAtBranch    Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
 }
 
 model Branch {

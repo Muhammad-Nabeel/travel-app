@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 import {
     type AirlineLogoEntry,
     getStoredAirlineLogos,
     saveStoredAirlineLogos,
 } from "@/lib/admin-settings/airline-logo-settings";
+import { isPassthroughImage, optimizeImage } from "@/lib/media/optimize-image";
+import { uploadToR2 } from "@/lib/storage/r2";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 // Cloudflare R2 configuration
 const r2Client = new S3Client({
@@ -18,7 +21,6 @@ const r2Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME!;
-const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL!;
 
 function canUseR2Storage(): boolean {
     return !!(
@@ -87,30 +89,20 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ ok: false, error: "Image size must be 5MB or less." }, { status: 400 });
         }
 
-        const extension = extractExtension(file.name, file.type);
+        const original = Buffer.from(await file.arrayBuffer());
+        // Logos render at 128×56; store a small WebP (SVG is kept as is).
+        const logo = isPassthroughImage(file.type)
+            ? { body: original, contentType: file.type, extension: extractExtension(file.name, file.type) }
+            : await optimizeImage(original, "icon");
         const normalizedBaseName = normalizeFileBaseName(inputName || file.name) || "airline-logo";
         const id = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
-        const storagePath = `airline-logos/${id}-${normalizedBaseName}.${extension}`;
-
-        const buffer = Buffer.from(await file.arrayBuffer());
-
-        const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: storagePath,
-            Body: buffer,
-            ContentType: file.type,
-            ACL: "public-read",
-            Metadata: {
-                "cache-control": "public, max-age=31536000",
-            },
-        });
-
-        await r2Client.send(command);
+        const storagePath = `airline-logos/${id}-${normalizedBaseName}.${logo.extension}`;
+        const src = await uploadToR2(storagePath, logo.body, logo.contentType);
 
         const createdLogo: AirlineLogoEntry = {
             id,
             name: inputName || normalizedBaseName.replace(/-/g, " "),
-            src: `${PUBLIC_URL}/${storagePath}`,
+            src,
             storagePath,
             isActive: true,
             sortOrder: Date.now(),
@@ -120,6 +112,7 @@ export async function POST(request: NextRequest) {
         const next = [...existing, createdLogo].sort((a, b) => a.sortOrder - b.sortOrder);
         await saveStoredAirlineLogos(next);
 
+        revalidatePublicSite();
         return NextResponse.json({ ok: true, logo: createdLogo }, { status: 201 });
     } catch (error) {
         return NextResponse.json(
@@ -168,6 +161,7 @@ export async function DELETE(request: NextRequest) {
         const next = existing.filter((item) => item.id !== id);
         await saveStoredAirlineLogos(next);
 
+        revalidatePublicSite();
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         return NextResponse.json(

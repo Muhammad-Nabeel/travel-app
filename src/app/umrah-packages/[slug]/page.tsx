@@ -1,95 +1,114 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle2,
+  BedDouble,
+  CalendarDays,
+  MapPin,
   Moon,
   Plane,
-  Star,
   Users,
-  XCircle,
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
+import { Breadcrumbs } from "@/components/features/detail/breadcrumbs";
+import {
+  BookingCard,
+  DetailLayout,
+  DetailPage,
+  DetailSection,
+  DetailTitle,
+  ENQUIRE_ID,
+  FactGrid,
+  InclusionLists,
+  MobileBookingBar,
+  SummaryRows,
+  TrustNotes,
+} from "@/components/features/detail/detail-kit";
+import { PhotoGallery } from "@/components/features/detail/photo-gallery";
 import { UmrahEnquiryForm } from "@/components/features/umrah/umrah-enquiry-form";
-import { buildMetadata } from "@/lib/seo";
+import { SectionHeader } from "@/components/shared/section-header";
+import { StructuredData } from "@/components/shared/structured-data";
+import {
+  buildMetadata,
+  createBreadcrumbSchema,
+  createTouristTripSchema,
+} from "@/lib/seo";
+import {
+  UMRAH_GALLERY,
+  getPublishedUmrahPackageBySlug,
+  getPublishedUmrahPackages,
+  getUmrahPackagePath,
+} from "@/lib/umrah-packages";
+import {
+  STAR_LABEL,
+  type StarRating,
+  configQuery,
+  formatPax,
+  priceForConfig,
+  toStarRating,
+} from "@/lib/umrah-pricing";
 
-// ─── Pricing helpers (mirrors umrah-configurator.tsx) ────────────────────────
+const TRUST_NOTES = [
+  "No payment needed to enquire",
+  "Visa processing support included",
+  "An Umrah adviser replies within 24 hours",
+];
 
-const STAR_MULTIPLIER: Record<number, number> = {
-  0: 1.0,
-  3: 0.78,
-  4: 1.0,
-  5: 1.52,
-};
-
-const STAR_LABEL: Record<number, string> = {
-  0: "Any",
-  3: "Economy (3★)",
-  4: "Standard (4★)",
-  5: "Luxury (5★)",
-};
-
-function nightSplit(pkg: PackageRow, nights: number) {
-  const total = pkg.makkahNights + pkg.madinahNights;
-  if (total === 0) return { makkah: nights, madinah: 0 };
-  const makkah = Math.round((pkg.makkahNights / total) * nights);
-  return { makkah, madinah: nights - makkah };
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
-function buildPricing(
-  pkg: PackageRow,
-  nights: number,
-  adults: number,
-  children: number,
-  makkahStars: number,
-  madinahStars: number,
-) {
-  const baseNights = pkg.makkahNights + pkg.madinahNights;
-  if (baseNights === 0) return null;
-
-  const split = nightSplit(pkg, nights);
-  const baseRatePerNight = pkg.basePrice / baseNights;
-  const makkahMult = STAR_MULTIPLIER[makkahStars] ?? 1;
-  const madinahMult = STAR_MULTIPLIER[madinahStars] ?? 1;
-
-  const perPersonTotal = Math.round(
-    baseRatePerNight * makkahMult * split.makkah +
-      baseRatePerNight * madinahMult * split.madinah,
-  );
-  const totalPax = adults + children;
-  const allPaxTotal = perPersonTotal * totalPax;
-  const perNightPerPerson = Math.round(
-    (baseRatePerNight * makkahMult * split.makkah +
-      baseRatePerNight * madinahMult * split.madinah) /
-      nights,
-  );
-  return { perPersonTotal, allPaxTotal, perNightPerPerson, totalPax, split };
+function hotelLabel(stars: StarRating) {
+  return stars === 0 ? "Any rating" : `${stars}★ ${STAR_LABEL[stars]}`;
 }
 
-// ─── Data fetching ────────────────────────────────────────────────────────────
+function money(pkg: PackageRow, value: number) {
+  return `${pkg.currency} ${value.toLocaleString()}`;
+}
 
-async function getPackage(slug: string): Promise<PackageRow | null> {
-  try {
-    const h = await headers();
-    const host = h.get("host") ?? "localhost:3000";
-    const protocol = host.startsWith("localhost") ? "http" : "https";
-    const res = await fetch(
-      `${protocol}://${host}/api/packages/${encodeURIComponent(slug)}`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as PackageRow & { ok?: boolean };
-    if ("ok" in data && data.ok === false) return null;
-    return data;
-  } catch {
-    return null;
-  }
+function RelatedPackageCard({
+  pkg,
+  query,
+  nights,
+}: {
+  pkg: PackageRow;
+  query: string;
+  nights: number;
+}) {
+  const perPerson = priceForConfig(pkg, nights, 1, 0)?.perPersonTotal ?? pkg.basePrice;
+  return (
+    <article className="group relative flex flex-col rounded-2xl border border-line bg-white p-5 transition hover:shadow-raised">
+      <p className="flex items-center gap-1.5 text-sm text-muted">
+        <MapPin className="size-3.5" />
+        From {pkg.departureCity}
+      </p>
+      <h3 className="mt-1 text-lg font-semibold leading-snug text-foreground">
+        <Link
+          href={`${getUmrahPackagePath(pkg.slug)}?${query}`}
+          className="after:absolute after:inset-0 group-hover:text-brand"
+        >
+          {pkg.title}
+        </Link>
+      </h3>
+      {pkg.subtitle ? <p className="mt-1 text-sm text-muted">{pkg.subtitle}</p> : null}
+      <p className="mt-3 text-sm text-foreground">
+        {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
+      </p>
+      <div className="mt-auto pt-5 text-right">
+        <p className="text-xs text-muted">{nights} nights from</p>
+        <p className="text-2xl font-bold tabular-nums text-foreground">
+          {money(pkg, perPerson)}
+        </p>
+        <p className="text-xs text-muted">per person</p>
+      </div>
+    </article>
+  );
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -100,17 +119,19 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const pkg = await getPackage(slug);
+  const pkg = await getPublishedUmrahPackageBySlug(slug);
   if (!pkg)
     return buildMetadata({
       title: "Package not found",
       description: "The requested Umrah package could not be found.",
-      path: `/umrah-packages/${slug}`,
+      path: getUmrahPackagePath(slug),
+      noIndex: true,
     });
+
   return buildMetadata({
-    title: pkg.title,
-    description: pkg.subtitle ?? pkg.description,
-    path: `/umrah-packages/${pkg.slug}`,
+    title: pkg.seoTitle,
+    description: pkg.seoDescription,
+    path: getUmrahPackagePath(pkg.slug),
     keywords: ["Umrah package", pkg.departureCity, "pilgrimage"],
   });
 }
@@ -127,327 +148,200 @@ export default async function UmrahPackageDetailPage({
   const { slug } = await params;
   const sp = await searchParams;
 
-  const pkg = await getPackage(slug);
+  const [pkg, packages] = await Promise.all([
+    getPublishedUmrahPackageBySlug(slug),
+    getPublishedUmrahPackages(),
+  ]);
   if (!pkg) notFound();
+  const packagePath = getUmrahPackagePath(pkg.slug);
 
   // Config from URL params (set by the configurator card link)
   const nights = Math.max(1, Number(sp.nights) || 14);
   const adults = Math.max(1, Number(sp.adults) || 2);
   const children = Math.max(0, Number(sp.children) || 0);
-  const makkahStars = Number(sp.makkahStars) || 0;
-  const madinahStars = Number(sp.madinahStars) || 0;
+  const makkahStars = toStarRating(sp.makkahStars);
+  const madinahStars = toStarRating(sp.madinahStars);
+  const query = configQuery({ nights, adults, childCount: children, makkahStars, madinahStars });
 
-  const pricing = buildPricing(
-    pkg,
-    nights,
-    adults,
-    children,
-    makkahStars,
-    madinahStars,
-  );
-
-  const startDate = new Date(pkg.startDate).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const endDate = new Date(pkg.endDate).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const pricing = priceForConfig(pkg, nights, adults, children, makkahStars, madinahStars);
+  const totalAmount = pricing ? money(pkg, pricing.allPaxTotal) : money(pkg, pkg.basePrice);
+  const totalNote = pricing
+    ? `total for ${formatPax(adults, children)}`
+    : "per person";
+  const related = packages.filter((other) => other.id !== pkg.id).slice(0, 3);
 
   return (
-    <div className="flex-1">
-      {/* ── Hero ── */}
-      <section
-        className="relative w-full overflow-hidden"
-        style={{
-          background: `
-            linear-gradient(180deg,
-              rgba(120,53,15,0.92) 0%,
-              rgba(217,119,6,0.72) 35%,
-              rgba(5,150,105,0.60) 70%,
-              rgba(226,232,240,0.7) 100%
-            )
-          `,
-        }}
-      >
-        <div
-          className="pointer-events-none absolute -left-24 -top-16 h-72 w-72 rounded-full opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(245,158,11,0.55), transparent 65%)",
-            filter: "blur(48px)",
-          }}
+    <DetailPage>
+      <StructuredData
+        data={[
+          createTouristTripSchema({
+            name: pkg.title,
+            description: pkg.seoDescription,
+            path: packagePath,
+            price: pkg.basePrice,
+            currency: pkg.currency,
+            seatsAvailable: pkg.seatsAvailable,
+            validFrom: pkg.createdAt,
+            validThrough: pkg.startDate,
+            touristType: "Pilgrims",
+            itinerary: [
+              `${pkg.makkahNights} nights in Makkah`,
+              `${pkg.madinahNights} nights in Madinah`,
+            ],
+          }),
+          createBreadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Umrah Packages", path: "/umrah-packages" },
+            { name: pkg.title, path: packagePath },
+          ]),
+        ]}
+      />
+      <div className="section-shell">
+        <Breadcrumbs
+          items={[
+            { name: "Home", href: "/" },
+            { name: "Umrah packages", href: "/umrah-packages" },
+            { name: pkg.title },
+          ]}
         />
-        <div
-          className="pointer-events-none absolute -right-20 -top-12 h-64 w-64 rounded-full opacity-35"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(52,211,153,0.5), transparent 62%)",
-            filter: "blur(44px)",
-          }}
-        />
 
-        <div className="section-shell relative z-10 py-12 pb-14">
-          <Link
-            href="/umrah-packages"
-            className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-white/70 transition hover:text-white"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to packages
-          </Link>
-
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-200/80">
-            {pkg.departureCity}
-          </p>
-          <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-            {pkg.title}
-          </h1>
-          {pkg.subtitle && (
-            <p className="mt-3 max-w-2xl text-base leading-7 text-white/70">
-              {pkg.subtitle}
-            </p>
-          )}
-
-          {/* Quick chips */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            {pricing && (
-              <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
-                <Moon className="h-4 w-4 text-amber-300" />
-                <span className="text-sm font-semibold text-white">
-                  {pricing.split.makkah}N Makkah · {pricing.split.madinah}N
-                  Madinah
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
-              <Users className="h-4 w-4 text-emerald-300" />
-              <span className="text-sm font-semibold text-white">
-                {adults} adult{adults !== 1 ? "s" : ""}
-                {children > 0
-                  ? `, ${children} child${children !== 1 ? "ren" : ""}`
-                  : ""}
-              </span>
-            </div>
-            {pkg.seatsAvailable > 0 && (
-              <div className="flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/20 px-4 py-1.5 backdrop-blur-sm">
-                <span className="text-sm font-semibold text-amber-200">
-                  ⚡ {pkg.seatsAvailable} seats remaining
-                </span>
-              </div>
-            )}
-            <span
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                pkg.status === "PUBLISHED"
-                  ? "border border-emerald-300/30 bg-emerald-400/20 text-emerald-200"
-                  : "border border-amber-300/30 bg-amber-400/20 text-amber-200"
-              }`}
-            >
-              {pkg.status.toLowerCase()}
+        <DetailTitle
+          title={pkg.title}
+          subtitle={pkg.subtitle}
+          badge={
+            <span className="inline-flex rounded-full bg-gold/12 px-2.5 py-1 text-xs font-semibold text-gold-strong">
+              Umrah package
             </span>
-          </div>
-        </div>
-      </section>
+          }
+          meta={
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="size-4 text-muted" />
+                From {pkg.departureCity}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Moon className="size-4 text-muted" />
+                {pkg.makkahNights + pkg.madinahNights} nights
+              </span>
+              {pkg.seatsAvailable > 0 ? (
+                <span className="font-semibold text-deal">
+                  {pkg.seatsAvailable} seats left
+                </span>
+              ) : null}
+            </>
+          }
+        />
 
-      {/* ── Body ── */}
-      <section className="section-shell py-10">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* ── Left: Details ── */}
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            {/* Description */}
-            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h2 className="mb-3 text-balance text-2xl font-extrabold tracking-tight text-slate-900">
-                About this package
-              </h2>
-              <p className="leading-7 text-slate-600">{pkg.description}</p>
+        <PhotoGallery photos={UMRAH_GALLERY} />
+
+        <DetailLayout
+          aside={
+            <BookingCard
+              price={{
+                label: pricing ? "Estimated total" : "from",
+                amount: totalAmount,
+                note: pricing ? (
+                  <>
+                    {money(pkg, pricing.perPersonTotal)} per person ·{" "}
+                    {formatPax(adults, children)}
+                  </>
+                ) : (
+                  "per person"
+                ),
+              }}
+              footer={<TrustNotes notes={TRUST_NOTES} />}
+            >
+              <SummaryRows
+                rows={[
+                  {
+                    label: "Nights",
+                    value: pricing
+                      ? `${nights} (${pricing.split.makkah} Makkah, ${pricing.split.madinah} Madinah)`
+                      : nights,
+                  },
+                  { label: "Travellers", value: formatPax(adults, children) },
+                  { label: "Makkah hotel", value: hotelLabel(makkahStars) },
+                  { label: "Madinah hotel", value: hotelLabel(madinahStars) },
+                ]}
+              />
+              <Link
+                href={`/umrah-packages?${query}`}
+                className="mt-4 inline-block text-sm font-semibold text-brand hover:text-brand-strong"
+              >
+                Change options
+              </Link>
+            </BookingCard>
+          }
+        >
+          <DetailSection title="Overview">
+            <p className="text-base leading-7 text-foreground">{pkg.description}</p>
+            <div className="mt-6">
+              <FactGrid
+                facts={[
+                  { icon: CalendarDays, label: "Departs", value: formatDate(pkg.startDate) },
+                  { icon: CalendarDays, label: "Returns", value: formatDate(pkg.endDate) },
+                  {
+                    icon: Moon,
+                    label: "Package length",
+                    value: `${pkg.makkahNights} nights Makkah + ${pkg.madinahNights} nights Madinah`,
+                  },
+                  { icon: Users, label: "Your group", value: formatPax(adults, children) },
+                  ...(pkg.airlineNotes
+                    ? [{ icon: Plane, label: "Flights", value: pkg.airlineNotes }]
+                    : []),
+                  ...(pkg.hotelSummary
+                    ? [{ icon: BedDouble, label: "Hotels", value: pkg.hotelSummary }]
+                    : []),
+                ]}
+              />
             </div>
+          </DetailSection>
 
-            {/* Inclusions & Exclusions */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {pkg.inclusions.length > 0 && (
-                <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6">
-                  <h3 className="mb-4 flex items-center gap-2 text-balance text-2xl font-extrabold tracking-tight text-emerald-800">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    What&apos;s included
-                  </h3>
-                  <ul className="flex flex-col gap-2">
-                    {pkg.inclusions.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-2 text-sm text-emerald-700"
-                      >
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 fill-emerald-200 text-emerald-500" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {pkg.exclusions.length > 0 && (
-                <div className="rounded-3xl border border-rose-100 bg-rose-50/50 p-6">
-                  <h3 className="mb-4 flex items-center gap-2 text-balance text-2xl font-extrabold tracking-tight text-rose-800">
-                    <XCircle className="h-5 w-5 text-rose-400" />
-                    Not included
-                  </h3>
-                  <ul className="flex flex-col gap-2">
-                    {pkg.exclusions.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-2 text-sm text-rose-700"
-                      >
-                        <XCircle className="mt-0.5 h-4 w-4 shrink-0 fill-rose-100 text-rose-400" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Hotel & Airline info */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {pkg.hotelSummary && (
-                <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-                  <h3 className="mb-2 text-balance text-lg font-extrabold tracking-tight text-slate-800">
-                    Hotel summary
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    🏨 {pkg.hotelSummary}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {makkahStars !== 0 && (
-                      <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-xs font-medium text-amber-700">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        Makkah: {STAR_LABEL[makkahStars] ?? `${makkahStars}★`}
+          {pricing ? (
+            <DetailSection title="Your stay">
+              <ol className="space-y-3">
+                {[
+                  { city: "Makkah", nights: pricing.split.makkah, stars: makkahStars },
+                  { city: "Madinah", nights: pricing.split.madinah, stars: madinahStars },
+                ]
+                  .filter((leg) => leg.nights > 0)
+                  .map((leg, i) => (
+                    <li
+                      key={leg.city}
+                      className="flex items-center gap-4 rounded-xl border border-line px-4 py-3"
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand">
+                        {i + 1}
                       </span>
-                    )}
-                    {madinahStars !== 0 && (
-                      <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-xs font-medium text-amber-700">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        Madinah:{" "}
-                        {STAR_LABEL[madinahStars] ?? `${madinahStars}★`}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {pkg.airlineNotes && (
-                <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-                  <h3 className="mb-2 text-balance text-lg font-extrabold tracking-tight text-slate-800">
-                    Flights
-                  </h3>
-                  <div className="flex items-start gap-2">
-                    <Plane className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                    <p className="text-sm leading-6 text-slate-700">
-                      {pkg.airlineNotes}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Travel dates */}
-            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h3 className="mb-3 text-balance text-lg font-extrabold tracking-tight text-slate-800">
-                Travel dates
-              </h3>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-brand" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">
-                      Departure
-                    </p>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {startDate}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-px bg-slate-100 sm:block hidden" />
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-emerald-500" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">
-                      Return
-                    </p>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {endDate}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Moon className="h-4 w-4 text-indigo-400" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">
-                      Duration
-                    </p>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {nights} nights · {pkg.makkahNights}N Makkah +{" "}
-                      {pkg.madinahNights}N Madinah
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Right: Pricing + Enquiry Form ── */}
-          <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-            {/* Pricing summary */}
-            {pricing && (
-              <div className="rounded-3xl border border-brand/20 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Estimated price
-                </p>
-                <p className="mt-2 text-4xl font-extrabold tabular-nums text-brand-strong">
-                  {pkg.currency} {pricing.allPaxTotal.toLocaleString()}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-600">
-                  {pkg.currency} {pricing.perPersonTotal.toLocaleString()}
-                  <span className="ml-1 text-xs font-normal text-slate-400">
-                    / person
-                  </span>
-                </p>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  ≈ {pkg.currency} {pricing.perNightPerPerson.toLocaleString()}
-                  <span className="ml-0.5">/ night per person</span>
-                </p>
-                <div className="mt-4 flex flex-wrap gap-1.5 border-t border-slate-100 pt-4 text-xs">
-                  <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-slate-600">
-                    {nights} nights
-                  </span>
-                  <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-slate-600">
-                    {adults} adult{adults !== 1 ? "s" : ""}
-                    {children > 0
-                      ? ` + ${children} child${children !== 1 ? "ren" : ""}`
-                      : ""}
-                  </span>
-                  {makkahStars !== 0 && (
-                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-amber-700">
-                      {makkahStars}★ Makkah
-                    </span>
-                  )}
-                  {madinahStars !== 0 && (
-                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-amber-700">
-                      {madinahStars}★ Madinah
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Enquiry form */}
-            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h2 className="mb-1 text-balance text-3xl font-extrabold tracking-tight text-slate-900">
-                Enquire now
-              </h2>
-              <p className="mb-5 text-sm text-slate-500">
-                Fill in your details and we&apos;ll get back to you shortly.
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground">{leg.city}</p>
+                        <p className="text-sm text-muted">{hotelLabel(leg.stars)} hotel</p>
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold text-foreground">
+                        {leg.nights} night{leg.nights !== 1 ? "s" : ""}
+                      </p>
+                    </li>
+                  ))}
+              </ol>
+              <p className="mt-3 text-sm text-muted">
+                Nights are split between the cities in the package&apos;s usual
+                ratio. Your adviser confirms the exact hotels.
               </p>
+            </DetailSection>
+          ) : null}
+
+          {pkg.inclusions.length > 0 || pkg.exclusions.length > 0 ? (
+            <DetailSection title="What's included">
+              <InclusionLists included={pkg.inclusions} excluded={pkg.exclusions} />
+            </DetailSection>
+          ) : null}
+
+          <DetailSection title="Enquire about this package" id={ENQUIRE_ID}>
+            <p className="mb-5 text-sm text-muted">
+              Send us your details and an Umrah adviser will confirm hotels,
+              flights and the final price for your group.
+            </p>
+            <div className="rounded-card border border-line p-5 sm:p-6">
               <UmrahEnquiryForm
                 pkg={pkg}
                 nights={nights}
@@ -458,9 +352,26 @@ export default async function UmrahPackageDetailPage({
                 estimatedTotal={pricing?.allPaxTotal ?? 0}
               />
             </div>
+          </DetailSection>
+        </DetailLayout>
+      </div>
+
+      {related.length > 0 ? (
+        <section className="section-shell mt-8 border-t border-line pt-12">
+          <SectionHeader
+            title="More Umrah packages"
+            href={`/umrah-packages?${query}`}
+            hrefLabel="See all"
+          />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((other) => (
+              <RelatedPackageCard key={other.id} pkg={other} query={query} nights={nights} />
+            ))}
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      ) : null}
+
+      <MobileBookingBar amount={totalAmount} note={totalNote} />
+    </DetailPage>
   );
 }

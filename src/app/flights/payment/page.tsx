@@ -12,8 +12,8 @@ export const metadata: Metadata = buildMetadata({
 
 export default function PaymentPage() {
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <PaymentPageClient />
-    </main>
+    </div>
   );
 }

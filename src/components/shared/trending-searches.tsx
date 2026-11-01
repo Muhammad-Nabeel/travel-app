@@ -14,6 +14,8 @@ type TrendingSearchesProps = {
 };
 
 export function TrendingSearches({ routes, onSelect }: TrendingSearchesProps) {
+  if (routes.length === 0) return null;
+
   return (
     <div className={styles.trendingRoot}>
       <p className={styles.trendingTitle}>

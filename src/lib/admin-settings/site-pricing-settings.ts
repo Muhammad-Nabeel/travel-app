@@ -35,11 +35,7 @@ function toPercent(value: unknown): number {
     return Math.min(100, Math.max(0, Number(parsed.toFixed(2))));
 }
 
-function getPaymentSettingDelegate() {
-    return prisma.paymentSetting;
-}
-
-async function getLegacySitePricingSettings(): Promise<SitePricingSettings | null> {
+async function readSitePricingSettings(): Promise<SitePricingSettings | null> {
     const row = await prisma.adminSetting.findUnique({
         where: { key: SITE_PRICING_KEY },
         select: { value: true },
@@ -63,7 +59,7 @@ async function getLegacySitePricingSettings(): Promise<SitePricingSettings | nul
     };
 }
 
-async function saveLegacySitePricingSettings(payload: SitePricingSettings) {
+async function writeSitePricingSettings(payload: SitePricingSettings) {
     await prisma.adminSetting.upsert({
         where: { key: SITE_PRICING_KEY },
         update: { value: JSON.stringify(payload) },
@@ -77,30 +73,7 @@ export async function getStoredSitePricingSettings(): Promise<SitePricingSetting
     }
 
     try {
-        const paymentSetting = getPaymentSettingDelegate();
-
-        if (!paymentSetting) {
-            return (await getLegacySitePricingSettings()) ?? defaultPricingSettings();
-        }
-
-        const row = await paymentSetting.findFirst({
-            orderBy: { createdAt: "asc" },
-        });
-
-        if (!row) {
-            return defaultPricingSettings();
-        }
-
-        return {
-            serviceChargePercent: toPercent(row.serviceChargePercent),
-            enableWise: row.enableWise,
-            enableStripe: row.enableStripe,
-            enablePaypal: row.enablePaypal,
-            enableSumup: row.enableSumup,
-            enablePaymob: row.enablePaymob,
-            enableCashOnDelivery: row.enableCashOnDelivery,
-            enablePayAtBranch: row.enablePayAtBranch,
-        };
+        return (await readSitePricingSettings()) ?? defaultPricingSettings();
     } catch {
         return defaultPricingSettings();
     }
@@ -124,28 +97,7 @@ export async function saveStoredSitePricingSettings(
         enablePayAtBranch: Boolean(input.enablePayAtBranch),
     };
 
-    const paymentSetting = getPaymentSettingDelegate();
-
-    if (!paymentSetting) {
-        await saveLegacySitePricingSettings(payload);
-        return payload;
-    }
-
-    const existing = await paymentSetting.findFirst({
-        select: { id: true },
-        orderBy: { createdAt: "asc" },
-    });
-
-    if (existing) {
-        await paymentSetting.update({
-            where: { id: existing.id },
-            data: payload,
-        });
-    } else {
-        await paymentSetting.create({
-            data: payload,
-        });
-    }
+    await writeSitePricingSettings(payload);
 
     return payload;
 }

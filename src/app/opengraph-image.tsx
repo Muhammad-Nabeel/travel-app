@@ -1,5 +1,10 @@
 import { ImageResponse } from "next/og";
 
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+
+// Re-render with the brand name set in the admin dashboard.
+export const revalidate = 300;
+
 export const size = {
   width: 1200,
   height: 630,
@@ -7,7 +12,9 @@ export const size = {
 
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const { name } = await getStoredBrandSettings();
+
   return new ImageResponse(
     <div
       style={{
@@ -33,7 +40,7 @@ export default function OpenGraphImage() {
           opacity: 0.92,
         }}
       >
-        Safar Umrah
+        {name}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", fontSize: 72, fontWeight: 800 }}>

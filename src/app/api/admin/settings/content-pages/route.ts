@@ -5,6 +5,7 @@ import {
     saveStoredSitePagesSettings,
     type SitePagesSettings,
 } from "@/lib/admin-settings/site-pages-settings";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export async function GET() {
     try {
@@ -33,11 +34,8 @@ export async function PUT(request: NextRequest) {
                 title: body.contactUs?.title ?? "",
                 intro: body.contactUs?.intro ?? "",
                 phoneLabel: body.contactUs?.phoneLabel ?? "",
-                phoneValue: body.contactUs?.phoneValue ?? "",
                 locationLabel: body.contactUs?.locationLabel ?? "",
-                locationValue: body.contactUs?.locationValue ?? "",
                 emailLabel: body.contactUs?.emailLabel ?? "",
-                emailValue: body.contactUs?.emailValue ?? "",
                 fullNameLabel: body.contactUs?.fullNameLabel ?? "",
                 fullNamePlaceholder: body.contactUs?.fullNamePlaceholder ?? "",
                 emailFieldLabel: body.contactUs?.emailFieldLabel ?? "",
@@ -67,7 +65,6 @@ export async function PUT(request: NextRequest) {
                 body: body.careers?.body ?? "",
                 ctaLabel: body.careers?.ctaLabel ?? "",
                 ctaHref: body.careers?.ctaHref ?? "",
-                jobs: Array.isArray(body.careers?.jobs) ? body.careers.jobs : [],
             },
             termsConditions: {
                 eyebrow: body.termsConditions?.eyebrow ?? "",
@@ -103,6 +100,8 @@ export async function PUT(request: NextRequest) {
             },
         });
 
+        // About, FAQ, careers and policy pages render this content.
+        revalidatePublicSite();
         return NextResponse.json(saved, { status: 200 });
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unexpected error";

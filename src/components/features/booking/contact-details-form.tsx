@@ -3,25 +3,32 @@
 import { Mail, Phone } from "lucide-react";
 import { useState } from "react";
 
+import {
+  FormField,
+  describedBy,
+  inputClass,
+} from "@/components/features/booking/form-field";
 import type { ContactDetails } from "@/lib/flights/booking-types";
 
 type ContactDetailsFormProps = {
   contact: ContactDetails;
   onChange: (updated: ContactDetails) => void;
+  /** Show every error, e.g. after a submit attempt. */
+  showErrors?: boolean;
 };
 
 /** Loose international phone pattern — must start with + and digits */
 const PHONE_REGEX = /^\+?[0-9\s\-().]{7,20}$/;
 
-function validatePhone(value: string) {
-  if (!value.trim()) return "Phone number is required";
+export function validatePhone(value: string) {
+  if (!value.trim()) return "Enter a phone number";
   if (!PHONE_REGEX.test(value.trim()))
-    return "Enter a valid international number e.g. +92 300 1234567";
+    return "Enter a valid international number, e.g. +92 300 1234567";
   return null;
 }
 
-function validateEmail(value: string) {
-  if (!value.trim()) return "Email is required";
+export function validateEmail(value: string) {
+  if (!value.trim()) return "Enter an email address";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()))
     return "Enter a valid email address";
   return null;
@@ -30,82 +37,64 @@ function validateEmail(value: string) {
 export function ContactDetailsForm({
   contact,
   onChange,
+  showErrors = false,
 }: ContactDetailsFormProps) {
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
 
-  const phoneError = phoneTouched ? validatePhone(contact.phone) : null;
-  const emailError = emailTouched ? validateEmail(contact.email) : null;
+  const phoneError =
+    phoneTouched || showErrors ? validatePhone(contact.phone) : null;
+  const emailError =
+    emailTouched || showErrors ? validateEmail(contact.email) : null;
 
   return (
-    <div className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-base-200 px-5 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Phone className="size-4" />
-        </div>
-        <div>
-          <p className="font-semibold text-foreground leading-tight">
-            Contact Information
-          </p>
-          <p className="text-xs text-muted">
-            E-tickets and updates will be sent here
-          </p>
-        </div>
+    <section className="rounded-card border border-line bg-white">
+      <div className="border-b border-line px-5 py-4">
+        <h2 className="text-base font-semibold text-foreground">
+          Contact details
+        </h2>
+        <p className="text-sm text-muted">
+          We send your e-tickets and trip updates here.
+        </p>
       </div>
 
-      {/* Fields */}
       <div className="grid gap-x-4 gap-y-5 p-5 sm:grid-cols-2">
-        {/* Phone */}
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="contact-phone"
-            className="text-xs font-semibold uppercase tracking-wide text-muted"
-          >
-            Mobile Number<span className="ml-0.5 text-red-500">*</span>
-          </label>
+        <FormField id="contact-phone" label="Mobile number" required error={phoneError}>
           <div className="relative">
-            <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Phone className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <input
               id="contact-phone"
               type="tel"
               inputMode="tel"
               autoComplete="tel"
-              className={`input input-bordered w-full pl-9 ${phoneError ? "input-error" : ""}`}
+              className={inputClass(phoneError, true)}
               placeholder="+92 300 1234567"
               value={contact.phone}
               onChange={(e) => onChange({ ...contact, phone: e.target.value })}
               onBlur={() => setPhoneTouched(true)}
+              {...describedBy("contact-phone", phoneError)}
             />
           </div>
-          {phoneError && <p className="text-[11px] text-error">{phoneError}</p>}
-        </div>
+        </FormField>
 
-        {/* Email */}
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="contact-email"
-            className="text-xs font-semibold uppercase tracking-wide text-muted"
-          >
-            Email Address<span className="ml-0.5 text-red-500">*</span>
-          </label>
+        <FormField id="contact-email" label="Email address" required error={emailError}>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <input
               id="contact-email"
               type="email"
               inputMode="email"
               autoComplete="email"
-              className={`input input-bordered w-full pl-9 ${emailError ? "input-error" : ""}`}
+              className={inputClass(emailError, true)}
               placeholder="you@example.com"
               value={contact.email}
               onChange={(e) => onChange({ ...contact, email: e.target.value })}
               onBlur={() => setEmailTouched(true)}
+              {...describedBy("contact-email", emailError)}
             />
           </div>
-          {emailError && <p className="text-[11px] text-error">{emailError}</p>}
-        </div>
+        </FormField>
       </div>
-    </div>
+    </section>
   );
 }

@@ -47,7 +47,7 @@ function FilterSection({
 }) {
   return (
     <div>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-base-content/50">
+      <p className="mb-3 text-sm font-semibold text-foreground">
         {title}
       </p>
       {children}
@@ -69,17 +69,17 @@ export function FlightFiltersPanel({
   onReset,
 }: FlightFiltersPanelProps) {
   return (
-    <aside className="card bg-base-100 shadow-sm">
-      <div className="card-body gap-0 p-4">
+    <aside className="rounded-2xl border border-line bg-white">
+      <div className="p-5">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-base-content">
-            <SlidersHorizontal className="size-4 text-primary" />
+          <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <SlidersHorizontal className="size-4 text-brand" />
             Filters
           </h2>
           <button
             type="button"
-            className="btn btn-ghost btn-xs gap-1 text-primary"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm font-semibold text-brand transition hover:bg-brand-soft"
             onClick={onReset}
           >
             <RotateCcw className="size-3" />
@@ -97,18 +97,18 @@ export function FlightFiltersPanel({
               step={Math.max(1, Math.round(maxPrice / 100))}
               value={Math.min(priceCap, maxPrice)}
               onChange={(e) => onPriceCapChange(Number(e.target.value))}
-              className="range range-xs range-primary w-full"
+              className="w-full accent-[var(--primary)]"
             />
-            <div className="mt-2 flex items-center justify-between text-xs text-base-content/60">
+            <div className="mt-2 flex items-center justify-between text-xs text-muted">
               <span>{formatMoney(0, currency)}</span>
-              <span className="font-semibold text-base-content">
+              <span className="font-semibold text-foreground">
                 {formatMoney(Math.min(priceCap, maxPrice), currency)}
               </span>
               <span>{formatMoney(maxPrice, currency)}</span>
             </div>
           </FilterSection>
 
-          <div className="divider my-0" />
+          <div className="border-t border-line" />
 
           {/* Stops */}
           <FilterSection title="Stops">
@@ -116,16 +116,16 @@ export function FlightFiltersPanel({
               {STOPS_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-base-200"
+                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-subtle"
                 >
                   <input
                     type="radio"
                     name="stops-filter"
-                    className="radio radio-xs radio-primary"
+                    className="size-4 accent-[var(--primary)]"
                     checked={stopsFilter === opt.value}
                     onChange={() => onStopsFilterChange(opt.value)}
                   />
-                  <span className="text-sm text-base-content">{opt.label}</span>
+                  <span className="text-sm text-foreground">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -134,7 +134,7 @@ export function FlightFiltersPanel({
           {/* Airlines — only shown when there are multiple */}
           {uniqueAirlines.length > 1 && (
             <>
-              <div className="divider my-0" />
+              <div className="border-t border-line" />
               <FilterSection title="Airlines">
                 <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
                   {uniqueAirlines.map((airline) => {
@@ -148,11 +148,11 @@ export function FlightFiltersPanel({
                     return (
                       <label
                         key={airline}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-base-200"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-subtle"
                       >
                         <input
                           type="checkbox"
-                          className="checkbox checkbox-xs checkbox-primary"
+                          className="size-4 rounded accent-[var(--primary)]"
                           checked={checked}
                           onChange={(e) => {
                             onAirlinesChange(
@@ -163,22 +163,21 @@ export function FlightFiltersPanel({
                           }}
                         />
                         {airlineLogoSrc ? (
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-base-200 bg-white p-1">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-white p-1">
                             <Image
                               src={airlineLogoSrc}
                               alt={`${airlineName} logo`}
                               className="h-full w-full object-contain"
                               width={24}
                               height={24}
-                              unoptimized
                             />
                           </div>
                         ) : (
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-[10px] font-bold uppercase text-emerald-600">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand-soft text-[10px] font-bold uppercase text-brand">
                             {airlineCode}
                           </div>
                         )}
-                        <span className="text-sm text-base-content">
+                        <span className="text-sm text-foreground">
                           {airlineName}
                         </span>
                       </label>

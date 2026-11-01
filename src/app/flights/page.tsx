@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
+import {
+  FlightEnquiryForm,
+  type FlightEnquiryLeg,
+} from "@/components/features/flights/flight-enquiry-form";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
@@ -12,14 +18,15 @@ import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { searchFlights } from "@/lib/flights/search-service";
 import { buildMetadata } from "@/lib/seo";
 
-function HomeLayout() {
+async function HomeLayout() {
+  const heroImage = await getPageBanner("flights");
   return (
-    <main className="flex-1">
-      <FlightSearchEngine />
+    <div className="flex-1">
+      <FlightSearchEngine heroImage={heroImage} />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />
-    </main>
+    </div>
   );
 }
 
@@ -87,21 +94,21 @@ export async function generateMetadata({
         resolvedSearchParams.departureDate,
       );
 
+  if (!hasSearch) {
+    return buildStaticPageMetadata("flights");
+  }
+
+  // Search result URLs are per-user and infinite; never index them.
   return buildMetadata({
     title:
-      hasSearch &&
-      resolvedSearchParams.origin &&
-      resolvedSearchParams.destination
+      resolvedSearchParams.origin && resolvedSearchParams.destination
         ? `Flights from ${resolvedSearchParams.origin} to ${resolvedSearchParams.destination}`
-        : "Flight Search",
-    description: hasSearch
-      ? "Review live flight search results and continue to booking when your route fits."
-      : "Search and compare flight options with flexible trip types and cabin filters.",
+        : "Flight Search Results",
+    description:
+      "Review live flight search results and continue to booking when your route fits.",
     path: "/flights",
-    keywords: ["flight search", "flight booking", "airfare"],
-    noIndex: hasSearch,
-  });
-}
+    noIndex: true,
+  });}
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -129,7 +136,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
 
   if (!result.ok) {
     return (
-      <main className="section-shell flex-1 py-10">
+      <div className="section-shell flex-1 py-10">
         <div className="alert alert-error bg-red-50 text-red-900">
           <div>
             <span>
@@ -143,7 +150,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
             )}
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -194,8 +201,37 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
     : query.destination;
   const searchSummary = `${originLabel} -> ${destinationLabel} · ${query.departureDate}${query.returnDate ? ` · ${query.returnDate}` : ""}`;
 
+  const toEnquiryLeg = (leg: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+  }): FlightEnquiryLeg => {
+    const from = getAirportDisplay(leg.origin);
+    const to = getAirportDisplay(leg.destination);
+    return {
+      ...leg,
+      originLabel: from ? `${from.city} (${leg.origin})` : leg.origin,
+      destinationLabel: to ? `${to.city} (${leg.destination})` : leg.destination,
+    };
+  };
+  const enquiryLegs =
+    query.tripType === "multi-city"
+      ? (query.legs ?? []).map(toEnquiryLeg)
+      : [
+          toEnquiryLeg(query),
+          ...(query.tripType === "round-trip" && query.returnDate
+            ? [
+                toEnquiryLeg({
+                  origin: query.destination,
+                  destination: query.origin,
+                  departureDate: query.returnDate,
+                }),
+              ]
+            : []),
+        ];
+
   return (
-    <main className="flex-1 py-6">
+    <div className="flex-1 py-6">
       <MobileSearchToggle summary={searchSummary}>
         <FlightSearchEngine
           variant="embedded"
@@ -237,14 +273,20 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
         />
       </MobileSearchToggle>
 
-      <FareCalendarStrip query={query} />
+      {result.liveSearchEnabled ? (
+        <>
+          <FareCalendarStrip query={query} />
 
-      <FlightsResultsPanel
-        offers={result.results}
-        query={result.query}
-        source={result.source}
-        warnings={result.warnings}
-      />
-    </main>
+          <FlightsResultsPanel
+            offers={result.results}
+            query={result.query}
+            source={result.source}
+            warnings={result.warnings}
+          />
+        </>
+      ) : (
+        <FlightEnquiryForm query={query} legs={enquiryLegs} />
+      )}
+    </div>
   );
 }

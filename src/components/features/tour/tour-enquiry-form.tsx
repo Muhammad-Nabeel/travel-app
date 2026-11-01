@@ -100,17 +100,17 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
 
   if (status === "success") {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-8 text-center">
-        <CheckCircle className="h-11 w-11 text-emerald-500" />
+      <div className="flex flex-col items-center gap-4 rounded-card border border-success/20 bg-success/5 p-8 text-center">
+        <CheckCircle className="h-11 w-11 text-success" />
         <div>
-          <h3 className="text-2xl font-extrabold tracking-tight text-emerald-800">
+          <h3 className="text-2xl font-bold text-foreground">
             Enquiry submitted!
           </h3>
-          <p className="mt-1 text-sm text-emerald-700">
+          <p className="mt-1 text-sm text-foreground">
             Thanks {form.customerName.trim()}. Our team will contact you soon.
           </p>
           {reference ? (
-            <p className="mt-3 inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-semibold text-emerald-800">
+            <p className="mt-3 inline-block rounded-full bg-success/10 px-4 py-1 text-sm font-semibold text-foreground">
               Ref: {reference}
             </p>
           ) : null}
@@ -124,9 +124,9 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="tour-name"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
-          Full name <span className="text-rose-500">*</span>
+          Full name <span className="text-deal">*</span>
         </label>
         <input
           id="tour-name"
@@ -134,25 +134,25 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
           onChange={(e) =>
             setForm((f) => ({ ...f, customerName: e.target.value }))
           }
-          className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+          className={`h-12 w-full rounded-lg border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
             errors.customerName
-              ? "border-rose-400 bg-rose-50"
-              : "border-slate-200 bg-white"
+              ? "border-deal bg-white"
+              : "border-line bg-white"
           }`}
           placeholder="e.g. Ahmed Khan"
           autoComplete="name"
         />
         {errors.customerName ? (
-          <p className="text-xs text-rose-500">{errors.customerName}</p>
+          <p className="text-[13px] text-deal">{errors.customerName}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="tour-email"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
-          Email address <span className="text-rose-500">*</span>
+          Email address <span className="text-deal">*</span>
         </label>
         <input
           id="tour-email"
@@ -161,16 +161,16 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
           onChange={(e) =>
             setForm((f) => ({ ...f, customerEmail: e.target.value }))
           }
-          className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+          className={`h-12 w-full rounded-lg border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
             errors.customerEmail
-              ? "border-rose-400 bg-rose-50"
-              : "border-slate-200 bg-white"
+              ? "border-deal bg-white"
+              : "border-line bg-white"
           }`}
           placeholder="e.g. ahmed@example.com"
           autoComplete="email"
         />
         {errors.customerEmail ? (
-          <p className="text-xs text-rose-500">{errors.customerEmail}</p>
+          <p className="text-[13px] text-deal">{errors.customerEmail}</p>
         ) : null}
       </div>
 
@@ -178,9 +178,9 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="tour-phone"
-            className="text-sm font-semibold text-slate-700"
+            className="text-sm font-semibold text-foreground"
           >
-            Phone <span className="text-rose-500">*</span>
+            Phone <span className="text-deal">*</span>
           </label>
           <input
             id="tour-phone"
@@ -189,25 +189,25 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
             onChange={(e) =>
               setForm((f) => ({ ...f, customerPhone: e.target.value }))
             }
-            className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+            className={`h-12 w-full rounded-lg border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
               errors.customerPhone
-                ? "border-rose-400 bg-rose-50"
-                : "border-slate-200 bg-white"
+                ? "border-deal bg-white"
+                : "border-line bg-white"
             }`}
             placeholder="+92 300 1234567"
             autoComplete="tel"
           />
           {errors.customerPhone ? (
-            <p className="text-xs text-rose-500">{errors.customerPhone}</p>
+            <p className="text-[13px] text-deal">{errors.customerPhone}</p>
           ) : null}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="tour-travelers"
-            className="text-sm font-semibold text-slate-700"
+            className="text-sm font-semibold text-foreground"
           >
-            Travelers <span className="text-rose-500">*</span>
+            Travelers <span className="text-deal">*</span>
           </label>
           <input
             id="tour-travelers"
@@ -217,15 +217,15 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
             onChange={(e) =>
               setForm((f) => ({ ...f, travelers: e.target.value }))
             }
-            className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+            className={`h-12 w-full rounded-lg border px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
               errors.travelers
-                ? "border-rose-400 bg-rose-50"
-                : "border-slate-200 bg-white"
+                ? "border-deal bg-white"
+                : "border-line bg-white"
             }`}
             placeholder="2"
           />
           {errors.travelers ? (
-            <p className="text-xs text-rose-500">{errors.travelers}</p>
+            <p className="text-[13px] text-deal">{errors.travelers}</p>
           ) : null}
         </div>
       </div>
@@ -233,7 +233,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="tour-month"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
           Preferred travel month
         </label>
@@ -243,7 +243,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
           onChange={(e) =>
             setForm((f) => ({ ...f, preferredMonth: e.target.value }))
           }
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="h-12 w-full rounded-lg border border-line bg-white px-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
           placeholder="e.g. September 2026"
         />
       </div>
@@ -251,7 +251,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="tour-message"
-          className="text-sm font-semibold text-slate-700"
+          className="text-sm font-semibold text-foreground"
         >
           Additional message
         </label>
@@ -260,13 +260,13 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
           rows={3}
           value={form.message}
           onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="w-full resize-none rounded-lg border border-line bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
           placeholder="Any specific hotel, dates, or special requirements..."
         />
       </div>
 
       {serverError ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
           {serverError}
         </p>
       ) : null}
@@ -274,7 +274,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-strong active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? (
           <>
@@ -289,7 +289,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
         )}
       </button>
 
-      <p className="text-center text-xs text-slate-400">
+      <p className="text-center text-xs text-muted">
         We usually respond within 24 hours.
       </p>
     </form>

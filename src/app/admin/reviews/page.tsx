@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Plus, Star, X } from "lucide-react";
+import { Plus, Star, X } from "lucide-react";
 import type { CustomerReviewRow } from "@/app/api/reviews/route";
 
 const TRIP_TYPES = [
@@ -52,8 +51,8 @@ function StarRatingInput({
           <Star
             className={`h-5 w-5 transition ${
               star <= (hovered || value)
-                ? "fill-amber-400 text-amber-400"
-                : "text-slate-300"
+                ? "fill-gold text-gold"
+                : "text-muted/50"
             }`}
           />
         </button>
@@ -69,7 +68,7 @@ function RatingBadge({ rating }: { rating: number }) {
         <Star
           key={i}
           className={`h-3 w-3 ${
-            i < rating ? "fill-amber-400 text-amber-400" : "text-slate-200"
+            i < rating ? "fill-gold text-gold" : "text-white/85"
           }`}
         />
       ))}
@@ -235,27 +234,17 @@ export default function AdminReviewsPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 py-6">
+    <main className="mx-auto w-full max-w-6xl space-y-6">
       {/* ── Page header ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link
-            href="/admin"
-            className="mb-3 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Administration
-          </Link>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-            Administration
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold text-blue-950">
+          <h1 className="text-xl font-semibold text-navy">
             Customer Reviews
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-muted">
             Manage customer testimonials published across the storefront.
             {isDummy && (
-              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+              <span className="ml-2 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-semibold text-gold-strong">
                 Sample data · add your first review below
               </span>
             )}
@@ -263,7 +252,7 @@ export default function AdminReviewsPage() {
         </div>
         <button
           onClick={openNew}
-          className="flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
         >
           <Plus className="h-4 w-4" />
           Add Review
@@ -274,23 +263,23 @@ export default function AdminReviewsPage() {
       {showForm && (
         <div
           ref={formRef}
-          className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"
+          className="rounded-2xl border border-line bg-white p-6 shadow-card"
         >
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-800">
+            <h2 className="text-base font-semibold text-navy">
               {editingId ? "Edit Review" : "Add New Review"}
             </h2>
             <button
               onClick={closeForm}
-              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-line/50"
               aria-label="Close form"
             >
-              <X className="h-4 w-4 text-slate-500" />
+              <X className="h-4 w-4 text-muted" />
             </button>
           </div>
 
           {error && (
-            <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">
+            <p className="mb-4 rounded-xl bg-deal/6 px-4 py-2.5 text-sm text-deal">
               {error}
             </p>
           )}
@@ -299,23 +288,23 @@ export default function AdminReviewsPage() {
             {/* Row 1: name + location */}
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Customer Name *
                 </span>
                 <input
                   {...field("customerName")}
                   placeholder="e.g. Ahmed Al-Rashdi"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Location
                 </span>
                 <input
                   {...field("location")}
                   placeholder="e.g. Karachi, Pakistan"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
             </div>
@@ -323,7 +312,7 @@ export default function AdminReviewsPage() {
             {/* Row 2: trip type + rating + sort order */}
             <div className="grid gap-4 sm:grid-cols-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Trip Type
                 </span>
                 <select
@@ -334,7 +323,7 @@ export default function AdminReviewsPage() {
                       tripType: e.target.value,
                     }))
                   }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 >
                   <option value="">— Select —</option>
                   {TRIP_TYPES.map((t) => (
@@ -346,7 +335,7 @@ export default function AdminReviewsPage() {
               </label>
 
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Rating *
                 </span>
                 <div className="flex h-9 items-center">
@@ -360,40 +349,40 @@ export default function AdminReviewsPage() {
               </div>
 
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Sort Order
                 </span>
                 <input
                   type="number"
                   min={0}
                   {...field("sortOrder")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
             </div>
 
             {/* Title */}
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Review Title *
               </span>
               <input
                 {...field("title")}
                 placeholder="e.g. Outstanding Umrah experience — exceeded every expectation"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
               />
             </label>
 
             {/* Body */}
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Review Body *
               </span>
               <textarea
                 {...field("body")}
                 rows={4}
                 placeholder="Full review text from the customer..."
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
               />
             </label>
 
@@ -409,9 +398,9 @@ export default function AdminReviewsPage() {
                       isVerified: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 rounded border-slate-300 accent-blue-600"
+                  className="h-4 w-4 rounded border-line-strong accent-brand"
                 />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-navy/80">
                   Verified Customer
                 </span>
               </label>
@@ -425,27 +414,27 @@ export default function AdminReviewsPage() {
                       isPublished: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 rounded border-slate-300 accent-blue-600"
+                  className="h-4 w-4 rounded border-line-strong accent-brand"
                 />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-navy/80">
                   Published
                 </span>
               </label>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <div className="flex justify-end gap-2 border-t border-line pt-4">
               <button
                 type="button"
                 onClick={closeForm}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-subtle"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                className="rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
               >
                 {saving
                   ? "Saving..."
@@ -459,24 +448,24 @@ export default function AdminReviewsPage() {
       )}
 
       {/* ── Reviews table ── */}
-      <section className="rounded-2xl border border-blue-100 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-sm font-semibold text-slate-800">
+      <section className="rounded-2xl border border-line bg-white shadow-card">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+          <h2 className="text-sm font-semibold text-navy">
             All Reviews{" "}
-            <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+            <span className="ml-1.5 rounded-full bg-line/50 px-2 py-0.5 text-xs font-medium text-muted">
               {reviews.length}
             </span>
           </h2>
         </div>
 
         {loading ? (
-          <p className="px-6 py-8 text-sm text-slate-400">Loading reviews…</p>
+          <p className="px-6 py-8 text-sm text-muted/70">Loading reviews…</p>
         ) : reviews.length === 0 ? (
-          <p className="px-6 py-8 text-sm text-slate-400">
+          <p className="px-6 py-8 text-sm text-muted/70">
             No reviews yet. Add your first one above.
           </p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {reviews.map((review) => (
               <div
                 key={review.id}
@@ -487,32 +476,32 @@ export default function AdminReviewsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <RatingBadge rating={review.rating} />
                     {review.tripType && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                      <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
                         {review.tripType}
                       </span>
                     )}
                     {review.isVerified && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      <span className="rounded-full bg-success/8 px-2 py-0.5 text-xs font-medium text-success">
                         ✓ Verified
                       </span>
                     )}
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         review.isPublished
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-500"
+                          ? "bg-success/8 text-success"
+                          : "bg-line/50 text-muted"
                       }`}
                     >
                       {review.isPublished ? "Published" : "Draft"}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-800">
+                  <p className="mt-1.5 text-sm font-semibold text-navy">
                     {review.title}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">
+                  <p className="mt-0.5 line-clamp-2 text-sm text-muted">
                     {review.body}
                   </p>
-                  <p className="mt-1.5 text-xs text-slate-400">
+                  <p className="mt-1.5 text-xs text-muted/70">
                     {review.customerName}
                     {review.location ? ` · ${review.location}` : ""}
                   </p>
@@ -522,19 +511,19 @@ export default function AdminReviewsPage() {
                 <div className="flex shrink-0 items-start gap-2">
                   <button
                     onClick={() => void togglePublished(review)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
                   >
                     {review.isPublished ? "Unpublish" : "Publish"}
                   </button>
                   <button
                     onClick={() => openEdit(review)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => void handleDelete(review.id)}
-                    className="rounded-lg border border-rose-100 px-2.5 py-1.5 text-xs font-medium text-rose-500 transition hover:bg-rose-50"
+                    className="rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
                   >
                     Delete
                   </button>

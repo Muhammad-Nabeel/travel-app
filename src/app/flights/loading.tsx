@@ -5,7 +5,7 @@ const SKELETON_COUNT = 4;
 
 export default function FlightsLoading() {
   return (
-    <main className="flex-1 py-6">
+    <div className="flex-1 py-6">
       <FlightSearchEngine variant="embedded" />
 
       <section className="section-shell mt-6 pb-40">
@@ -60,6 +60,6 @@ export default function FlightsLoading() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -1,66 +1,75 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 
-import type { PackageRow } from "@/app/api/packages/route";
+import {
+  buildStaticPageMetadata,
+  getStaticPageSeo,
+} from "@/lib/admin-settings/seo-settings";
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { UmrahConfigurator } from "@/components/features/umrah/umrah-configurator";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
+import {
+  getPublishedUmrahPackages,
+  getUmrahPackagePath,
+} from "@/lib/umrah-packages";
+import { toDuration, toStarRating } from "@/lib/umrah-pricing";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Umrah Packages",
-  description:
-    "Compare available Umrah packages, departures, inclusions, and pricing before you book.",
-  path: "/umrah-packages",
-  keywords: ["Umrah packages", "pilgrimage travel", "Umrah booking"],
-});
-
-async function getPackages(): Promise<{
-  packages: PackageRow[];
-  isDummy: boolean;
-}> {
-  try {
-    const h = await headers();
-    const host = h.get("host") ?? "localhost:3000";
-    const protocol = host.startsWith("localhost") ? "http" : "https";
-    const res = await fetch(`${protocol}://${host}/api/packages?all=true`, {
-      cache: "no-store",
-    });
-    const isDummy = res.headers.get("x-package-source") === "dummy";
-    const data = await res.json();
-    return { packages: Array.isArray(data) ? data : [], isDummy };
-  } catch {
-    return { packages: [], isDummy: true };
-  }
+export async function generateMetadata(): Promise<Metadata> {
+  const packages = await getPublishedUmrahPackages();
+  // Only index the listing once it shows published packages.
+  return buildStaticPageMetadata("umrahPackages", {
+    noIndex: packages.length === 0,
+  });
 }
 
-export default async function UmrahPackagesPage() {
-  const { packages, isDummy } = await getPackages();
+export default async function UmrahPackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  // Restores a configuration carried back from a package page.
+  const initial = {
+    duration: toDuration(sp.nights),
+    adults: Math.min(20, Math.max(1, Number(sp.adults) || 2)),
+    children: Math.min(12, Math.max(0, Number(sp.children) || 0)),
+    city: typeof sp.city === "string" ? sp.city : "All",
+    makkahStars: toStarRating(sp.makkahStars),
+    madinahStars: toStarRating(sp.madinahStars),
+  };
+  const [packages, seo, heroImage] = await Promise.all([
+    getPublishedUmrahPackages(),
+    getStaticPageSeo("umrahPackages"),
+    getPageBanner("umrah"),
+  ]);
 
   return (
     <>
       <StructuredData
         data={[
           createWebPageSchema({
-            title: "Umrah Packages",
-            description:
-              "Compare available Umrah packages, departures, inclusions, and pricing before you book.",
+            title: seo.title,
+            description: seo.description,
             path: "/umrah-packages",
             type: "CollectionPage",
           }),
           createItemListSchema(
             packages.map((pkg) => ({
               name: pkg.title,
-              path: "/umrah-packages",
+              path: getUmrahPackagePath(pkg.slug),
             })),
             "Umrah packages",
           ),
         ]}
       />
-      <UmrahConfigurator packages={packages} isDummy={isDummy} />
+      <UmrahConfigurator
+        packages={packages}
+        heroImage={heroImage}
+        initial={initial}
+      />
     </>
   );
 }

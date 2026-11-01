@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { VisaResults } from "@/components/features/visa/visa-results";
 import { getStoredVisaCountries } from "@/lib/admin-settings/visa-settings";
 import {
-  buildMetadata,
   createItemListSchema,
   createWebPageSchema,
 } from "@/lib/seo";
 import { getVisaPath } from "@/lib/visa";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Visa Guidance",
-  description:
-    "Review destination-specific visa guidance and planning details before you travel.",
-  path: "/visa",
-  keywords: ["visa guidance", "travel visa", "visa requirements"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return buildStaticPageMetadata("visa");
+}
 
 export default async function VisaPage() {
-  const visaResults = await getStoredVisaCountries();
+  const [visaResults, heroImage] = await Promise.all([
+    getStoredVisaCountries(),
+    getPageBanner("visa"),
+  ]);
   const activeResults = visaResults
     .filter((item) => item.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -29,7 +29,7 @@ export default async function VisaPage() {
   const popularCountries = countryOptions.slice(0, 6);
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -50,10 +50,11 @@ export default async function VisaPage() {
       />
 
       <VisaResults
+        heroImage={heroImage}
         results={activeResults}
         countryOptions={countryOptions}
         popularCountries={popularCountries}
       />
-    </main>
+    </div>
   );
 }

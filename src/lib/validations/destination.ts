@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { seoFields } from "@/lib/validations/seo";
+
 export const destinationSchema = z.object({
     city: z
         .string()
@@ -90,6 +92,7 @@ export const destinationSchema = z.object({
         .default("blue"),
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
+    ...seoFields,
 });
 
 export type DestinationInput = z.infer<typeof destinationSchema>;

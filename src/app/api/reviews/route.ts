@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { authOptions } from "@/lib/providers/auth/auth-provider";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export type CustomerReviewRow = {
     id: string;
@@ -69,6 +73,10 @@ export async function POST(request: NextRequest) {
         }
 
         const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
+        // Visitor reviews stay hidden until an admin publishes them.
+        const session = await getServerSession(authOptions);
+        const isAdmin =
+            (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
         const review = await prisma.customerReview.create({
             data: {
@@ -78,12 +86,13 @@ export async function POST(request: NextRequest) {
                 title: body.title.trim(),
                 body: body.body.trim(),
                 tripType: body.tripType?.trim() || null,
-                isVerified: body.isVerified ?? false,
-                isPublished: body.isPublished ?? false,
-                sortOrder: Number(body.sortOrder) || 0,
+                isVerified: isAdmin ? (body.isVerified ?? false) : false,
+                isPublished: isAdmin ? (body.isPublished ?? false) : false,
+                sortOrder: isAdmin ? Number(body.sortOrder) || 0 : 0,
             },
         });
 
+        revalidatePublicSite();
         return NextResponse.json(review, { status: 201 });
     } catch (err) {
         console.error("[reviews POST]", err);

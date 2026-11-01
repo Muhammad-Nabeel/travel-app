@@ -1,28 +1,9 @@
 .homeHero {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  background-image:
-    linear-gradient(
-      180deg,
-      rgba(6, 78, 59, 0.88) 0%,
-      rgba(16, 185, 129, 0.58) 40%,
-      rgba(167, 243, 208, 0.42) 72%,
-      rgba(226, 232, 240, 0.7) 100%
-    ),
-    radial-gradient(
-      circle at top left,
-      rgba(245, 158, 11, 0.35),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at right 18%,
-      rgba(16, 185, 129, 0.35),
-      transparent 32%
-    );
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  overflow: visible;
+  z-index: 40;
+  background-color: var(--bg);
 }
 
 .embeddedSearch {
@@ -30,35 +11,16 @@
   width: 100%;
 }
 
-.heroOrb {
-  position: absolute;
-  width: 24rem;
-  height: 24rem;
-  border-radius: 9999px;
-  filter: blur(50px);
-  opacity: 0.45;
-}
 
-.heroOrbLeft {
-  left: -8rem;
-  top: -6rem;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.5), transparent 62%);
-}
 
-.heroOrbRight {
-  right: -7rem;
-  top: -5rem;
-  background: radial-gradient(circle, rgba(52, 211, 153, 0.5), transparent 60%);
-}
 
 .searchCard {
   background: #ffffff;
-  border-radius: 14px;
-  box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.15),
-    0 1px 4px rgba(0, 0, 0, 0.06);
-  padding: 12px 14px 14px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  padding: 16px 18px 18px;
   width: 100%;
+  border: 1px solid var(--border-color);
 }
 
 .controlsRow {
@@ -79,7 +41,7 @@
 .stayTab {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text);
   padding: 6px 16px;
   border-radius: 20px;
   border: none;
@@ -92,12 +54,12 @@
 }
 
 .stayTab:hover {
-  background: #f3f4f6;
+  background: var(--bg-subtle);
 }
 
 .stayTabActive {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--primary-soft);
+  color: var(--primary-hover);
   font-weight: 600;
 }
 
@@ -114,10 +76,10 @@
   gap: 5px;
   font-size: 0.84rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text);
   padding: 6px 11px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
   background: #ffffff;
   cursor: pointer;
   white-space: nowrap;
@@ -125,7 +87,7 @@
 }
 
 .ctrlBtn:hover {
-  background: #f9fafb;
+  background: var(--bg-subtle);
 }
 
 .ctrlBtnIcon {
@@ -141,7 +103,7 @@
   top: calc(100% + 8px);
   right: 0;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
@@ -154,7 +116,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 9px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--bg-subtle);
 }
 
 .paxRow:last-child {
@@ -170,13 +132,13 @@
   display: block;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text);
 }
 
 .paxSub {
   display: block;
   font-size: 0.74rem;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .paxCounter {
@@ -189,9 +151,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--border-color);
   background: #ffffff;
-  color: #374151;
+  color: var(--text);
   font-size: 1.1rem;
   line-height: 1;
   display: flex;
@@ -204,8 +166,8 @@
 }
 
 .paxBtn:hover:not(:disabled) {
-  border-color: #059669;
-  color: #059669;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .paxBtn:disabled {
@@ -216,7 +178,7 @@
 .paxNum {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text);
   min-width: 18px;
   text-align: center;
 }
@@ -238,11 +200,11 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
   background: #ffffff;
-  min-height: 48px;
+  min-height: 56px;
   min-width: 0;
   cursor: text;
   transition:
@@ -251,16 +213,16 @@
 }
 
 .field:focus-within {
-  border-color: #059669;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30, 66, 111, 0.1);
 }
 
 .fieldLabel {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .fieldBody {
@@ -270,7 +232,7 @@
 }
 
 .fieldBodyIcon {
-  color: #6b7280;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -281,7 +243,7 @@
   background: transparent;
   font-size: 0.97rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text);
   outline: none;
 }
 
@@ -298,13 +260,13 @@
 .trendingRow {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--bg-subtle);
 }
 
 .trendingLabel {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-right: 8px;
@@ -324,8 +286,8 @@
   gap: 4px;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #374151;
-  background: #f3f4f6;
+  color: var(--text);
+  background: var(--bg-subtle);
   border: none;
   border-radius: 20px;
   padding: 4px 12px;
@@ -334,8 +296,8 @@
 }
 
 .trendingChip:hover {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--primary-soft);
+  color: var(--primary-hover);
 }
 
 .searchBtn {
@@ -343,14 +305,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #059669;
+  background: var(--primary);
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   border: none;
-  border-radius: 10px;
-  padding: 0 20px;
-  min-height: 48px;
+  border-radius: 999px;
+  padding: 0 28px;
+  min-height: 56px;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -359,8 +321,8 @@
 }
 
 .searchBtn:hover {
-  background: #047857;
-  transform: translateY(-1px);
+  background: var(--primary-hover);
+  transform: none;
 }
 
 .searchBtn:active {
@@ -404,5 +366,23 @@
 
   .fieldsRow {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Below tablet width the controls wrap unpredictably, so control dropdowns
+   anchor to the row's left edge instead of their button and stay on screen. */
+@media (max-width: 767px) {
+  .controlsRow {
+    position: relative;
+  }
+
+  .controlsRow .dropdownWrapper {
+    position: static;
+  }
+
+  .controlsRow .dropdownPanel {
+    left: 0;
+    right: auto;
+    max-width: 100%;
   }
 }

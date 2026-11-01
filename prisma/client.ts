@@ -22,6 +22,12 @@ function createSanitizedConnectionUrl() {
         .replace(/[?&]$/, "");
 }
 
+// Hosts without TLS on Postgres (e.g. cPanel) need sslmode=disable in the URL.
+function isSslDisabled() {
+    const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL ?? "";
+    return /[?&]sslmode=disable\b/.test(connectionString);
+}
+
 function createPool() {
     const parsedPoolMax = Number(process.env.PG_POOL_MAX);
     const max = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0
@@ -30,7 +36,7 @@ function createPool() {
 
     return new Pool({
         connectionString: createSanitizedConnectionUrl(),
-        ssl: { rejectUnauthorized: false },
+        ssl: isSslDisabled() ? false : { rejectUnauthorized: false },
         max,
         idleTimeoutMillis: 10_000,
         allowExitOnIdle: true,

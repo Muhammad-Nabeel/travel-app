@@ -1,483 +1,299 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useRef, useState } from "react";
 import {
+  BedDouble,
+  Check,
   ChevronDown,
+  ChevronLeft,
+  MapPin,
   Minus,
-  Moon,
   Plus,
-  Search,
   Star,
-  Users,
 } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
+import {
+  DURATIONS,
+  type Duration,
+  STAR_LABEL,
+  STAR_OPTIONS,
+  type StarRating,
+  configQuery,
+  formatPax,
+  nightSplit,
+  priceForConfig,
+} from "@/lib/umrah-pricing";
+import { ProductTabs } from "@/components/features/home/product-tabs";
+import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-const DURATIONS = [7, 14, 21, 28] as const;
-type Duration = (typeof DURATIONS)[number];
-
-// 0 = Any (no preference). Multipliers are relative to a 4★ base.
-const STAR_OPTIONS = [3, 4, 5] as const;
-type StarRating = 0 | 3 | 4 | 5;
-
-const STAR_MULTIPLIER: Record<StarRating, number> = {
-  0: 1.0, // Any — use base price
-  3: 0.78, // Economy
-  4: 1.0, // Standard (base)
-  5: 1.52, // Luxury
-};
-
-const STAR_LABEL: Record<StarRating, string> = {
-  0: "Any",
-  3: "Economy",
-  4: "Standard",
-  5: "Luxury",
+export type UmrahConfig = {
+  duration: Duration;
+  adults: number;
+  children: number;
+  city: string;
+  makkahStars: StarRating;
+  madinahStars: StarRating;
 };
 
 type Props = {
   packages: PackageRow[];
-  isDummy: boolean;
+  initial: UmrahConfig;
+  /** Hero banner from Admin → Media → Page Banners. */
+  heroImage: string;
 };
 
-// ─── Pricing helpers ────────────────────────────────────────────────────────
+const STEPS = [
+  { id: "trip", label: "Trip & travellers" },
+  { id: "makkah", label: "Makkah hotel" },
+  { id: "madinah", label: "Madinah hotel" },
+  { id: "review", label: "Review" },
+] as const;
 
-function priceForConfig(
-  pkg: PackageRow,
-  nights: number,
-  adults: number,
-  childCount: number,
-  makkahStars: StarRating = 0,
-  madinahStars: StarRating = 0,
-) {
-  const baseNights = pkg.makkahNights + pkg.madinahNights;
-  if (baseNights === 0) return null;
+const STAR_CHOICES: StarRating[] = [0, ...STAR_OPTIONS];
 
-  const split = nightSplit(pkg, nights);
-  const baseRatePerNight = pkg.basePrice / baseNights;
-  const makkahMult = STAR_MULTIPLIER[makkahStars];
-  const madinahMult = STAR_MULTIPLIER[madinahStars];
+const STAR_HINT: Record<StarRating, string> = {
+  0: "Best available price",
+  3: "Comfortable, a short walk or shuttle away",
+  4: "Close to the Haram, good amenities",
+  5: "Closest to the Haram, premium service",
+};
 
-  const perPersonTotal = Math.round(
-    baseRatePerNight * makkahMult * split.makkah +
-      baseRatePerNight * madinahMult * split.madinah,
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function matchingPackages(packages: PackageRow[], city: string) {
+  return packages.filter(
+    (p) => p.status === "PUBLISHED" && (city === "All" || p.departureCity === city),
   );
-  const totalPax = adults + childCount;
-  const allPaxTotal = perPersonTotal * totalPax;
-  const perNightPerPerson = Math.round(
-    (baseRatePerNight * makkahMult * split.makkah +
-      baseRatePerNight * madinahMult * split.madinah) /
-      nights,
-  );
-  return {
-    perNightPerPerson,
-    perPersonTotal,
-    allPaxTotal,
-    totalPax,
-    makkahMult,
-    madinahMult,
-  };
 }
 
-function nightSplit(pkg: PackageRow, nights: number) {
-  const total = pkg.makkahNights + pkg.madinahNights;
-  if (total === 0) return { makkah: nights, madinah: 0 };
-  const makkah = Math.round((pkg.makkahNights / total) * nights);
-  return { makkah, madinah: nights - makkah };
+/** Cheapest per-person price for a configuration across the given packages. */
+function cheapest(packages: PackageRow[], config: UmrahConfig) {
+  let best: { amount: number; currency: string } | null = null;
+  for (const pkg of packages) {
+    const price = priceForConfig(
+      pkg,
+      config.duration,
+      1,
+      0,
+      config.makkahStars,
+      config.madinahStars,
+    );
+    if (price && (!best || price.perPersonTotal < best.amount)) {
+      best = { amount: price.perPersonTotal, currency: pkg.currency };
+    }
+  }
+  return best;
 }
 
-// ─── Star picker ────────────────────────────────────────────────────────────
+function hotelLabel(stars: StarRating) {
+  return stars === 0 ? "Any rating" : `${stars}★ ${STAR_LABEL[stars]}`;
+}
 
-function StarPicker({
+function money(value: { amount: number; currency: string } | null) {
+  return value ? `${value.currency} ${value.amount.toLocaleString()}` : "—";
+}
+
+// ─── Small controls ─────────────────────────────────────────────────────────
+
+function Counter({
   label,
+  hint,
   value,
+  min,
+  max,
   onChange,
 }: {
   label: string;
-  value: StarRating;
-  onChange: (v: StarRating) => void;
+  hint: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
 }) {
+  const buttonClass =
+    "flex size-10 items-center justify-center rounded-full border border-line text-foreground transition hover:border-brand hover:text-brand disabled:pointer-events-none disabled:opacity-35";
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-        {label}
-      </p>
-      <div className="flex items-center gap-1.5">
+    <div className="flex items-center justify-between gap-4 py-3">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="text-xs text-muted">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => onChange(0)}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-            value === 0
-              ? "border-slate-400 bg-slate-100 text-slate-700"
-              : "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
-          }`}
+          onClick={() => onChange(value - 1)}
+          disabled={value <= min}
+          className={buttonClass}
+          aria-label={`Fewer ${label.toLowerCase()}`}
         >
-          Any
+          <Minus className="size-4" />
         </button>
-        {STAR_OPTIONS.map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(value === n ? 0 : n)}
-            className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${
-              value === n
-                ? "border-amber-400 bg-amber-400 text-white shadow-sm"
-                : "border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-500"
-            }`}
-          >
-            {Array.from({ length: n }).map((_, i) => (
-              <Star
-                key={i}
-                className={`h-2.5 w-2.5 ${
-                  value === n
-                    ? "fill-white text-white"
-                    : "fill-current text-amber-400"
-                }`}
-              />
-            ))}
-            <span className="ml-0.5">{n}★</span>
-          </button>
-        ))}
-        {value !== 0 && (
-          <span className="ml-1 text-xs text-slate-400">
-            · {STAR_LABEL[value]}
-          </span>
-        )}
+        <span className="w-6 text-center text-base font-semibold tabular-nums" aria-live="polite">
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          disabled={value >= max}
+          className={buttonClass}
+          aria-label={`More ${label.toLowerCase()}`}
+        >
+          <Plus className="size-4" />
+        </button>
       </div>
     </div>
   );
 }
 
-// ─── Pax dropdown ───────────────────────────────────────────────────────────
-
-function PaxDropdown({
-  adults,
-  childCount,
-  onAdults,
-  onChildren,
+function StarTiles({
+  name,
+  value,
+  onChange,
+  priceFor,
 }: {
-  adults: number;
-  childCount: number;
-  onAdults: (n: number) => void;
-  onChildren: (n: number) => void;
+  name: string;
+  value: StarRating;
+  onChange: (v: StarRating) => void;
+  priceFor: (stars: StarRating) => string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const label =
-    `${adults} Adult${adults !== 1 ? "s" : ""}` +
-    (childCount > 0
-      ? `, ${childCount} Child${childCount !== 1 ? "ren" : ""}`
-      : "");
-
-  useLayoutEffect(() => {
-    if (open && triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect();
-      setPos({
-        top: r.bottom + window.scrollY + 6,
-        left: r.left + window.scrollX,
-        width: Math.max(r.width, 256),
-      });
-    }
-  }, [open]);
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node) &&
-        panelRef.current &&
-        !panelRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const panel = open
-    ? createPortal(
-        <div
-          ref={panelRef}
-          style={{
-            position: "absolute",
-            top: pos.top,
-            left: pos.left,
-            width: pos.width,
-            zIndex: 9999,
-          }}
-          className="rounded-2xl border border-slate-100 bg-white p-4 shadow-xl"
-        >
-          {/* portal panel — rendered at document body, unaffected by parent stacking contexts */}
-          {/* Adults */}
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-medium text-slate-800">Adults</p>
-              <p className="text-xs text-slate-400">Age 12+</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onAdults(Math.max(1, adults - 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-brand hover:text-brand"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="w-5 text-center text-sm font-semibold tabular-nums">
-                {adults}
-              </span>
-              <button
-                type="button"
-                onClick={() => onAdults(Math.min(20, adults + 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-brand hover:text-brand"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          <div className="border-t border-slate-50" />
-          {/* Children */}
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-medium text-slate-800">Children</p>
-              <p className="text-xs text-slate-400">Under 12</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onChildren(Math.max(0, childCount - 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-brand hover:text-brand"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="w-5 text-center text-sm font-semibold tabular-nums">
-                {childCount}
-              </span>
-              <button
-                type="button"
-                onClick={() => onChildren(Math.min(12, childCount + 1))}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-brand hover:text-brand"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="mt-2 w-full rounded-xl bg-brand py-2 text-sm font-medium text-white transition hover:bg-brand-strong"
-          >
-            Done
-          </button>
-        </div>,
-        document.body,
-      )
-    : null;
-
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-12 min-w-45 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 transition hover:border-brand/40 hover:shadow-sm"
-      >
-        <Users className="h-4 w-4 shrink-0 text-slate-400" />
-        <span className="flex-1 text-left">{label}</span>
-        <ChevronDown
-          className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {panel}
-    </>
+    <div role="radiogroup" aria-label={name} className="grid gap-3 sm:grid-cols-2">
+      {STAR_CHOICES.map((stars) => {
+        const selected = value === stars;
+        return (
+          <button
+            key={stars}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(stars)}
+            className={`relative flex flex-col items-start rounded-xl border p-4 text-left transition ${
+              selected
+                ? "border-brand bg-brand-soft ring-1 ring-brand"
+                : "border-line bg-white hover:border-foreground/40"
+            }`}
+          >
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              {stars === 0 ? (
+                "Any rating"
+              ) : (
+                <>
+                  <span className="flex" aria-hidden>
+                    {Array.from({ length: stars }).map((_, i) => (
+                      <Star key={i} className="size-3.5 fill-gold text-gold" />
+                    ))}
+                  </span>
+                  {STAR_LABEL[stars]}
+                  <span className="sr-only">{stars} star</span>
+                </>
+              )}
+            </span>
+            <span className="mt-1 text-xs text-muted">{STAR_HINT[stars]}</span>
+            <span className="mt-3 text-sm text-foreground">
+              from <strong className="tabular-nums">{priceFor(stars)}</strong>
+              <span className="text-muted"> pp</span>
+            </span>
+            {selected ? (
+              <Check className="absolute right-3 top-3 size-5 text-brand" strokeWidth={2.5} />
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 // ─── Package result card ────────────────────────────────────────────────────
 
-function PackageCard({
-  pkg,
-  nights,
-  adults,
-  childCount,
-  makkahStars,
-  madinahStars,
-}: {
-  pkg: PackageRow;
-  nights: Duration;
-  adults: number;
-  childCount: number;
-  makkahStars: StarRating;
-  madinahStars: StarRating;
-}) {
+function PackageCard({ pkg, config }: { pkg: PackageRow; config: UmrahConfig }) {
   const pricing = priceForConfig(
     pkg,
-    nights,
-    adults,
-    childCount,
-    makkahStars,
-    madinahStars,
+    config.duration,
+    config.adults,
+    config.children,
+    config.makkahStars,
+    config.madinahStars,
   );
-  const split = nightSplit(pkg, nights);
-
   if (!pricing) return null;
 
-  const resolvedPricing = pricing;
-
-  const totalPax = adults + childCount;
-  const hasMult = makkahStars !== 0 || madinahStars !== 0;
-
+  const split = nightSplit(pkg, config.duration);
   const detailHref =
-    `/umrah-packages/${pkg.slug}` +
-    `?nights=${nights}&adults=${adults}&children=${childCount}` +
-    `&makkahStars=${makkahStars}&madinahStars=${madinahStars}`;
+    `/umrah-packages/${pkg.slug}?` +
+    configQuery({
+      nights: config.duration,
+      adults: config.adults,
+      childCount: config.children,
+      makkahStars: config.makkahStars,
+      madinahStars: config.madinahStars,
+    });
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row">
-      {/* Accent band */}
-      <div className="h-1.5 w-full bg-linear-to-r from-amber-400 via-yellow-300 to-emerald-400 sm:h-auto sm:w-1.5" />
-
-      <div className="flex flex-1 flex-col gap-0 p-5 sm:flex-row sm:gap-6">
-        {/* Left: Info */}
-        <div className="flex flex-1 flex-col gap-3">
-          {/* Title row */}
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
-                {pkg.departureCity}
-              </p>
-              <h3 className="mt-1 text-lg font-bold leading-snug text-slate-900">
-                {pkg.title}
-              </h3>
-              {pkg.subtitle && (
-                <p className="mt-0.5 text-sm text-slate-500">{pkg.subtitle}</p>
-              )}
-            </div>
-            <span
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                pkg.status === "PUBLISHED"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-            >
-              {pkg.status.toLowerCase()}
-            </span>
-          </div>
-
-          {/* Night + hotel rating chips */}
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-brand/8 px-3 py-1">
-              <Moon className="h-3.5 w-3.5 text-brand" />
-              <span className="text-xs font-semibold text-brand">
-                {split.makkah}N Makkah
-              </span>
-              {makkahStars !== 0 && (
-                <span className="ml-0.5 flex items-center gap-0.5 text-xs font-medium text-amber-600">
-                  {Array.from({ length: makkahStars }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-2.5 w-2.5 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </span>
-              )}
-            </div>
-            {split.madinah > 0 && (
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1">
-                <Moon className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-xs font-semibold text-emerald-700">
-                  {split.madinah}N Madinah
-                </span>
-                {madinahStars !== 0 && (
-                  <span className="ml-0.5 flex items-center gap-0.5 text-xs font-medium text-amber-600">
-                    {Array.from({ length: madinahStars }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-2.5 w-2.5 fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Hotel note */}
-          {pkg.hotelSummary && (
-            <p className="text-xs text-slate-500">🏨 {pkg.hotelSummary}</p>
-          )}
-
-          {/* Inclusions */}
-          {pkg.inclusions.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {pkg.inclusions.slice(0, 4).map((inc) => (
-                <span
-                  key={inc}
-                  className="rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-xs text-slate-500"
-                >
-                  ✓ {inc}
-                </span>
-              ))}
-              {pkg.inclusions.length > 4 && (
-                <span className="rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-xs text-slate-400">
-                  +{pkg.inclusions.length - 4} more
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Seats */}
-          {pkg.seatsAvailable > 0 && (
-            <p className="text-xs font-medium text-amber-600">
-              ⚡ {pkg.seatsAvailable} seats remaining
-            </p>
-          )}
+    <article className="group relative flex flex-col rounded-2xl border border-line bg-white transition hover:shadow-raised sm:flex-row">
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <p className="flex items-center gap-1.5 text-sm text-muted">
+          <MapPin className="size-3.5" />
+          From {pkg.departureCity}
+        </p>
+        <div>
+          <h3 className="text-lg font-semibold leading-snug text-foreground">
+            <Link href={detailHref} className="after:absolute after:inset-0 group-hover:text-brand">
+              {pkg.title}
+            </Link>
+          </h3>
+          {pkg.subtitle ? <p className="mt-0.5 text-sm text-muted">{pkg.subtitle}</p> : null}
         </div>
 
-        {/* Right: Pricing panel */}
-        <div className="flex flex-col items-end justify-between gap-4 border-t border-slate-100 pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-widest text-slate-400">
-              {nights} nights · {totalPax} pax
-            </p>
-            <p className="mt-1 text-3xl font-extrabold tabular-nums text-brand-strong">
-              {pkg.currency} {resolvedPricing.allPaxTotal.toLocaleString()}
-            </p>
-            <p className="mt-0.5 text-sm font-semibold text-slate-600">
-              {pkg.currency} {resolvedPricing.perPersonTotal.toLocaleString()}
-              <span className="ml-1 text-xs font-normal text-slate-400">
-                / person
-              </span>
-            </p>
-            <p className="mt-0.5 text-xs text-slate-400">
-              ≈ {pkg.currency}{" "}
-              {resolvedPricing.perNightPerPerson.toLocaleString()}
-              <span className="ml-0.5">/ night per person</span>
-            </p>
-            {hasMult && (
-              <p className="mt-1.5 flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-700">
-                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                {makkahStars !== 0 ? `${makkahStars}★ Makkah` : "Any Makkah"}
-                {" · "}
-                {madinahStars !== 0
-                  ? `${madinahStars}★ Madinah`
-                  : "Any Madinah"}
-              </p>
-            )}
-          </div>
+        <p className="text-sm font-medium text-foreground">
+          {split.makkah} nights Makkah
+          {split.madinah > 0 ? ` · ${split.madinah} nights Madinah` : ""}
+        </p>
+        {pkg.hotelSummary ? (
+          <p className="flex items-start gap-1.5 text-sm text-muted">
+            <BedDouble className="mt-0.5 size-4 shrink-0" />
+            {pkg.hotelSummary}
+          </p>
+        ) : null}
 
-          <Link
-            href={detailHref}
-            className="whitespace-nowrap rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95"
-          >
-            View details
-          </Link>
+        {pkg.inclusions.length > 0 ? (
+          <ul className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+            {pkg.inclusions.slice(0, 4).map((inc) => (
+              <li key={inc} className="flex items-center gap-2 text-sm text-foreground">
+                <Check className="size-4 shrink-0 text-success" />
+                {inc}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {pkg.inclusions.length > 4 ? (
+          <p className="text-xs text-muted">+{pkg.inclusions.length - 4} more included</p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-row items-end justify-between gap-4 border-t border-line p-5 sm:w-60 sm:flex-col sm:items-end sm:border-l sm:border-t-0">
+        <div className="sm:text-right">
+          {pkg.seatsAvailable > 0 ? (
+            <p className="mb-2 text-xs font-semibold text-deal">
+              {pkg.seatsAvailable} seats left
+            </p>
+          ) : null}
+          <p className="text-xs text-muted">
+            {config.duration} nights · {formatPax(config.adults, config.children)}
+          </p>
+          <p className="text-2xl font-bold tabular-nums text-foreground">
+            {pkg.currency} {pricing.allPaxTotal.toLocaleString()}
+          </p>
+          <p className="text-xs text-muted">
+            {pkg.currency} {pricing.perPersonTotal.toLocaleString()} per person
+          </p>
         </div>
+        <span className="shrink-0 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition group-hover:bg-brand-strong">
+          View details
+        </span>
       </div>
     </article>
   );
@@ -485,311 +301,414 @@ function PackageCard({
 
 // ─── Main configurator ──────────────────────────────────────────────────────
 
-export function UmrahConfigurator({ packages, isDummy }: Props) {
-  const [selectedDuration, setSelectedDuration] = useState<Duration>(14);
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
-  const [departureCity, setDepartureCity] = useState("All");
-  const [makkahStars, setMakkahStars] = useState<StarRating>(0);
-  const [madinahStars, setMadinahStars] = useState<StarRating>(0);
-  const [applied, setApplied] = useState<{
-    duration: Duration;
-    adults: number;
-    children: number;
-    city: string;
-    makkahStars: StarRating;
-    madinahStars: StarRating;
-  }>({
-    duration: 14,
-    adults: 2,
-    children: 0,
-    city: "All",
-    makkahStars: 0,
-    madinahStars: 0,
-  });
+export function UmrahConfigurator({ packages, initial, heroImage }: Props) {
+  const [step, setStep] = useState(0);
+  const [visited, setVisited] = useState(0);
+  const [draft, setDraft] = useState<UmrahConfig>(initial);
+  const [applied, setApplied] = useState<UmrahConfig>(initial);
+  const resultsRef = useRef<HTMLElement>(null);
 
   const departureCities = useMemo(() => {
-    const cities = Array.from(
-      new Set(packages.map((p) => p.departureCity)),
-    ).sort();
+    const cities = Array.from(new Set(packages.map((p) => p.departureCity))).sort();
     return ["All", ...cities];
   }, [packages]);
 
-  function handleSearch() {
-    setApplied({
-      duration: selectedDuration,
-      adults,
-      children,
-      city: departureCity,
-      makkahStars,
-      madinahStars,
-    });
-  }
-
+  const draftMatches = useMemo(
+    () => matchingPackages(packages, draft.city),
+    [packages, draft.city],
+  );
   const filtered = useMemo(
-    () =>
-      packages.filter(
-        (p) =>
-          p.status === "PUBLISHED" &&
-          (applied.city === "All" || p.departureCity === applied.city),
-      ),
+    () => matchingPackages(packages, applied.city),
     [packages, applied.city],
   );
 
-  const totalPax = applied.adults + applied.children;
+  const update = (patch: Partial<UmrahConfig>) => setDraft((d) => ({ ...d, ...patch }));
+
+  function goTo(next: number) {
+    setStep(next);
+    setVisited((v) => Math.max(v, next));
+  }
+
+  function showPackages() {
+    setApplied(draft);
+    const query = configQuery({
+      nights: draft.duration,
+      adults: draft.adults,
+      childCount: draft.children,
+      makkahStars: draft.makkahStars,
+      madinahStars: draft.madinahStars,
+    });
+    const city = draft.city !== "All" ? `&city=${encodeURIComponent(draft.city)}` : "";
+    window.history.replaceState(null, "", `?${query}${city}`);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const draftFrom = cheapest(draftMatches, draft);
+  const draftPax = draft.adults + draft.children;
+  const isLastStep = step === STEPS.length - 1;
+
+  const summaryRows = [
+    { label: "Duration", value: `${draft.duration} nights`, step: 0 },
+    { label: "Departing from", value: draft.city === "All" ? "Any city" : draft.city, step: 0 },
+    { label: "Travellers", value: formatPax(draft.adults, draft.children), step: 0 },
+    { label: "Makkah hotel", value: hotelLabel(draft.makkahStars), step: 1 },
+    { label: "Madinah hotel", value: hotelLabel(draft.madinahStars), step: 2 },
+  ];
 
   return (
     <div className="flex-1">
-      {/* ── Hero configurator ── */}
-      <section
-        className="relative w-full overflow-hidden"
-        style={{
-          background: `
-            linear-gradient(180deg,
-              rgba(120,53,15,0.92) 0%,
-              rgba(217,119,6,0.72) 30%,
-              rgba(5,150,105,0.65) 65%,
-              rgba(226,232,240,0.7) 100%
-            ),
-            radial-gradient(circle at top left, rgba(245,158,11,0.4), transparent 30%),
-            radial-gradient(circle at right 15%, rgba(16,185,129,0.3), transparent 35%)
-          `,
-        }}
-        aria-label="Umrah package configurator"
-      >
-        {/* Orb decorations */}
-        <div
-          className="pointer-events-none absolute -left-24 -top-16 h-72 w-72 rounded-full opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(245,158,11,0.55), transparent 65%)",
-            filter: "blur(48px)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute -right-20 -top-12 h-64 w-64 rounded-full opacity-35"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(52,211,153,0.5), transparent 62%)",
-            filter: "blur(44px)",
-          }}
-        />
+      {/* ── Hero ── */}
+      <section className="relative isolate" aria-label="Plan your Umrah">
+        <div className="absolute inset-x-0 top-0 -z-10 h-[340px] overflow-hidden sm:h-[380px]">
+          <Image
+            src={heroImage}
+            alt=""
+            fill
+            sizes="100vw"
+            fetchPriority="high"
+            loading="eager"
+            className="object-cover object-[center_60%]"
+          />
+          <div className="absolute inset-0 bg-linear-to-b from-navy/60 via-navy/35 to-navy/10" />
+        </div>
 
-        <div className="section-shell relative z-10 py-14 pb-10 text-center">
-          {isDummy && (
-            <p className="mb-4 inline-block rounded-full border border-amber-200/60 bg-amber-50/20 px-4 py-1 text-xs text-amber-100 backdrop-blur-sm">
-              Demo mode — database not connected
+        <div className="section-shell pb-6 pt-12 sm:pt-16">
+          <div className="mx-auto mb-8 max-w-3xl text-center text-white">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+              Plan your Umrah
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-base text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">
+              Choose your nights, travellers and hotels. See the price for your
+              group as you go.
             </p>
-          )}
+          </div>
 
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100/80">
-            Plan your Umrah
-          </p>
-          <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-            Build your package
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-white/70">
-            Choose your duration and group size — see the exact cost per person
-            instantly.
-          </p>
+          {/* ── Stepper card ── */}
+          <div className="overflow-hidden rounded-card border border-line bg-white shadow-raised">
+            <ProductTabs active="umrah" className="" />
+            <ol className="flex overflow-x-auto border-b border-line px-2 sm:px-4">
+              {STEPS.map((s, i) => {
+                const active = i === step;
+                const done = !active && i <= visited;
+                return (
+                  <li key={s.id} className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => goTo(i)}
+                      aria-current={active ? "step" : undefined}
+                      className={`flex items-center gap-2 border-b-2 px-3 py-4 text-sm font-semibold transition sm:px-4 ${
+                        active
+                          ? "border-brand text-brand"
+                          : "border-transparent text-muted hover:text-foreground"
+                      }`}
+                    >
+                      <span
+                        className={`flex size-6 items-center justify-center rounded-full text-xs ${
+                          active
+                            ? "bg-brand text-white"
+                            : done
+                              ? "bg-success text-white"
+                              : "bg-subtle text-muted"
+                        }`}
+                      >
+                        {done ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
+                      </span>
+                      {s.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
 
-          {/* ── Search card ── */}
-          <div className="mt-8 w-full rounded-2xl bg-white shadow-2xl shadow-black/20">
-            {/* Duration tabs */}
-            <div className="border-b border-slate-100 px-5 pt-4 pb-3">
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Duration
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {DURATIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setSelectedDuration(d)}
-                    className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                      selectedDuration === d
-                        ? "bg-brand text-white shadow-sm shadow-brand/30"
-                        : "border border-slate-200 bg-white text-slate-600 hover:border-brand/40 hover:text-brand"
-                    }`}
-                  >
-                    {d} nights
-                  </button>
-                ))}
+            <div className="grid md:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="p-5 sm:p-6">
+                {step === 0 ? (
+                  <div className="space-y-6">
+                    <fieldset>
+                      <legend className="mb-3 text-sm font-semibold text-foreground">
+                        How many nights?
+                      </legend>
+                      <div className="flex flex-wrap gap-2">
+                        {DURATIONS.map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            aria-pressed={draft.duration === d}
+                            onClick={() => update({ duration: d })}
+                            className={`h-11 rounded-full border px-5 text-sm font-semibold transition ${
+                              draft.duration === d
+                                ? "border-brand bg-brand-soft text-brand"
+                                : "border-line bg-white text-foreground hover:border-foreground/40"
+                            }`}
+                          >
+                            {d} nights
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+
+                    <div>
+                      <label
+                        htmlFor="umrah-city"
+                        className="mb-2 block text-sm font-semibold text-foreground"
+                      >
+                        Departing from
+                      </label>
+                      <div className="relative sm:max-w-xs">
+                        <select
+                          id="umrah-city"
+                          value={draft.city}
+                          onChange={(e) => update({ city: e.target.value })}
+                          className="h-12 w-full appearance-none rounded-lg border border-line bg-white pl-4 pr-10 text-sm text-foreground transition hover:border-foreground/40"
+                        >
+                          {departureCities.map((city) => (
+                            <option key={city} value={city}>
+                              {city === "All" ? "Any city" : city}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                      </div>
+                    </div>
+
+                    <fieldset className="sm:max-w-sm">
+                      <legend className="text-sm font-semibold text-foreground">Travellers</legend>
+                      <div className="divide-y divide-line">
+                        <Counter
+                          label="Adults"
+                          hint="Age 12+"
+                          value={draft.adults}
+                          min={1}
+                          max={20}
+                          onChange={(adults) => update({ adults })}
+                        />
+                        <Counter
+                          label="Children"
+                          hint="Under 12"
+                          value={draft.children}
+                          min={0}
+                          max={12}
+                          onChange={(children) => update({ children })}
+                        />
+                      </div>
+                    </fieldset>
+                  </div>
+                ) : null}
+
+                {step === 1 || step === 2 ? (
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {step === 1 ? "Your hotel in Makkah" : "Your hotel in Madinah"}
+                    </h2>
+                    <p className="mb-4 mt-1 text-sm text-muted">
+                      Prices are per person for {draft.duration} nights. Your
+                      adviser confirms the exact hotel.
+                    </p>
+                    <StarTiles
+                      name={step === 1 ? "Makkah hotel rating" : "Madinah hotel rating"}
+                      value={step === 1 ? draft.makkahStars : draft.madinahStars}
+                      onChange={(stars) =>
+                        update(step === 1 ? { makkahStars: stars } : { madinahStars: stars })
+                      }
+                      priceFor={(stars) =>
+                        money(
+                          cheapest(
+                            draftMatches,
+                            step === 1
+                              ? { ...draft, makkahStars: stars }
+                              : { ...draft, madinahStars: stars },
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                ) : null}
+
+                {isLastStep ? (
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Check your choices</h2>
+                    <dl className="mt-4 divide-y divide-line rounded-xl border border-line">
+                      {summaryRows.map((row) => (
+                        <div key={row.label} className="flex items-center justify-between gap-4 px-4 py-3">
+                          <dt className="text-sm text-muted">{row.label}</dt>
+                          <dd className="flex items-center gap-3 text-sm font-semibold text-foreground">
+                            {row.value}
+                            <button
+                              type="button"
+                              onClick={() => goTo(row.step)}
+                              className="text-sm font-semibold text-brand hover:text-brand-strong"
+                              aria-label={`Edit ${row.label.toLowerCase()}`}
+                            >
+                              Edit
+                            </button>
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ) : null}
+
+                <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-5">
+                  {step > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => goTo(step - 1)}
+                      className="inline-flex h-11 items-center gap-1 rounded-full px-4 text-sm font-semibold text-foreground transition hover:bg-subtle"
+                    >
+                      <ChevronLeft className="size-4" />
+                      Back
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  {isLastStep ? (
+                    <button
+                      type="button"
+                      onClick={showPackages}
+                      className="h-12 rounded-full bg-brand px-7 text-base font-semibold text-white transition hover:bg-brand-strong"
+                    >
+                      Show {draftMatches.length} package{draftMatches.length !== 1 ? "s" : ""}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={showPackages}
+                        className="hidden h-11 rounded-full px-4 text-sm font-semibold text-brand transition hover:bg-brand-soft sm:block"
+                      >
+                        Skip to packages
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => goTo(step + 1)}
+                        className="h-12 rounded-full bg-brand px-7 text-base font-semibold text-white transition hover:bg-brand-strong"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Hotel ratings */}
-            <div className="border-b border-slate-100 px-5 pt-4 pb-4 flex flex-col gap-4 sm:flex-row sm:gap-8">
-              <StarPicker
-                label="Makkah hotel"
-                value={makkahStars}
-                onChange={setMakkahStars}
-              />
-              <StarPicker
-                label="Madinah hotel"
-                value={madinahStars}
-                onChange={setMadinahStars}
-              />
-            </div>
-
-            {/* Controls row */}
-            <div className="flex flex-wrap items-center gap-3 px-5 py-4">
-              {/* Departure city */}
-              <div className="relative">
-                <select
-                  value={departureCity}
-                  onChange={(e) => setDepartureCity(e.target.value)}
-                  className="h-12 min-w-37.5 appearance-none rounded-2xl border border-slate-200 bg-white pl-4 pr-9 text-sm text-slate-700 transition hover:border-brand/40 focus:outline-none"
-                  aria-label="Departure city"
-                >
-                  {departureCities.map((city) => (
-                    <option key={city} value={city}>
-                      {city === "All" ? "All cities" : city}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              </div>
-
-              {/* Pax picker */}
-              <PaxDropdown
-                adults={adults}
-                childCount={children}
-                onAdults={setAdults}
-                onChildren={setChildren}
-              />
-
-              {/* Search button */}
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="ml-auto flex h-12 items-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-strong active:scale-95"
+              {/* Running summary */}
+              <aside
+                aria-label="Price summary"
+                className="border-t border-line bg-subtle p-5 sm:p-6 md:border-l md:border-t-0"
               >
-                <Search className="h-4 w-4" />
-                Find packages
-              </button>
+                <p className="text-sm font-semibold text-foreground">Your Umrah</p>
+                <dl className="mt-3 hidden space-y-2 text-sm md:block">
+                  {summaryRows.map((row) => (
+                    <div key={row.label} className="flex justify-between gap-3">
+                      <dt className="text-muted">{row.label}</dt>
+                      <dd className="text-right font-medium text-foreground">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-2 md:mt-5 md:border-t md:border-line md:pt-5" aria-live="polite">
+                  <p className="text-sm text-muted">from</p>
+                  <p className="text-[28px] font-bold leading-tight tabular-nums text-foreground">
+                    {money(draftFrom)}
+                  </p>
+                  <p className="text-sm text-muted">per person</p>
+                  {draftFrom && draftPax > 1 ? (
+                    <p className="mt-2 text-sm text-foreground">
+                      About{" "}
+                      <strong className="tabular-nums">
+                        {money({ ...draftFrom, amount: draftFrom.amount * draftPax })}
+                      </strong>{" "}
+                      for {draftPax} travellers
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── Results ── */}
-      <section className="section-shell py-10" aria-label="Package results">
-        {/* Summary bar */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              {applied.duration}-night packages
-            </h2>
-            <p className="mt-0.5 text-sm text-slate-500">
-              {applied.city === "All"
-                ? "All departure cities"
-                : `Departing from ${applied.city}`}{" "}
-              · {applied.adults} adult{applied.adults !== 1 ? "s" : ""}
-              {applied.children > 0
-                ? `, ${applied.children} child${applied.children !== 1 ? "ren" : ""}`
-                : ""}{" "}
-              · {totalPax} pax
-              {(applied.makkahStars !== 0 || applied.madinahStars !== 0) && (
-                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  {applied.makkahStars !== 0
-                    ? `${applied.makkahStars}★ Makkah`
-                    : "Any Makkah"}
-                  {" · "}
-                  {applied.madinahStars !== 0
-                    ? `${applied.madinahStars}★ Madinah`
-                    : "Any Madinah"}
-                </span>
-              )}
-            </p>
-          </div>
-          <span className="rounded-full border border-brand/20 bg-brand/5 px-4 py-1 text-sm font-medium text-brand">
-            {filtered.length} packages
-          </span>
+      <section
+        ref={resultsRef}
+        className="section-shell scroll-mt-24 py-10"
+        aria-label="Package results"
+      >
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+            {applied.duration}-night Umrah packages
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {filtered.length} package{filtered.length !== 1 ? "s" : ""} ·{" "}
+            {applied.city === "All" ? "all departure cities" : `from ${applied.city}`} ·{" "}
+            {formatPax(applied.adults, applied.children)} · Makkah{" "}
+            {hotelLabel(applied.makkahStars).toLowerCase()} · Madinah{" "}
+            {hotelLabel(applied.madinahStars).toLowerCase()}
+          </p>
         </div>
 
-        {/* Package cards */}
         {filtered.length === 0 ? (
-          <div className="rounded-3xl border border-slate-100 bg-white p-16 text-center shadow-sm">
-            <p className="text-lg font-semibold text-slate-700">
-              No packages available
+          <div className="rounded-2xl border border-line bg-subtle px-6 py-16 text-center">
+            <EmptyStateImage slot="emptyPackages" />
+            <p className="text-lg font-semibold text-foreground">No packages from this city yet</p>
+            <p className="mt-1 text-sm text-muted">
+              Try another departure city, or check back soon.
             </p>
-            <p className="mt-2 text-sm text-slate-400">
-              Try selecting a different departure city or check back soon.
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                update({ city: "All" });
+                setApplied((a) => ({ ...a, city: "All" }));
+              }}
+              className="mt-5 rounded-full border border-line bg-white px-5 py-2 text-sm font-semibold text-foreground transition hover:shadow-card"
+            >
+              Show all cities
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             {filtered.map((pkg) => (
-              <PackageCard
-                key={pkg.id}
-                pkg={pkg}
-                nights={applied.duration}
-                adults={applied.adults}
-                childCount={applied.children}
-                makkahStars={applied.makkahStars}
-                madinahStars={applied.madinahStars}
-              />
+              <PackageCard key={pkg.id} pkg={pkg} config={applied} />
             ))}
           </div>
         )}
 
-        {/* Duration quick-switch at bottom */}
-        <div className="mt-10 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <p className="mb-4 text-sm font-semibold text-slate-500 uppercase tracking-widest">
-            Compare durations for {totalPax} pax
-          </p>
-          <div className="grid gap-3 sm:grid-cols-4">
-            {DURATIONS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => {
-                  setSelectedDuration(d);
-                  setApplied((prev) => ({ ...prev, duration: d }));
-                }}
-                className={`rounded-2xl border p-4 text-left transition hover:border-brand/40 hover:shadow-sm ${
-                  applied.duration === d
-                    ? "border-brand bg-brand/5 shadow-sm"
-                    : "border-slate-100 bg-white"
-                }`}
-              >
-                <p
-                  className={`text-2xl font-extrabold tabular-nums ${
-                    applied.duration === d
-                      ? "text-brand-strong"
-                      : "text-slate-800"
-                  }`}
-                >
-                  {d}N
-                </p>
-                <p className="mt-0.5 text-xs text-slate-400">{d} nights</p>
-                {filtered.length > 0 &&
-                  (() => {
-                    const representative = filtered[0];
-                    const p = priceForConfig(
-                      representative,
-                      d,
-                      applied.adults,
-                      applied.children,
-                      applied.makkahStars,
-                      applied.madinahStars,
-                    );
-                    return p ? (
-                      <p className="mt-2 text-sm font-semibold text-slate-700">
-                        from {representative.currency}{" "}
-                        {p.perPersonTotal.toLocaleString()}
-                        <span className="ml-1 text-xs font-normal text-slate-400">
-                          /person
-                        </span>
-                      </p>
-                    ) : null;
-                  })()}
-              </button>
-            ))}
+        {filtered.length > 0 ? (
+          <div className="mt-12">
+            <h3 className="text-lg font-semibold text-foreground">Compare lengths of stay</h3>
+            <p className="mt-1 text-sm text-muted">
+              Lowest price per person for {formatPax(applied.adults, applied.children)}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {DURATIONS.map((d) => {
+                const from = cheapest(filtered, { ...applied, duration: d });
+                const active = applied.duration === d;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      update({ duration: d });
+                      setApplied((prev) => ({ ...prev, duration: d }));
+                    }}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      active
+                        ? "border-brand bg-brand-soft ring-1 ring-brand"
+                        : "border-line bg-white hover:border-foreground/40"
+                    }`}
+                  >
+                    <p className={`text-sm font-semibold ${active ? "text-brand" : "text-foreground"}`}>
+                      {d} nights
+                    </p>
+                    <p className="mt-1 text-lg font-bold tabular-nums text-foreground">
+                      {money(from)}
+                    </p>
+                    <p className="text-xs text-muted">per person</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : null}
       </section>
     </div>
   );

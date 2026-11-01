@@ -158,102 +158,92 @@ function getAmenityTags(flight: FlightPayload | null): string[] {
 
 export default async function AdminBookingDetailsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const sourceParam = Array.isArray(resolvedSearchParams.source)
-    ? resolvedSearchParams.source[0]
-    : resolvedSearchParams.source;
-  const source =
-    sourceParam === "service_request" || sourceParam === "booking"
-      ? sourceParam
-      : undefined;
 
-  const booking = await getBookingById(id, source);
+  const booking = await getBookingById(id);
   if (!booking) {
     notFound();
   }
 
-  if ("reference" in booking && "payload" in booking) {
+  if (booking.channel === "SERVICE_REQUEST") {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-6">
-        <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
               Service Request Details
             </p>
             <Link
               href="/admin/bookings"
-              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+              className="rounded-lg border border-line bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft"
             >
               Back To List
             </Link>
           </div>
 
-          <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+          <h1 className="text-xl font-semibold text-navy">
             {booking.reference}
           </h1>
-          <p className="mt-2 text-sm text-blue-800/80">
+          <p className="mt-2 text-sm text-muted">
             Type: {formatStatus(booking.type)} · Status:{" "}
             {formatStatus(booking.status)}
           </p>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <article className="rounded-2xl border border-line bg-white p-5 shadow-card">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
               Basic
             </p>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
+            <div className="mt-2 space-y-1 text-sm text-navy/80">
               <p>
-                <span className="font-semibold text-slate-900">Amount:</span>{" "}
+                <span className="font-semibold text-navy">Amount:</span>{" "}
                 {formatMoney(
-                  booking.currency ?? "PKR",
-                  booking.amount?.toString() ?? "0",
+                  booking.currency,
+                  booking.totalAmount?.toString() ?? "0",
                 )}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Customer:</span>{" "}
+                <span className="font-semibold text-navy">Customer:</span>{" "}
                 {booking.customerName ?? "N/A"} (
                 {booking.customerEmail ?? "N/A"})
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Phone:</span>{" "}
+                <span className="font-semibold text-navy">Phone:</span>{" "}
                 {booking.customerPhone ?? "N/A"}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Title:</span>{" "}
+                <span className="font-semibold text-navy">Title:</span>{" "}
                 {booking.title ?? "N/A"}
               </p>
             </div>
           </article>
 
-          <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <article className="rounded-2xl border border-line bg-white p-5 shadow-card">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
               Timeline
             </p>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
+            <div className="mt-2 space-y-1 text-sm text-navy/80">
               <p>
-                <span className="font-semibold text-slate-900">Created:</span>{" "}
+                <span className="font-semibold text-navy">Created:</span>{" "}
                 {formatDateTime(booking.createdAt)}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Updated:</span>{" "}
+                <span className="font-semibold text-navy">Updated:</span>{" "}
                 {formatDateTime(booking.updatedAt)}
               </p>
             </div>
           </article>
         </section>
 
-        <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+        <details className="rounded-2xl border border-line bg-subtle p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-navy">
             Request Payload (JSON)
           </summary>
-          <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
+          <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-navy p-3 text-xs text-white/90">
             {JSON.stringify(booking.payload, null, 2)}
           </pre>
         </details>
@@ -261,127 +251,127 @@ export default async function AdminBookingDetailsPage({
     );
   }
 
-  const flight = asFlightPayload(booking.flightData);
+  const flight = asFlightPayload(booking.payload);
   const payment = asPaymentPayload(booking.paymentData);
   const amenities = getAmenityTags(flight);
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
-      <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Booking Details
           </p>
           <Link
             href="/admin/bookings"
-            className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+            className="rounded-lg border border-line bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft"
           >
             Back To List
           </Link>
         </div>
 
-        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+        <h1 className="text-xl font-semibold text-navy">
           {booking.reference}
         </h1>
-        <p className="mt-2 text-sm text-blue-800/80">
-          Provider: {booking.provider} · Status: {formatStatus(booking.status)}
+        <p className="mt-2 text-sm text-muted">
+          Provider: {booking.provider ?? "-"} · Status: {formatStatus(booking.status)}
         </p>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <article className="rounded-2xl border border-line bg-white p-5 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
             Basic
           </p>
-          <div className="mt-2 space-y-1 text-sm text-slate-700">
+          <div className="mt-2 space-y-1 text-sm text-navy/80">
             <p>
-              <span className="font-semibold text-slate-900">Amount:</span>{" "}
-              {formatMoney(booking.currency, booking.totalAmount.toString())}
+              <span className="font-semibold text-navy">Amount:</span>{" "}
+              {formatMoney(booking.currency, booking.totalAmount?.toString() ?? "0")}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">Created:</span>{" "}
+              <span className="font-semibold text-navy">Created:</span>{" "}
               {formatDateTime(booking.createdAt)}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">Updated:</span>{" "}
+              <span className="font-semibold text-navy">Updated:</span>{" "}
               {formatDateTime(booking.updatedAt)}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">Customer:</span>{" "}
-              {booking.user.name} ({booking.user.email})
+              <span className="font-semibold text-navy">Customer:</span>{" "}
+              {booking.customerName ?? "N/A"} ({booking.customerEmail ?? "N/A"})
             </p>
           </div>
         </article>
 
-        <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <article className="rounded-2xl border border-line bg-white p-5 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
             Payment
           </p>
-          <div className="mt-2 space-y-1 text-sm text-slate-700">
+          <div className="mt-2 space-y-1 text-sm text-navy/80">
             <p>
-              <span className="font-semibold text-slate-900">Method:</span>{" "}
+              <span className="font-semibold text-navy">Method:</span>{" "}
               {formatStatus(payment?.method)}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-navy">
                 Payment Status:
               </span>{" "}
               {formatStatus(payment?.status)}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-navy">
                 Service Charge:
               </span>{" "}
               {payment?.serviceChargePercent ?? 0}% ·{" "}
               {payment?.serviceChargeAmount ?? 0}
             </p>
             <p>
-              <span className="font-semibold text-slate-900">Grand Total:</span>{" "}
-              {(payment?.grandTotal ?? booking.totalAmount).toString()}
+              <span className="font-semibold text-navy">Grand Total:</span>{" "}
+              {(payment?.grandTotal ?? booking.totalAmount ?? 0).toString()}
             </p>
           </div>
         </article>
       </section>
 
-      <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+      <section className="rounded-2xl border border-line bg-white p-5 shadow-card">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           Selected Flight (Sabre/Provider Offer)
         </p>
 
         {flight ? (
           <>
-            <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 text-sm text-navy/80 sm:grid-cols-2">
               <p>
-                <span className="font-semibold text-slate-900">Route:</span>{" "}
+                <span className="font-semibold text-navy">Route:</span>{" "}
                 {flight.offer?.origin ?? flight.query?.origin ?? "-"} to{" "}
                 {flight.offer?.destination ?? flight.query?.destination ?? "-"}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Airline:</span>{" "}
+                <span className="font-semibold text-navy">Airline:</span>{" "}
                 {flight.offer?.airline ?? "-"}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Flight #:</span>{" "}
+                <span className="font-semibold text-navy">Flight #:</span>{" "}
                 {flight.offer?.flightNumber ?? "-"}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Trip Type:</span>{" "}
+                <span className="font-semibold text-navy">Trip Type:</span>{" "}
                 {formatStatus(flight.query?.tripType)}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-navy">
                   Departure Date:
                 </span>{" "}
                 {formatDate(flight.query?.departureDate)}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-navy">
                   Return Date:
                 </span>{" "}
                 {formatDate(flight.query?.returnDate)}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-navy">
                   Refundable:
                 </span>{" "}
                 {flight.offer?.refundable === undefined
@@ -391,15 +381,15 @@ export default async function AdminBookingDetailsPage({
                     : "No"}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-navy">
                   Validating Airline:
                 </span>{" "}
                 {flight.offer?.validatingAirline ?? "-"}
               </p>
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <div className="mt-4 rounded-xl border border-line bg-subtle p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
                 Amenities & Fare Features
               </p>
               {amenities.length > 0 ? (
@@ -407,26 +397,26 @@ export default async function AdminBookingDetailsPage({
                   {amenities.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700"
+                      className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand-strong"
                     >
                       {item}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted">
                   No amenities/refund metadata found in this booking payload.
                 </p>
               )}
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <div className="mt-4 rounded-xl border border-line bg-subtle p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
                 Passenger Details
               </p>
               {Array.isArray(flight.passengers) &&
               flight.passengers.length > 0 ? (
-                <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                <ul className="mt-2 space-y-1 text-sm text-navy/80">
                   {flight.passengers.map((passenger, index) => (
                     <li key={`${booking.id}-passenger-${index}`}>
                       {passenger.firstName ?? ""} {passenger.lastName ?? ""}
@@ -442,28 +432,27 @@ export default async function AdminBookingDetailsPage({
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted">
                   No passenger list found.
                 </p>
               )}
             </div>
           </>
         ) : (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             No flight data found for this booking.
           </p>
         )}
       </section>
 
-      <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+      <details className="rounded-2xl border border-line bg-subtle p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-navy">
           Raw Payload (JSON)
         </summary>
-        <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
+        <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-navy p-3 text-xs text-white/90">
           {JSON.stringify(
             {
-              flightData: booking.flightData,
-              hotelData: booking.hotelData,
+              payload: booking.payload,
               paymentData: booking.paymentData,
             },
             null,
@@ -475,58 +464,13 @@ export default async function AdminBookingDetailsPage({
   );
 }
 
-async function getBookingById(
-  id: string,
-  source?: "service_request" | "booking",
-) {
+async function getBookingById(id: string) {
   if (shouldBypassDatabase()) {
     return null;
   }
 
   try {
-    if (source === "service_request") {
-      return await prisma.serviceRequest.findUnique({
-        where: { id },
-      });
-    }
-
-    if (source === "booking") {
-      return await prisma.booking.findUnique({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-      });
-    }
-
-    const fromBooking = await prisma.booking.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    if (fromBooking) {
-      return fromBooking;
-    }
-
-    return await prisma.serviceRequest.findUnique({
-      where: { id },
-    });
+    return await prisma.booking.findUnique({ where: { id } });
   } catch (err) {
     markDatabaseUnavailable(err);
     return null;

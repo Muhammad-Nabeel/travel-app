@@ -73,17 +73,18 @@ export async function POST(request: NextRequest) {
 
         const parsedAmount = toNumberOrNull(body.amount);
         const reference = buildServiceRequestReference(type);
-        const created = await prisma.serviceRequest.create({
+        const created = await prisma.booking.create({
             data: {
                 reference,
                 type,
+                channel: "SERVICE_REQUEST",
                 status: "PENDING",
                 customerName: body.customerName?.trim() || null,
                 customerEmail: body.customerEmail?.trim() || null,
                 customerPhone: body.customerPhone?.trim() || null,
                 title: body.title?.trim() || null,
-                amount: parsedAmount === null ? null : new Prisma.Decimal(parsedAmount),
-                currency: body.currency?.trim() || null,
+                totalAmount: parsedAmount === null ? null : new Prisma.Decimal(parsedAmount),
+                currency: body.currency?.trim() || undefined,
                 payload,
             },
             select: {

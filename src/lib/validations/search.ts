@@ -125,9 +125,26 @@ export const flightSearchSchema = z.object({
     }
 });
 
+const isoDateSchema = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD dates.");
+
 export const hotelSearchSchema = z.object({
-    city: z.string().min(2),
-    checkInDate: z.string().min(10),
-    checkOutDate: z.string().min(10),
-    guests: z.coerce.number().int().min(1).max(8).default(2),
+    destination: z.string().trim().min(2),
+    checkIn: isoDateSchema,
+    checkOut: isoDateSchema,
+    adults: z.coerce.number().int().min(1).max(9).default(2),
+    children: z.coerce.number().int().min(0).max(9).default(0),
+    rooms: z.coerce.number().int().min(1).max(9).default(1),
+    stayType: z.enum(["hotel-only", "hotel+flight"]).default("hotel-only"),
+}).superRefine((value, ctx) => {
+    if (value.checkOut <= value.checkIn) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["checkOut"],
+            message: "Check-out date must be after check-in date.",
+        });
+    }
 });
+
+export type HotelSearchQuery = z.infer<typeof hotelSearchSchema>;

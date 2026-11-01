@@ -1,7 +1,13 @@
 "use client";
 
-import { Accessibility, Calendar, CreditCard, User } from "lucide-react";
+import { Accessibility, Check, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
+import {
+  FormField,
+  describedBy,
+  inputClass,
+} from "@/components/features/booking/form-field";
 import type {
   PassengerDetails,
   PassengerType,
@@ -21,28 +27,17 @@ const PASSENGER_TYPE_SUBTITLE: Record<PassengerType, string> = {
   infant: "Under 2 years",
 };
 
-// ── field component ───────────────────────────────────────────────────────────
+export type PassengerErrors = Partial<
+  Record<"firstName" | "lastName" | "dateOfBirth" | "passportExpiry", string>
+>;
 
-type FieldProps = {
-  id: string;
-  label: string;
-  children: React.ReactNode;
-  required?: boolean;
-};
-
-function Field({ id, label, children, required }: FieldProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={id}
-        className="text-xs font-semibold text-muted uppercase tracking-wide"
-      >
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  );
+export function validatePassenger(p: PassengerDetails): PassengerErrors {
+  const errors: PassengerErrors = {};
+  if (!p.firstName.trim()) errors.firstName = "Enter the first name";
+  if (!p.lastName.trim()) errors.lastName = "Enter the last name";
+  if (!p.dateOfBirth) errors.dateOfBirth = "Enter the date of birth";
+  if (!p.passportExpiry) errors.passportExpiry = "Enter the passport expiry date";
+  return errors;
 }
 
 // ── main component ────────────────────────────────────────────────────────────
@@ -52,13 +47,18 @@ type PassengerFormProps = {
   /** Display number shown in header e.g. "Passenger 1" */
   displayNumber: number;
   onChange: (updated: PassengerDetails) => void;
+  /** Show every error, e.g. after a submit attempt. */
+  showErrors?: boolean;
 };
 
 export function PassengerForm({
   passenger,
   displayNumber,
   onChange,
+  showErrors = false,
 }: PassengerFormProps) {
+  const [open, setOpen] = useState(true);
+
   function set<K extends keyof PassengerDetails>(
     key: K,
     value: PassengerDetails[K],
@@ -66,114 +66,119 @@ export function PassengerForm({
     onChange({ ...passenger, [key]: value });
   }
 
+  const allErrors = validatePassenger(passenger);
+  const complete = Object.keys(allErrors).length === 0;
+  const errors: PassengerErrors = showErrors ? allErrors : {};
+  // Keep a card with errors open so the messages are visible.
+  const expanded = open || (showErrors && !complete);
+
   const typeLabel = PASSENGER_TYPE_LABEL[passenger.type];
-  const typeSubtitle = PASSENGER_TYPE_SUBTITLE[passenger.type];
+  const fullName = `${passenger.firstName} ${passenger.lastName}`.trim();
+  const idBase = `${passenger.type}-${passenger.index}`;
+  const panelId = `passenger-${idBase}`;
 
   return (
-    <div className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-      {/* Card header */}
-      <div className="flex items-center gap-3 border-b border-base-200 px-5 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <User className="size-4" />
-        </div>
-        <div>
-          <p className="font-semibold text-foreground leading-tight">
-            Passenger {displayNumber} — {typeLabel}
-          </p>
-          <p className="text-xs text-muted">{typeSubtitle}</p>
-        </div>
-      </div>
-
-      {/* Form fields */}
-      <div className="grid gap-x-4 gap-y-5 p-5 sm:grid-cols-2">
-        {/* First name */}
-        <Field
-          id={`fn-${passenger.type}-${passenger.index}`}
-          label="First Name"
-          required
+    <section className="rounded-card border border-line bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left"
+      >
+        <span
+          className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+            complete ? "bg-success text-white" : "bg-subtle text-foreground"
+          }`}
         >
+          {complete ? <Check className="size-4" strokeWidth={3} /> : displayNumber}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-foreground">
+            {typeLabel} {displayNumber}
+            {fullName ? <span className="font-normal text-muted"> · {fullName}</span> : null}
+          </span>
+          <span className="block text-sm text-muted">
+            {PASSENGER_TYPE_SUBTITLE[passenger.type]}
+            {complete ? " · Details complete" : ""}
+          </span>
+        </span>
+        <ChevronDown
+          className={`size-5 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <div
+        id={panelId}
+        hidden={!expanded}
+        className="grid gap-x-4 gap-y-5 border-t border-line p-5 sm:grid-cols-2"
+      >
+        <FormField id={`fn-${idBase}`} label="First name" required error={errors.firstName}>
           <input
-            id={`fn-${passenger.type}-${passenger.index}`}
+            id={`fn-${idBase}`}
             type="text"
-            className="input input-bordered w-full"
+            className={inputClass(errors.firstName)}
             placeholder="As on passport"
             value={passenger.firstName}
             onChange={(e) => set("firstName", e.target.value)}
             autoComplete="given-name"
+            {...describedBy(`fn-${idBase}`, errors.firstName)}
           />
-        </Field>
+        </FormField>
 
-        {/* Last name */}
-        <Field
-          id={`ln-${passenger.type}-${passenger.index}`}
-          label="Last Name"
-          required
-        >
+        <FormField id={`ln-${idBase}`} label="Last name" required error={errors.lastName}>
           <input
-            id={`ln-${passenger.type}-${passenger.index}`}
+            id={`ln-${idBase}`}
             type="text"
-            className="input input-bordered w-full"
+            className={inputClass(errors.lastName)}
             placeholder="As on passport"
             value={passenger.lastName}
             onChange={(e) => set("lastName", e.target.value)}
             autoComplete="family-name"
+            {...describedBy(`ln-${idBase}`, errors.lastName)}
           />
-        </Field>
+        </FormField>
 
-        {/* Date of birth */}
-        <Field
-          id={`dob-${passenger.type}-${passenger.index}`}
-          label="Date of Birth"
+        <FormField id={`dob-${idBase}`} label="Date of birth" required error={errors.dateOfBirth}>
+          <input
+            id={`dob-${idBase}`}
+            type="date"
+            className={inputClass(errors.dateOfBirth)}
+            value={passenger.dateOfBirth}
+            onChange={(e) => set("dateOfBirth", e.target.value)}
+            {...describedBy(`dob-${idBase}`, errors.dateOfBirth)}
+          />
+        </FormField>
+
+        <FormField
+          id={`pe-${idBase}`}
+          label="Passport expiry date"
           required
+          error={errors.passportExpiry}
         >
-          <div className="relative">
-            <Calendar className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <input
-              id={`dob-${passenger.type}-${passenger.index}`}
-              type="date"
-              className="input input-bordered w-full pl-9"
-              value={passenger.dateOfBirth}
-              onChange={(e) => set("dateOfBirth", e.target.value)}
-            />
-          </div>
-        </Field>
+          <input
+            id={`pe-${idBase}`}
+            type="date"
+            className={inputClass(errors.passportExpiry)}
+            value={passenger.passportExpiry}
+            onChange={(e) => set("passportExpiry", e.target.value)}
+            {...describedBy(`pe-${idBase}`, errors.passportExpiry)}
+          />
+        </FormField>
 
-        {/* Passport expiry */}
-        <Field
-          id={`pe-${passenger.type}-${passenger.index}`}
-          label="Passport Expiry Date"
-          required
-        >
-          <div className="relative">
-            <CreditCard className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <input
-              id={`pe-${passenger.type}-${passenger.index}`}
-              type="date"
-              className="input input-bordered w-full pl-9"
-              value={passenger.passportExpiry}
-              onChange={(e) => set("passportExpiry", e.target.value)}
-            />
-          </div>
-        </Field>
-
-        {/* Wheelchair */}
-        <div className="sm:col-span-2">
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-base-300 px-4 py-3 transition hover:bg-base-200/50">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary"
-              checked={passenger.wheelchairRequired}
-              onChange={(e) => set("wheelchairRequired", e.target.checked)}
-            />
-            <div className="flex items-center gap-2">
-              <Accessibility className="size-4 text-muted" />
-              <span className="text-sm font-medium text-foreground">
-                Wheelchair assistance required
-              </span>
-            </div>
-          </label>
-        </div>
+        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-line px-4 py-3 transition hover:bg-subtle sm:col-span-2">
+          <input
+            type="checkbox"
+            className="size-5 accent-brand"
+            checked={passenger.wheelchairRequired}
+            onChange={(e) => set("wheelchairRequired", e.target.checked)}
+          />
+          <Accessibility className="size-4 text-muted" />
+          <span className="text-sm font-medium text-foreground">
+            Wheelchair assistance required
+          </span>
+        </label>
       </div>
-    </div>
+    </section>
   );
 }

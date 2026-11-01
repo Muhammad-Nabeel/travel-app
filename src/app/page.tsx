@@ -6,55 +6,69 @@ import { AirlinesSlider } from "@/components/features/home/airlines-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { CustomerReviewsSection } from "@/components/features/home/customer-reviews-section";
+import { PromoBanner } from "@/components/features/home/promo-banner";
+import { WhyBookSection } from "@/components/features/home/why-book-section";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
-  buildMetadata,
-  createOrganizationSchema,
-  createWebPageSchema,
-  createWebsiteSchema,
-} from "@/lib/seo";
+  buildOrganizationJsonLd,
+  buildStaticPageMetadata,
+  getStaticPageSeo,
+} from "@/lib/admin-settings/seo-settings";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
+import {
+  getPrimaryPhone,
+  getStoredSupportContactSettings,
+} from "@/lib/admin-settings/support-contact-settings";
+import { createWebPageSchema, createWebsiteSchema } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Flights, Umrah Packages and Travel Planning",
-  description:
-    "Search flights, discover destinations, compare activities, and plan Umrah travel from a cleaner booking and content experience.",
-  path: "/",
-  keywords: [
-    "flight search",
-    "Umrah travel",
-    "travel planning",
-    "destinations",
-    "travel activities",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return buildStaticPageMetadata("home");
+}
 
-export default function Home() {
+export default async function Home() {
+  const [seo, organizationJsonLd, heroImage, contact, brand] =
+    await Promise.all([
+      getStaticPageSeo("home"),
+      buildOrganizationJsonLd(),
+      getPageBanner("home"),
+      getStoredSupportContactSettings(),
+      getStoredBrandSettings(),
+    ]);
+
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <StructuredData
         data={[
           createWebPageSchema({
-            title: "Flights, Umrah Packages and Travel Planning",
-            description:
-              "Search flights, discover destinations, compare activities, and plan Umrah travel from a cleaner booking and content experience.",
+            title: seo.title,
+            description: seo.description,
             path: "/",
           }),
-          createWebsiteSchema(),
-          createOrganizationSchema(),
+          createWebsiteSchema(seo.siteName),
+          organizationJsonLd,
         ]}
       />
 
-      <FlightSearchEngine />
+      <FlightSearchEngine heroImage={heroImage} />
+
+      <WhyBookSection
+        brandName={seo.siteName}
+        phone={getPrimaryPhone(contact)}
+        assets={brand.assets}
+      />
 
       <AirlinesSlider />
 
       <DestinationsSlider />
 
+      <PromoBanner />
+
       <ActivitiesSlider />
 
-      <BlogSlider />
-
       <CustomerReviewsSection />
-    </main>
+
+      <BlogSlider />
+    </div>
   );
 }

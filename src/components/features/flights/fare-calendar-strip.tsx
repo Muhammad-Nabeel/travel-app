@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarDays, TrendingDown } from "lucide-react";
 
+import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import type { FlightSearchQuery } from "@/lib/flights/types";
 
 type FareCalendarStripProps = {
@@ -106,7 +107,7 @@ export function FareCalendarStripSkeleton() {
   return (
     <section className="section-shell mt-5" aria-hidden>
       <div className="grid gap-3 lg:grid-cols-[250px_minmax(0,1fr)]">
-        <div className="rounded-2xl border border-base-300 bg-base-200/65 p-4">
+        <div className="rounded-2xl border border-line bg-white p-4">
           <div className="skeleton h-4 w-28" />
           <div className="mt-2 skeleton h-3 w-36" />
           <div className="mt-2 skeleton h-8 w-24" />
@@ -117,7 +118,7 @@ export function FareCalendarStripSkeleton() {
             {Array.from({ length: 7 }, (_, index) => (
               <div
                 key={`fare-calendar-skeleton-${index}`}
-                className="w-32 rounded-xl border border-base-300 bg-base-100 px-3 py-2"
+                className="w-32 rounded-xl border border-line bg-white px-3 py-2.5"
               >
                 <div className="skeleton h-3 w-20" />
                 <div className="mt-2 skeleton h-6 w-16" />
@@ -131,11 +132,12 @@ export function FareCalendarStripSkeleton() {
 }
 
 export function FareCalendarStrip({ query }: FareCalendarStripProps) {
+  const liveFaresEnabled = useLiveFaresEnabled();
   const [fares, setFares] = useState<FareEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (query.tripType === "multi-city") {
+    if (query.tripType === "multi-city" || !liveFaresEnabled) {
       return;
     }
 
@@ -194,6 +196,7 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       controller.abort();
     };
   }, [
+    liveFaresEnabled,
     query.tripType,
     query.origin,
     query.destination,
@@ -202,7 +205,7 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
     query.cabinClass,
   ]);
 
-  if (query.tripType === "multi-city") return null;
+  if (query.tripType === "multi-city" || !liveFaresEnabled) return null;
   if (loading) return <FareCalendarStripSkeleton />;
   if (!fares || fares.length === 0) return null;
 
@@ -230,13 +233,12 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
   return (
     <section className="section-shell mt-5">
       <div className="grid gap-3 lg:grid-cols-[250px_minmax(0,1fr)]">
-        <div className="rounded-2xl border border-base-300 bg-base-200/65 p-4">
-          <p className="text-sm font-semibold text-slate-700">Price Tracking</p>
-          <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-            <TrendingDown className="h-3.5 w-3.5 text-emerald-600" />
-            Current lowest price:
+        <div className="rounded-2xl border border-line bg-white p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <TrendingDown className="size-4 text-success" />
+            Lowest price found
           </p>
-          <p className="mt-1 text-xl font-semibold text-slate-900">
+          <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
             {formatMoney(absoluteLowest, absoluteLowestCurrency)}
           </p>
         </div>
@@ -256,18 +258,19 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
                   <div
                     key={fare.date}
                     className={[
-                      "w-32 rounded-xl border border-dashed bg-base-100 px-3 py-2 text-left",
+                      "w-32 rounded-xl border px-3 py-2.5 text-left",
                       isSelected
-                        ? "border-slate-800 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.7)]"
-                        : "border-base-300",
+                        ? "border-brand bg-brand-soft"
+                        : "border-line bg-subtle",
                     ].join(" ")}
                   >
-                    <p className="flex items-center gap-1 text-xs text-slate-600">
+                    <p className="flex items-center gap-1 text-xs font-medium text-muted">
                       <CalendarDays className="h-3.5 w-3.5" />
                       {formatDateLabel(fare.date)}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">
-                      No fare
+                    <p className="mt-1 text-sm font-medium text-muted">
+                      <span aria-hidden>—</span>
+                      <span className="sr-only">No fare</span>
                     </p>
                   </div>
                 );
@@ -278,21 +281,21 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
                   key={fare.date}
                   href={href}
                   className={[
-                    "w-32 rounded-xl border bg-base-100 px-3 py-2 text-left transition",
+                    "w-32 rounded-xl border px-3 py-2.5 text-left transition",
                     isSelected
-                      ? "border-slate-800 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.7)]"
-                      : "border-base-300 hover:border-slate-400 hover:bg-base-200/70",
+                      ? "border-brand bg-brand-soft"
+                      : "border-line bg-white hover:border-foreground/40",
                   ].join(" ")}
                   prefetch={false}
                 >
-                  <p className="flex items-center gap-1 text-xs text-slate-600">
+                  <p className="flex items-center gap-1 text-xs font-medium text-muted">
                     <CalendarDays className="h-3.5 w-3.5" />
                     {formatDateLabel(fare.date)}
                   </p>
                   <p
                     className={[
-                      "mt-1 text-lg font-semibold leading-tight",
-                      isLowest ? "text-emerald-700" : "text-slate-900",
+                      "mt-1 text-base font-bold leading-tight tabular-nums",
+                      isLowest ? "text-success" : "text-foreground",
                     ].join(" ")}
                   >
                     {formatMoney(fare.amount, fare.currency)}

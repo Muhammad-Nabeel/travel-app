@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+
+import {
+    isPassthroughImage,
+    optimizeImage,
+    withExtension,
+    type ImageTarget,
+} from "@/lib/media/optimize-image";
+import { uploadToR2 } from "@/lib/storage/r2";
 
 // Cloudflare R2 configuration
 const r2Client = new S3Client({
@@ -26,10 +34,14 @@ function canUseR2Storage(): boolean {
 
 type MediaType =
     | "website-logo"
+    | "brand-assets"
+    | "footer-media"
+    | "page-banners"
     | "blog-media"
     | "umrah-images"
     | "destination-images"
     | "activities-images"
+    | "tour-images"
     | "general";
 
 function getStoragePath(mediaType: MediaType, fileName: string): string {
@@ -39,6 +51,12 @@ function getStoragePath(mediaType: MediaType, fileName: string): string {
     switch (mediaType) {
         case "website-logo":
             return `website/logo/${timestamp}-${randomId}-${fileName}`;
+        case "brand-assets":
+            return `website/brand/${timestamp}-${randomId}-${fileName}`;
+        case "footer-media":
+            return `website/footer/${timestamp}-${randomId}-${fileName}`;
+        case "page-banners":
+            return `website/banners/${timestamp}-${randomId}-${fileName}`;
         case "blog-media":
             return `blog/${timestamp}-${randomId}-${fileName}`;
         case "umrah-images":
@@ -47,6 +65,8 @@ function getStoragePath(mediaType: MediaType, fileName: string): string {
             return `destinations/${timestamp}-${randomId}-${fileName}`;
         case "activities-images":
             return `activities/${timestamp}-${randomId}-${fileName}`;
+        case "tour-images":
+            return `tours/${timestamp}-${randomId}-${fileName}`;
         case "general":
         default:
             return `media/${timestamp}-${randomId}-${fileName}`;
@@ -57,6 +77,12 @@ function getListPrefix(mediaType: MediaType): string {
     switch (mediaType) {
         case "website-logo":
             return "website/logo/";
+        case "brand-assets":
+            return "website/brand/";
+        case "footer-media":
+            return "website/footer/";
+        case "page-banners":
+            return "website/banners/";
         case "blog-media":
             return "blog/";
         case "umrah-images":
@@ -65,18 +91,32 @@ function getListPrefix(mediaType: MediaType): string {
             return "destinations/";
         case "activities-images":
             return "activities/";
+        case "tour-images":
+            return "tours/";
         case "general":
         default:
             return "media/";
     }
 }
 
+/** Brand icons are small; the app icon (favicon) is requested explicitly. */
+function getImageTarget(mediaType: MediaType, requested: FormDataEntryValue | null): ImageTarget {
+    if (requested === "favicon") return "favicon";
+    if (mediaType === "website-logo") return "logo";
+    if (mediaType === "brand-assets" || mediaType === "footer-media") return "icon";
+    return "photo";
+}
+
 function getMediaTypeFromKey(key: string): MediaType {
     if (key.startsWith("website/logo/")) return "website-logo";
+    if (key.startsWith("website/brand/")) return "brand-assets";
+    if (key.startsWith("website/footer/")) return "footer-media";
+    if (key.startsWith("website/banners/")) return "page-banners";
     if (key.startsWith("blog/")) return "blog-media";
     if (key.startsWith("umrah/")) return "umrah-images";
     if (key.startsWith("destinations/")) return "destination-images";
     if (key.startsWith("activities/")) return "activities-images";
+    if (key.startsWith("tours/")) return "tour-images";
     return "general";
 }
 
@@ -120,30 +160,24 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate file name
-        const extension = file.name.split(".").pop() || "bin";
-        const fileName = customFileName || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
+        let body: Buffer = Buffer.from(await file.arrayBuffer());
+        let contentType = file.type;
+        let extension = file.name.split(".").pop() || "bin";
+
+        // Raster images are stored as resized WebP (see optimizeImage).
+        if (file.type.startsWith("image/") && !isPassthroughImage(file.type)) {
+            const target = getImageTarget(mediaType, formData.get("target"));
+            const optimized = await optimizeImage(body, target);
+            body = optimized.body;
+            contentType = optimized.contentType;
+            extension = optimized.extension;
+        }
+
+        const fileName = customFileName
+            ? withExtension(customFileName, extension)
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
         const storagePath = getStoragePath(mediaType, fileName);
-
-        const buffer = await file.arrayBuffer();
-
-        const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: storagePath,
-            Body: Buffer.from(buffer),
-            ContentType: file.type,
-            ACL: "public-read",
-            Metadata: {
-                "cache-control": "public, max-age=31536000",
-                "original-filename": file.name,
-                "upload-timestamp": Date.now().toString(),
-                "media-type": mediaType,
-            },
-        });
-
-        await r2Client.send(command);
-
-        const publicUrl = `${PUBLIC_URL}/${storagePath}`;
+        const publicUrl = await uploadToR2(storagePath, body, contentType);
 
         return NextResponse.json({
             success: true,
@@ -151,8 +185,8 @@ export async function POST(request: NextRequest) {
             fileName,
             storagePath,
             mediaType,
-            size: file.size,
-            contentType: file.type,
+            size: body.length,
+            contentType,
         });
     } catch (error) {
         console.error("Media upload error:", error);

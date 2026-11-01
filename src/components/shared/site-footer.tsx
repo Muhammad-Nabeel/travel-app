@@ -1,104 +1,224 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Mail, MapPin, PhoneCall, PlaneTakeoff } from "lucide-react";
+import { PlaneTakeoff } from "lucide-react";
 
-const quickLinks = [
-  { href: "/about-us", label: "About Us" },
-  { href: "/contact-us", label: "Contact Us" },
-  { href: "/arrange-a-call", label: "Arrange a Call" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/careers", label: "Careers" },
-  { href: "/admin", label: "Admin" },
+import type { PublicBrand } from "@/lib/admin-settings/brand-settings";
+import type { BrandAssetSlot } from "@/lib/brand-assets";
+import {
+  getPrimaryPhone,
+  type SupportContactSettings,
+} from "@/lib/admin-settings/support-contact-settings";
+
+type FooterLink = { href: string; label: string; icon?: BrandAssetSlot };
+
+const columns: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Company",
+    links: [
+      { href: "/about-us", label: "About us" },
+      { href: "/careers", label: "Careers" },
+      { href: "/blog", label: "Travel blog" },
+    ],
+  },
+  {
+    title: "Explore",
+    links: [
+      { href: "/flights", label: "Flights" },
+      { href: "/umrah-packages", label: "Umrah packages" },
+      { href: "/tour-packages", label: "Tour packages" },
+      { href: "/hotels", label: "Hotels" },
+      { href: "/visa", label: "Visa services" },
+      { href: "/activities", label: "Things to do" },
+    ],
+  },
+  {
+    title: "Help",
+    links: [
+      { href: "/contact-us", label: "Contact us", icon: "footerContactUs" },
+      {
+        href: "/arrange-a-call",
+        label: "Arrange a call",
+        icon: "footerArrangeCall",
+      },
+      { href: "/faq", label: "FAQ", icon: "footerFaq" },
+    ],
+  },
+  {
+    title: "Policies",
+    links: [
+      { href: "/terms-conditions", label: "Terms & conditions" },
+      { href: "/privacy-policy", label: "Privacy policy" },
+      { href: "/refund-policy", label: "Refund policy" },
+      { href: "/cookie-policy", label: "Cookie policy" },
+    ],
+  },
 ];
 
-const serviceLinks = [
-  { href: "/flights", label: "Flight Booking" },
-  { href: "/hotels", label: "Hotel Booking" },
-  { href: "/umrah-packages", label: "Custom Umrah Plans" },
-  { href: "/", label: "Visa Assistance" },
-];
-
-export function SiteFooter() {
-  const year = new Date().getFullYear();
+/** Admin-uploaded footer icon from Media → Brand & Icons; nothing when unset. */
+function FooterIcon({
+  brand,
+  slot,
+  size = 20,
+}: {
+  brand: PublicBrand;
+  slot: BrandAssetSlot;
+  size?: number;
+}) {
+  const src = brand.assets[slot];
+  if (!src) return null;
 
   return (
-    <footer className="mt-12 border-t border-base-300 bg-base-200/70 text-base-content">
-      <div className="section-shell py-10">
-        <div className="footer gap-8 md:footer-horizontal">
-          <aside className="max-w-sm gap-3">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-primary p-2 text-primary-content">
-                <PlaneTakeoff className="size-4" />
-              </span>
-              <p className="display-font text-3xl leading-none">Safar</p>
-            </div>
-            <p className="text-sm leading-6 text-base-content/70">
-              Trusted travel support for flights, hotels, and Umrah journeys
-              with 24/7 live assistance.
-            </p>
-            <div className="space-y-2 text-sm">
-              <p className="flex items-center gap-2">
-                <Mail className="size-4 text-primary" />
-                support@safartravel.com
-              </p>
-              <p className="flex items-center gap-2">
-                <PhoneCall className="size-4 text-primary" />
-                +44 7933 837137 · +92 307 2477709
-              </p>
-              <p className="flex items-center gap-2">
-                <MapPin className="size-4 text-primary" />
-                London, UK · Lahore, PK
-              </p>
-            </div>
-          </aside>
+    <Image
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className="shrink-0 object-contain"
+      style={{ width: size, height: size }}
+    />
+  );
+}
 
-          <nav>
-            <h6 className="footer-title">Quick Links</h6>
-            {quickLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="link link-hover"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+export function SiteFooter({
+  brand,
+  contact,
+}: {
+  brand: PublicBrand;
+  contact: SupportContactSettings;
+}) {
+  const year = new Date().getFullYear();
+  const phone = getPrimaryPhone(contact);
+  const whatsapp =
+    contact.whatsappNumber && contact.whatsappNumber !== phone
+      ? contact.whatsappNumber
+      : "";
 
-          <nav>
-            <h6 className="footer-title">Services</h6>
-            {serviceLinks.map((link) => (
-              <Link
-                key={`${link.href}-${link.label}`}
-                href={link.href}
-                className="link link-hover"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+  return (
+    <footer className="mt-16 border-t border-line bg-subtle text-foreground">
+      <div className="section-shell grid gap-10 py-12 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
+        <div className="max-w-sm space-y-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2"
+            aria-label={`${brand.name} home`}
+          >
+            {brand.logoUrl ? (
+              <Image
+                src={brand.logoUrl}
+                alt={`${brand.name} logo`}
+                width={160}
+                height={36}
+                className="h-9 w-auto object-contain"
+              />
+            ) : (
+              <>
+                <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">
+                  <PlaneTakeoff className="size-4" />
+                </span>
+                <span className="text-xl font-bold tracking-tight">
+                  {brand.name}
+                </span>
+              </>
+            )}
+          </Link>
+          <p className="text-sm leading-6 text-muted">
+            Trusted travel support for flights, hotels, and Umrah journeys with
+            24/7 live assistance.
+          </p>
+          <ul className="space-y-2 text-sm text-muted">
+            <li className="flex items-center gap-2">
+              <FooterIcon brand={brand} slot="footerEmail" />
+              <a href={`mailto:${contact.email}`} className="hover:text-brand">
+                {contact.email}
+              </a>
+            </li>
+            {phone ? (
+              <li className="flex items-center gap-2">
+                <FooterIcon brand={brand} slot="footerPhone" />
+                <a
+                  href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                  className="hover:text-brand"
+                >
+                  {phone}
+                </a>
+              </li>
+            ) : null}
+            {whatsapp ? (
+              <li className="flex items-center gap-2">
+                <FooterIcon brand={brand} slot="footerWhatsapp" />
+                {whatsapp}
+              </li>
+            ) : null}
+            {contact.address ? (
+              <li className="flex items-center gap-2">
+                <FooterIcon brand={brand} slot="footerAddress" />
+                {contact.address}
+              </li>
+            ) : null}
+          </ul>
+        </div>
 
-          <nav>
-            <h6 className="footer-title">Legal</h6>
-            <Link href="/terms-conditions" className="link link-hover">
-              Terms & Conditions
-            </Link>
-            <Link href="/privacy-policy" className="link link-hover">
-              Privacy Policy
-            </Link>
-            <Link href="/refund-policy" className="link link-hover">
-              Refund Policy
-            </Link>
-            <Link href="/cookie-policy" className="link link-hover">
-              Cookie Policy
-            </Link>
-          </nav>
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-4">
+          {columns.map((column) => (
+            <nav key={column.title} aria-label={column.title}>
+              <h2 className="mb-3 text-sm font-semibold">{column.title}</h2>
+              <ul className="space-y-2.5">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-brand"
+                    >
+                      {link.icon ? (
+                        <FooterIcon brand={brand} slot={link.icon} size={18} />
+                      ) : null}
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
       </div>
 
-      <div className="border-t border-base-300/70 bg-base-100/70">
-        <div className="section-shell flex flex-col gap-2 py-4 text-xs text-base-content/70 sm:flex-row sm:items-center sm:justify-between">
-          <p>Copyright {year} Safar Travel. All rights reserved.</p>
-          <p>Built for secure bookings and assisted travel planning.</p>
+      {brand.footerBadges.length > 0 ? (
+        <div className="border-t border-line">
+          <ul
+            aria-label="Payments and accreditations"
+            className="section-shell flex flex-wrap items-center justify-center gap-3 py-5"
+          >
+            {brand.footerBadges.map((badge) => (
+              <li key={badge.url}>
+                <Image
+                  src={badge.url}
+                  alt={badge.label}
+                  width={84}
+                  height={36}
+                  className="h-9 w-auto object-contain"
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="border-t border-line">
+        <div className="section-shell flex flex-col gap-3 py-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {year} {brand.name}. All rights reserved.
+          </p>
+          <p className="sm:text-center">
+            Powered by{" "}
+            <a
+              href="https://aimdigitallimited.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-foreground transition hover:text-brand"
+            >
+              AIM DIGITAL UK LIMITED
+            </a>
+          </p>
         </div>
       </div>
     </footer>

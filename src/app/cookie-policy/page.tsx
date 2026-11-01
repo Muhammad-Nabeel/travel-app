@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
 
+import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { SiteContentPage } from "@/components/shared/site-content-page";
 import { getStoredSitePagesSettings } from "@/lib/admin-settings/site-pages-settings";
-import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getStoredSitePagesSettings();
-  const page = settings.cookiePolicy;
-
-  return buildMetadata({
-    title: page.title,
-    description: page.intro,
-    path: "/cookie-policy",
-    keywords: ["cookie policy", "tracking", "travel website cookies"],
-  });
+  return buildStaticPageMetadata("cookiePolicy");
 }
 
 export default async function CookiePolicyPage() {

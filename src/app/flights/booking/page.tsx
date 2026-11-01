@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { BookingFormClient } from "@/components/features/booking/booking-form-client";
 import { searchFlights } from "@/lib/flights/search-service";
@@ -35,15 +35,24 @@ export default async function BookingPage({ searchParams }: BookingPageProps) {
 
   if (!result.ok) {
     return (
-      <main className="section-shell flex-1 py-10">
+      <div className="section-shell flex-1 py-10">
         <div className="alert alert-error">
           <span>
             Unable to reload your flight selection. Please go back and try
             again.
           </span>
         </div>
-      </main>
+      </div>
     );
+  }
+
+  // With live search off there are no offers to book; send the user to the fare request form.
+  if (!result.liveSearchEnabled) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchQuery)) {
+      if (value !== undefined) searchParams.set(key, value);
+    }
+    redirect(`/flights?${searchParams.toString()}`);
   }
 
   let selectedOffer: FlightOffer | undefined;
@@ -62,8 +71,8 @@ export default async function BookingPage({ searchParams }: BookingPageProps) {
   }
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <BookingFormClient offer={selectedOffer} query={result.query} />
-    </main>
+    </div>
   );
 }

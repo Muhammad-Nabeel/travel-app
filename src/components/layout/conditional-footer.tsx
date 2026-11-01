@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { SiteFooter } from "@/components/shared/site-footer";
-
-export function ConditionalFooter() {
+export function ConditionalFooter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith("/admin");
 
@@ -12,5 +10,5 @@ export function ConditionalFooter() {
     return null;
   }
 
-  return <SiteFooter />;
+  return children;
 }

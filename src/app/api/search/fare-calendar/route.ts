@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import { searchSabreFareCalendar } from "@/lib/providers/sabre/flight-search";
 
 function getDateOffset(base: Date, monthsToAdd: number) {
@@ -66,6 +67,12 @@ export async function GET(request: NextRequest) {
     const monthStart = monthInput ? new Date(`${monthInput}T00:00:00.000Z`) : new Date();
     monthStart.setUTCDate(1);
 
+    const sabreSettings = await getActiveSabreSettings();
+    if (!sabreSettings) {
+        // Live fares are switched off in admin, so the calendar shows no prices.
+        return NextResponse.json({ ok: true, fares: [] });
+    }
+
     const allFares = new Map<string, { amount: number; currency: string }>();
     try {
         for (let i = 0; i < months; i += 1) {
@@ -79,7 +86,7 @@ export async function GET(request: NextRequest) {
                 cabinClass,
                 tripType,
                 currency,
-            });
+            }, sabreSettings);
 
             for (const fare of fares) {
                 const existing = allFares.get(fare.date);

@@ -1,230 +1,72 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Star } from "lucide-react";
 
-type Activity = {
-  id: string;
-  destinationId: string;
-  title: string;
-  category: string;
-  description: string | null;
-  imageUrl: string;
-  cost: string;
-  reviews: number;
-  reviewCount: number;
-  sortOrder: number;
-  isActive: boolean;
-};
+import { CardCarousel } from "@/components/shared/card-carousel";
+import { getActivityHref } from "@/lib/activity-href";
+import { getActiveActivities } from "@/lib/home-sections";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "tourist-attraction": "bg-blue-100 text-blue-700",
-  seaside: "bg-cyan-100 text-cyan-700",
-  cultural: "bg-purple-100 text-purple-700",
-  adventure: "bg-orange-100 text-orange-700",
-  food: "bg-red-100 text-red-700",
-  shopping: "bg-pink-100 text-pink-700",
-};
-
-function ActivitiesSkeleton() {
-  return (
-    <section className="section-shell py-10">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <div className="h-7 w-52 animate-pulse rounded-lg bg-slate-200" />
-          <div className="mt-2 h-4 w-64 animate-pulse rounded bg-slate-100" />
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
-        </div>
-      </div>
-      <div className="flex gap-4 overflow-hidden pb-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex min-w-[288px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow sm:min-w-[320px]"
-          >
-            <div className="relative h-48 animate-pulse bg-slate-200">
-              <div className="absolute right-3 top-3 h-5 w-20 animate-pulse rounded-full bg-slate-300" />
-            </div>
-            <div className="flex flex-col gap-2 p-4">
-              <div className="h-5 w-3/4 animate-pulse rounded bg-slate-200" />
-              <div className="flex gap-1">
-                {Array.from({ length: 5 }).map((_, j) => (
-                  <div
-                    key={j}
-                    className="h-3 w-3 animate-pulse rounded bg-slate-200"
-                  />
-                ))}
-                <div className="ml-1 h-3 w-8 animate-pulse rounded bg-slate-100" />
-              </div>
-              <div className="mt-1 h-4 w-1/3 animate-pulse rounded bg-slate-200" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function ActivitiesSlider() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    fetch("/api/activities", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setActivities(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []);
-
-  if (loading) return <ActivitiesSkeleton />;
-
-  const updateArrows = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 0);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-  const scroll = (dir: "left" | "right") => {
-    scrollRef.current?.scrollBy({
-      left: dir === "left" ? -300 : 300,
-      behavior: "smooth",
-    });
-  };
-
+export async function ActivitiesSlider() {
+  const activities = await getActiveActivities();
   if (activities.length === 0) return null;
 
   return (
-    <section className="section-shell py-10" aria-label="Trending activities">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Trending Activities
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Top-rated experiences and attractions
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={() => scroll("left")}
-            disabled={!canLeft}
-            aria-label="Scroll activities left"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:opacity-30"
-          >
-            <ChevronLeft className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            disabled={!canRight}
-            aria-label="Scroll activities right"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:opacity-30"
-          >
-            <ChevronRight className="h-4 w-4 text-slate-700" />
-          </button>
-        </div>
-      </div>
+    <CardCarousel
+      ariaLabel="Trending activities"
+      title="Things to do"
+      subtitle="Top-rated experiences and attractions"
+      href="/activities"
+      scrollLabel="activities"
+    >
+      {activities.map((activity) => (
+        <Link
+          key={activity.id}
+          href={getActivityHref(activity)}
+          className="group block w-[82%] shrink-0 snap-start sm:w-72"
+          aria-label={`View details for ${activity.title}`}
+        >
+          <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised">
+            <div className="relative aspect-4/3 overflow-hidden bg-subtle">
+              <Image
+                src={activity.imageUrl}
+                alt={activity.title}
+                fill
+                sizes="(min-width: 640px) 288px, 82vw"
+                className="object-cover transition duration-300 group-hover:scale-[1.03]"
+              />
+              <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-foreground shadow-card">
+                {activity.category.replace("-", " ")}
+              </span>
+            </div>
 
-      <div
-        ref={scrollRef}
-        onScroll={updateArrows}
-        className="flex gap-4 overflow-x-auto pb-3"
-        style={{ scrollbarWidth: "none" } as React.CSSProperties}
-      >
-        {activities.map((activity) => (
-          <Link
-            key={activity.id}
-            href={`/activities/${activity.id}`}
-            className="block focus-visible:outline-none"
-            aria-label={`View details for ${activity.title}`}
-          >
-            <article className="relative flex min-w-72 shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg hover:-translate-y-0.5 sm:min-w-80">
-              <div className="relative h-48 overflow-hidden bg-slate-200">
-                <Image
-                  src={activity.imageUrl}
-                  alt={activity.title}
-                  className="h-full w-full object-cover"
-                  width={512}
-                  height={320}
-                  unoptimized
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/20 to-transparent" />
+            <div className="flex flex-1 flex-col p-4">
+              <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
+                {activity.title}
+              </h3>
+              {activity.description && (
+                <p className="mt-1 line-clamp-2 text-sm text-muted">
+                  {activity.description}
+                </p>
+              )}
 
-                <div className="absolute right-3 top-3">
-                  <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-                      CATEGORY_COLORS[activity.category] ||
-                      CATEGORY_COLORS["tourist-attraction"]
-                    }`}
-                  >
-                    {activity.category.replace("-", " ")}
-                  </span>
-                </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+                  {activity.reviews.toFixed(1)}
+                  <Star className="size-3 fill-white" />
+                </span>
+                <span className="text-xs text-muted">
+                  {activity.reviewCount.toLocaleString()} reviews
+                </span>
               </div>
 
-              <div className="flex flex-1 flex-col gap-3 p-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 line-clamp-2">
-                    {activity.title}
-                  </h3>
-                  {activity.description && (
-                    <p className="mt-1 text-sm text-slate-600 line-clamp-2">
-                      {activity.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-3.5 w-3.5 ${
-                          i < Math.round(activity.reviews)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-slate-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs font-semibold text-slate-700">
-                    {activity.reviews.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    ({activity.reviewCount.toLocaleString()} reviews)
-                  </span>
-                </div>
-
-                <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-3">
-                  <span className="text-sm font-semibold text-slate-700">
-                    {activity.cost}
-                  </span>
-                  <span className="text-xs text-slate-500">per person</span>
-                </div>
+              <div className="mt-auto pt-4 text-right">
+                <p className="text-lg font-bold text-foreground">{activity.cost}</p>
+                <p className="text-xs text-muted">per person</p>
               </div>
-            </article>
-          </Link>
-        ))}
-      </div>
-    </section>
+            </div>
+          </article>
+        </Link>
+      ))}
+    </CardCarousel>
   );
 }

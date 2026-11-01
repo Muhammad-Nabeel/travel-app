@@ -1,20 +1,6 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import { Star } from "lucide-react";
-import type { CustomerReviewRow } from "@/app/api/reviews/route";
 
-type PublicReview = Pick<
-  CustomerReviewRow,
-  | "id"
-  | "customerName"
-  | "location"
-  | "rating"
-  | "title"
-  | "body"
-  | "tripType"
-  | "isVerified"
->;
+import { getPublishedReviews } from "@/lib/home-sections";
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -45,62 +31,25 @@ function initialsFromName(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
 
-export function CustomerReviewsSection() {
-  const [reviews, setReviews] = useState<PublicReview[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadReviews() {
-      try {
-        const res = await fetch("/api/reviews", { cache: "no-store" });
-        const json = (await res.json()) as PublicReview[];
-        if (!cancelled) {
-          setReviews(Array.isArray(json) ? json : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setReviews([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadReviews();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const sliderReviews = useMemo(() => reviews, [reviews]);
-
-  if (loading || sliderReviews.length === 0) {
-    return null;
-  }
+export async function CustomerReviewsSection() {
+  const reviews = await getPublishedReviews();
+  if (reviews.length === 0) return null;
 
   return (
-    <section className="section-shell py-6" aria-label="Customer reviews">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="section-shell py-6 md:py-8" aria-label="Customer reviews">
+      <div>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-              Customer Voices
-            </p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">
-              Verified traveler reviews
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+              What our travellers say
             </h2>
           </div>
         </div>
-        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
-          {sliderReviews.map((review) => (
+        <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3">
+          {reviews.map((review) => (
             <article
               key={review.id}
-              className="w-[17.5rem] shrink-0 snap-start rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 sm:w-[18.5rem]"
+              className="w-[17.5rem] shrink-0 snap-start rounded-2xl border border-line bg-white p-4 shadow-card sm:w-[18.5rem]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">

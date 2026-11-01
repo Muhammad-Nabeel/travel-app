@@ -1,4 +1,5 @@
 import { flightResults } from "@/lib/mock-data";
+import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import { searchSabreFlights } from "@/lib/providers/sabre/flight-search";
 import { flightSearchSchema } from "@/lib/validations/search";
 
@@ -316,9 +317,21 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
 
     const query = queryResult.data;
     const warnings: string[] = [];
+    const sabreSettings = await getActiveSabreSettings();
+
+    if (!sabreSettings) {
+        return {
+            ok: true,
+            query,
+            results: [],
+            source: "mock",
+            warnings,
+            liveSearchEnabled: false,
+        };
+    }
 
     try {
-        const sabreResults = await searchSabreFlights(query);
+        const sabreResults = await searchSabreFlights(query, sabreSettings);
         const filteredResults = applyQueryFilters(sabreResults, query);
 
         if (filteredResults.length > 0) {
@@ -328,6 +341,7 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
                 results: filteredResults,
                 source: "sabre",
                 warnings,
+                liveSearchEnabled: true,
             };
         }
 
@@ -344,6 +358,7 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
                 warnings: [
                     "No live multi-city fares were returned for these legs. Please adjust dates/routes and try again.",
                 ],
+                liveSearchEnabled: true,
             };
         }
     } catch (error) {
@@ -362,6 +377,7 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
                 warnings: [
                     "Live multi-city search is temporarily unavailable. Please try again shortly.",
                 ],
+                liveSearchEnabled: true,
             };
         }
     }
@@ -374,5 +390,6 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
         results: mockResults,
         source: "mock",
         warnings,
+        liveSearchEnabled: true,
     };
 }

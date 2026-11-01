@@ -6,15 +6,11 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
   title: "Admin",
-  description: "Administrative controls for Safar Umrah.",
+  description: "Administrative controls for the website.",
   path: "/admin",
   noIndex: true,
 });
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen bg-linear-to-b from-blue-50 via-sky-50 to-white">
-      <AdminShell>{children}</AdminShell>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

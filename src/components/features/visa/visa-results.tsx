@@ -17,6 +17,7 @@ type VisaResultsProps = {
   results: VisaCountryEntry[];
   countryOptions: string[];
   popularCountries: string[];
+  heroImage: string;
 };
 
 type SearchFilters = {
@@ -54,6 +55,7 @@ export function VisaResults({
   results,
   countryOptions,
   popularCountries,
+  heroImage,
 }: VisaResultsProps) {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
 
@@ -74,6 +76,7 @@ export function VisaResults({
   return (
     <>
       <VisaSearchEngine
+        heroImage={heroImage}
         countryOptions={countryOptions}
         popularCountries={popularCountries}
         onSearch={(params) => setFilters(params)}
@@ -137,7 +140,7 @@ export function VisaResults({
                     </p>
                     <Link
                       href={getVisaPath(visa.country, visa.visaType)}
-                      className="mt-2 inline-flex rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                      className="mt-2 inline-flex rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-strong"
                     >
                       View details
                     </Link>

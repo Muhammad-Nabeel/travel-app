@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
     getStoredSupportContactSettings,
     saveStoredSupportContactSettings,
+    type SupportContactSettings,
 } from "@/lib/admin-settings/support-contact-settings";
 
 export async function GET() {
@@ -17,14 +18,14 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
-        const body = (await request.json()) as {
-            mobileNumber?: string;
-            landlineNumber?: string;
-        };
+        const body = (await request.json()) as Partial<SupportContactSettings>;
 
         const saved = await saveStoredSupportContactSettings({
+            email: body.email ?? "",
             mobileNumber: body.mobileNumber ?? "",
             landlineNumber: body.landlineNumber ?? "",
+            whatsappNumber: body.whatsappNumber ?? "",
+            address: body.address ?? "",
         });
 
         return NextResponse.json(saved, { status: 200 });

@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { hotelResults } from "@/lib/mock-data";
 import { hotelSearchSchema } from "@/lib/validations/search";
 
 export function GET(request: NextRequest) {
+    const params = request.nextUrl.searchParams;
     const parseResult = hotelSearchSchema.safeParse({
-        city: request.nextUrl.searchParams.get("city") ?? "Makkah",
-        checkInDate: request.nextUrl.searchParams.get("checkInDate") ?? "2026-04-12",
-        checkOutDate: request.nextUrl.searchParams.get("checkOutDate") ?? "2026-04-17",
-        guests: request.nextUrl.searchParams.get("guests") ?? "2",
+        destination: params.get("destination") ?? undefined,
+        checkIn: params.get("checkIn") ?? undefined,
+        checkOut: params.get("checkOut") ?? undefined,
+        adults: params.get("adults") ?? undefined,
+        children: params.get("children") ?? undefined,
+        rooms: params.get("rooms") ?? undefined,
+        stayType: params.get("stayType") ?? undefined,
     });
 
     if (!parseResult.success) {
@@ -24,7 +27,7 @@ export function GET(request: NextRequest) {
     return NextResponse.json({
         ok: true,
         query: parseResult.data,
-        results: hotelResults,
-        note: "Replace mock results with Sabre and Amadeus adapters.",
+        // No hotel provider is connected yet.
+        results: [],
     });
 }

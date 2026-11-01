@@ -3,10 +3,13 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
+import { useBrand } from "@/components/shared/brand-provider";
 
 function SignUpForm() {
+  const brand = useBrand();
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -81,10 +84,14 @@ function SignUpForm() {
             href="/"
             className="flex items-center gap-2 text-black transition hover:opacity-80"
           >
-            <span className="rounded-full bg-sky-400 p-2.5 text-white shadow-sm">
-              <PlaneTakeoff className="size-5" />
-            </span>
-            <span className="display-font text-3xl leading-none">Safar</span>
+            {brand.assets.icon ? (
+              <Image src={brand.assets.icon} alt="" width={44} height={44} className="size-11 object-contain" />
+            ) : (
+              <span className="rounded-full bg-brand p-2.5 text-white shadow-sm">
+                <PlaneTakeoff className="size-5" />
+              </span>
+            )}
+            <span className="display-font text-3xl leading-none">{brand.name}</span>
           </Link>
         </div>
 
@@ -94,7 +101,7 @@ function SignUpForm() {
             Create an account
           </h1>
           <p className="text-sm text-gray-500 mb-6">
-            Join Safar and start planning your journey
+            Join {brand.name} and start planning your journey
           </p>
 
           {/* Google Sign Up */}
@@ -256,7 +263,7 @@ function SignUpForm() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-400 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="size-4 animate-spin" />}
               Create account

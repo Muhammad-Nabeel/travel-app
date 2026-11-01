@@ -3,10 +3,21 @@
 import { useEffect, useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
 
+import {
+  EMPTY_SEO_DRAFT,
+  SeoFields,
+  resolveSeoDraft,
+  seoDraftFrom,
+  seoTitleBudgetIssue,
+  type SeoDraft,
+} from "@/components/admin/seo-fields";
+import { useBrand } from "@/components/shared/brand-provider";
 import type {
   VisaCountryEntry,
   VisaType,
 } from "@/lib/admin-settings/visa-settings";
+import { suggestVisaSeo } from "@/lib/seo-suggestions";
+import { getVisaPath } from "@/lib/visa";
 
 const EMPTY_ENTRY: VisaCountryEntry = {
   country: "",
@@ -19,6 +30,8 @@ const EMPTY_ENTRY: VisaCountryEntry = {
   code: "",
   isActive: true,
   sortOrder: 0,
+  seoTitle: "",
+  seoDescription: "",
 };
 
 const VISA_TYPES: { value: VisaType; label: string }[] = [
@@ -58,6 +71,15 @@ function findPricingIssue(entries: VisaCountryEntry[]): string | null {
 
 export default function AdminVisaPage() {
   const [entries, setEntries] = useState<VisaCountryEntry[]>([]);
+  const [seoDrafts, setSeoDrafts] = useState<SeoDraft[]>([]);
+  const brand = useBrand();
+
+  const loadEntries = (items: VisaCountryEntry[]) => {
+    setEntries(items);
+    setSeoDrafts(
+      items.map((item) => seoDraftFrom(item, suggestVisaSeo(item, brand.name))),
+    );
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +91,7 @@ export default function AdminVisaPage() {
           cache: "no-store",
         });
         const data = await res.json();
-        setEntries(Array.isArray(data) ? data : []);
+        loadEntries(Array.isArray(data) ? data : []);
       } catch {
         setError("Unable to load visa countries.");
       } finally {
@@ -78,6 +100,8 @@ export default function AdminVisaPage() {
     };
 
     void fetchEntries();
+    // Loads once; the brand only shapes the initial SEO suggestions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateEntry = <K extends keyof VisaCountryEntry>(
@@ -101,11 +125,26 @@ export default function AdminVisaPage() {
       setSaving(false);
       return;
     }
+    const payload = entries.map((entry, index) => ({
+      ...entry,
+      ...resolveSeoDraft(
+        seoDrafts[index] ?? EMPTY_SEO_DRAFT,
+        suggestVisaSeo(entry, brand.name),
+      ),
+    }));
+    for (const entry of payload) {
+      const titleIssue = seoTitleBudgetIssue(entry.seoTitle, brand.name);
+      if (titleIssue) {
+        setError(`${entry.country || "New country"}: ${titleIssue}`);
+        setSaving(false);
+        return;
+      }
+    }
     try {
       const res = await fetch("/api/admin/settings/visa-countries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entries),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -114,7 +153,7 @@ export default function AdminVisaPage() {
       }
 
       const saved = (await res.json()) as VisaCountryEntry[];
-      setEntries(saved);
+      loadEntries(saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save changes.");
     } finally {
@@ -124,23 +163,25 @@ export default function AdminVisaPage() {
 
   const handleAdd = () => {
     setEntries((prev) => [...prev, { ...EMPTY_ENTRY }]);
+    setSeoDrafts((prev) => [...prev, EMPTY_SEO_DRAFT]);
   };
 
   const handleRemove = (index: number) => {
     setEntries((prev) => prev.filter((_, idx) => idx !== index));
+    setSeoDrafts((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   return (
     <div className="section-shell py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Visa Settings
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+          <h1 className="mt-2 text-2xl font-semibold text-navy">
             Visa countries & pricing
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-muted">
             Manage visa types and pricing for each destination. Active items are
             shown on the visa search page.
           </p>
@@ -149,7 +190,7 @@ export default function AdminVisaPage() {
           <button
             type="button"
             onClick={handleAdd}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+            className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-navy/80 transition hover:border-line-strong"
           >
             <Plus className="h-4 w-4" />
             Add country
@@ -158,7 +199,7 @@ export default function AdminVisaPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-70"
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save"}
@@ -167,17 +208,17 @@ export default function AdminVisaPage() {
       </div>
 
       {error ? (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mb-4 rounded-xl border border-deal/20 bg-deal/6 px-4 py-3 text-sm text-deal">
           {error}
         </div>
       ) : null}
 
       {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-2xl border border-line bg-white p-6 text-sm text-muted">
           Loading visa countries...
         </div>
       ) : entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-2xl border border-dashed border-line bg-white p-6 text-sm text-muted">
           No visa countries yet. Add your first country.
         </div>
       ) : (
@@ -185,16 +226,16 @@ export default function AdminVisaPage() {
           {entries.map((entry, index) => (
             <section
               key={`${entry.country}-${index}`}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-line bg-white p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-navy">
                   {entry.country || "New country"}
                 </p>
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  className="inline-flex items-center gap-2 rounded-lg border border-deal/20 px-3 py-1.5 text-xs font-semibold text-deal transition hover:bg-deal/6"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Remove
@@ -203,7 +244,7 @@ export default function AdminVisaPage() {
 
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Country
                   </span>
                   <input
@@ -211,12 +252,12 @@ export default function AdminVisaPage() {
                     onChange={(event) =>
                       updateEntry(index, "country", event.target.value)
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Visa type
                   </span>
                   <select
@@ -228,7 +269,7 @@ export default function AdminVisaPage() {
                         event.target.value as VisaType,
                       )
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   >
                     {VISA_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -239,7 +280,7 @@ export default function AdminVisaPage() {
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Country code
                   </span>
                   <input
@@ -248,12 +289,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "code", event.target.value)
                     }
                     placeholder="MY"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm uppercase outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Duration
                   </span>
                   <input
@@ -262,12 +303,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "duration", event.target.value)
                     }
                     placeholder="30 days"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Entry type
                   </span>
                   <input
@@ -276,12 +317,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "entry", event.target.value)
                     }
                     placeholder="Single Entry"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Per person cost
                   </span>
                   <input
@@ -290,12 +331,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "perPersonCost", event.target.value)
                     }
                     placeholder="PKR 30,000 / Traveler"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Service fee
                   </span>
                   <input
@@ -304,12 +345,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "serviceFee", event.target.value)
                     }
                     placeholder="PKR 10,000"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Net cost
                   </span>
                   <input
@@ -318,12 +359,12 @@ export default function AdminVisaPage() {
                       updateEntry(index, "netCost", event.target.value)
                     }
                     placeholder="PKR 40,000"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Sort order
                   </span>
                   <input
@@ -336,21 +377,34 @@ export default function AdminVisaPage() {
                         Number(event.target.value),
                       )
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                <label className="flex items-center gap-2 text-sm font-semibold text-muted">
                   <input
                     type="checkbox"
                     checked={entry.isActive}
                     onChange={(event) =>
                       updateEntry(index, "isActive", event.target.checked)
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                   />
                   Active
                 </label>
+              </div>
+
+              <div className="mt-4">
+                <SeoFields
+                  draft={seoDrafts[index] ?? EMPTY_SEO_DRAFT}
+                  suggestion={suggestVisaSeo(entry, brand.name)}
+                  onChange={(draft) =>
+                    setSeoDrafts((prev) =>
+                      prev.map((item, idx) => (idx === index ? draft : item)),
+                    )
+                  }
+                  path={getVisaPath(entry.country, entry.visaType)}
+                />
               </div>
             </section>
           ))}

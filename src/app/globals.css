@@ -1,49 +1,103 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* ── Light theme tokens (corporate) ────────────────────── */
-:root {
-  --app-header-height: 63px;
-  --background: #f8f9ff; /* near-white with blue tint */
-  --foreground: #1d1d1d; /* corporate base-content */
-  --card: #ffffff;
-  --muted: #6b7280;
-  --brand: #4b6bfb; /* corporate primary */
-  --brand-strong: #3451fa;
-  --accent: #67cba0; /* corporate accent */
-  --ring: rgba(75, 107, 251, 0.22);
-  --scroll-track: #e9eefb;
-  --scroll-thumb: #93a8e9;
-  --scroll-thumb-hover: #708de3;
+/* DaisyUI theme aligned with the site tokens below so Daisy components
+   (footer, results, forms) share one palette. */
+@plugin "daisyui/theme" {
+  name: "corporate";
+  default: true;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f5f6f8;
+  --color-base-300: #dfe0e4;
+  --color-base-content: #191e3b;
+  --color-primary: #1e426f;
+  --color-primary-content: #ffffff;
+  --color-secondary: #191e3b;
+  --color-secondary-content: #ffffff;
+  --color-accent: #b8913a;
+  --color-accent-content: #ffffff;
+  --color-neutral: #191e3b;
+  --color-neutral-content: #ffffff;
+  --color-info: #1e426f;
+  --color-info-content: #ffffff;
+  --color-success: #227950;
+  --color-success-content: #ffffff;
+  --color-warning: #f5b400;
+  --color-warning-content: #191e3b;
+  --color-error: #d1173a;
+  --color-error-content: #ffffff;
+  --radius-selector: 999px;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
-/* ── Dark theme tokens (business) ──────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1d232a; /* business base-100 */
-    --foreground: #a6adbb; /* business base-content */
-    --card: #191e24;
-    --muted: #6b7280;
-    --brand: #1c4f82; /* business primary */
-    --brand-strong: #1a4270;
-    --accent: #67cba0;
-    --ring: rgba(28, 79, 130, 0.3);
-    --scroll-track: #2a3440;
-    --scroll-thumb: #45658a;
-    --scroll-thumb-hover: #5d7ea6;
-  }
+/* ── Design tokens (light only; see DESIGN_IMPROVEMENT_PLAN.md §3) ── */
+:root {
+  --app-header-height: 64px;
+
+  /* Neutrals */
+  --bg: #ffffff;
+  --bg-subtle: #f5f6f8;
+  --surface: #ffffff;
+  --border-color: #dfe0e4; /* not --border: DaisyUI uses that as the border width */
+  --border-strong: #c4c7d0; /* form controls */
+  --text: #191e3b;
+  --text-muted: #5f6377;
+
+  /* Brand (matches the logo) */
+  --primary: #1e426f; /* EasyTrip logo navy */
+  --primary-hover: #15304f;
+  --primary-soft: #e8edf4;
+  --gold: #b8913a;
+  --gold-strong: #7a5f1f; /* gold text on light backgrounds (AA) */
+  --deal: #d1173a;
+  --success: #227950;
+  --navy: #191e3b;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 3px rgba(12, 14, 28, 0.08), 0 2px 8px rgba(12, 14, 28, 0.06);
+  --shadow-raised: 0 8px 24px rgba(12, 14, 28, 0.14);
+
+  /* Legacy aliases still used by components */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --muted: var(--text-muted);
+  --brand: var(--primary);
+  --brand-strong: var(--primary-hover);
+  --accent: var(--gold);
+  --ring: rgba(30, 66, 111, 0.22);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-muted: var(--muted);
-  --color-brand: var(--brand);
-  --color-brand-strong: var(--brand-strong);
-  --color-accent: var(--accent);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-subtle: var(--bg-subtle);
+  --color-card: var(--surface);
+  --color-line: var(--border-color);
+  --color-line-strong: var(--border-strong);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--primary);
+  --color-brand-strong: var(--primary-hover);
+  --color-brand-soft: var(--primary-soft);
+  --color-accent: var(--gold);
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-deal: var(--deal);
+  --color-navy: var(--navy);
+  --radius-card: var(--radius-lg);
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
   --font-sans: var(--font-plus-jakarta-sans);
-  --font-display: var(--font-cormorant-garamond);
+  --font-display: var(--font-dm-serif-display);
 }
 
 * {
@@ -56,111 +110,58 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-plus-jakarta-sans), sans-serif;
-  background-image:
-    radial-gradient(
-      circle at top left,
-      rgba(75, 107, 251, 0.08),
-      /* corporate primary tint */ transparent 28%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(103, 203, 160, 0.1),
-      /* corporate accent tint */ transparent 32%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(248, 249, 255, 0.97) 0%,
-      rgba(235, 238, 255, 1) 100%
-    );
 }
 
-/* Professional, subtle scrollbar styling across pages and panels */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
-}
-
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-track {
-  background: var(--scroll-track);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--scroll-thumb), var(--brand));
-  border-radius: 999px;
-  border: 2px solid var(--scroll-track);
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--scroll-thumb-hover),
-    var(--brand-strong)
-  );
-}
-
-*::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-[data-theme="business"] body,
-[data-theme="business"] {
-  background-image:
-    radial-gradient(
-      circle at top left,
-      rgba(28, 79, 130, 0.15),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(103, 203, 160, 0.08),
-      transparent 32%
-    ),
-    linear-gradient(180deg, rgba(29, 35, 42, 0.99) 0%, rgba(25, 30, 36, 1) 100%);
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
+/* In the base layer so utilities such as text-white on links still win. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 .display-font {
-  font-family: var(--font-cormorant-garamond), serif;
+  font-family: var(--font-dm-serif-display), serif;
+  font-weight: 400;
 }
 
 .surface {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(240, 249, 255, 0.8) 100%
-  );
-  backdrop-filter: blur(12px);
+  background: var(--surface);
 }
 
 .section-shell {
   margin-inline: auto;
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1200px, calc(100% - 2rem));
+}
+
+/* Darkens the hero photo for legible text and fades its bottom edge into the page. */
+.hero-backdrop-overlay {
+  background-image:
+    linear-gradient(
+      180deg,
+      transparent calc(100% - var(--hero-fade, 120px)),
+      var(--bg) calc(100% - var(--hero-fade, 120px))
+    ),
+    linear-gradient(
+      180deg,
+      rgba(12, 18, 40, 0.55) 0%,
+      rgba(12, 18, 40, 0.3) 55%,
+      rgba(12, 18, 40, 0.1) 100%
+    );
 }
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(75, 107, 251, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(75, 107, 251, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(30, 66, 111, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 66, 111, 0.06) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
 .ring-soft {
-  box-shadow:
-    0 0 0 1px rgba(75, 107, 251, 0.08),
-    0 18px 45px rgba(75, 107, 251, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .destination-tile {
@@ -199,6 +200,11 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--ring);
 }
 
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 @keyframes airline-marquee {
   from {
     transform: translateX(0);
@@ -215,4 +221,21 @@ textarea:focus {
 
 .airline-marquee:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .airline-marquee {
+    animation: none;
+  }
+}
+
+/* Keep the footer and floating widgets clear of a detail page's mobile booking bar. */
+@media (max-width: 1023px) {
+  body:has([data-booking-bar]) {
+    padding-bottom: 4.5rem;
+  }
+
+  body:has([data-booking-bar]) .floating-widget-stack {
+    bottom: 5.5rem;
+  }
 }

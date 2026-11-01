@@ -12,11 +12,14 @@ import {
   Users,
 } from "lucide-react";
 
+import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
 import styles from "./flight-search-engine.module.css";
 import { AirportInput, type Airport } from "../../../shared/airport-input";
 import { TrendingSearches } from "../../../shared/trending-searches";
+import { ProductTabs } from "../product-tabs";
 import type { CabinClass, TripType } from "@/lib/flights/types";
 import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
+import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import { flightSearchSchema } from "@/lib/validations/search";
 import { trackGa4Event } from "@/lib/analytics/ga4-events";
 const CABIN_CLASSES = [
@@ -26,8 +29,7 @@ const CABIN_CLASSES = [
   "First",
 ] as const;
 
-type FlightSearchEngineProps = {
-  variant?: "hero" | "embedded";
+type FlightSearchEngineProps = HeroBannerProps & {
   initialValues?: {
     tripType?: TripType;
     directOnly?: boolean;
@@ -152,10 +154,12 @@ function getMonthCells(monthStart: Date) {
 
 export function FlightSearchEngine({
   variant = "hero",
+  heroImage,
   initialValues,
 }: FlightSearchEngineProps) {
   const router = useRouter();
   const { settings: currencySettings, loading: currencyLoading } = useCurrencySettings();
+  const liveFaresEnabled = useLiveFaresEnabled();
 
   const [tripType, setTripType] = useState<TripType>(
     initialValues?.tripType ?? "one-way",
@@ -475,12 +479,14 @@ export function FlightSearchEngine({
   };
 
   useEffect(() => {
-    if (!showFareCalendar) return;
+    // With live fares off the calendar is a plain date picker; no fare lookup.
+    if (!showFareCalendar || !liveFaresEnabled) return;
     const controller = new AbortController();
     void loadFareCalendar(calendarMonth, controller.signal);
     return () => controller.abort();
   }, [
     showFareCalendar,
+    liveFaresEnabled,
     calendarMonth,
     calendarField,
     calendarLegIndex,
@@ -810,31 +816,25 @@ export function FlightSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Flight search engine"
     >
-      {isHero ? (
-        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-80">
-          <div className={`${styles.heroOrb} ${styles.heroOrbLeft}`} />
-          <div className={`${styles.heroOrb} ${styles.heroOrbRight}`} />
-        </div>
-      ) : null}
+      {heroImage ? <HeroBackdrop src={heroImage} /> : null}
 
       <div
-        className={`section-shell relative z-10 ${isHero ? "py-10 md:py-14" : "py-4"}`}
+        className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}
       >
         {isHero ? (
-          <div className="mx-auto mb-8 max-w-6xl text-center text-white">
-            <div className="mx-auto flex w-fit items-center justify-center gap-2 rounded-full border border-white/35 bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/95 backdrop-blur-2xl">
-              Built for serious flight search
-            </div>
-            <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-              Find the best flight in seconds.
+          <div className="mx-auto mb-8 max-w-4xl text-center text-white md:mb-10">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+              Your journey, beautifully planned
             </h1>
-            <p className="mx-auto mt-3 max-w-3xl text-base leading-7 text-blue-50/95 sm:text-lg">
-              One clean row to search, compare, and book faster.
+            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">
+              Flights, Umrah packages, tours and visas — all in one place.
             </p>
           </div>
         ) : null}
 
         <form className={styles.searchCard} onSubmit={handleSubmit}>
+          {isHero ? <ProductTabs active="flights" /> : null}
+
           {/* Controls row */}
           <div className={styles.controlsRow}>
             <div className={styles.tripTypeTabs}>
@@ -1284,7 +1284,7 @@ export function FlightSearchEngine({
             </div>
           )}
 
-          {isHero ? (
+          {isHero && trendingRoutes.length > 0 ? (
             <div className={styles.trendingRow}>
               <TrendingSearches
                 routes={trendingRoutes}

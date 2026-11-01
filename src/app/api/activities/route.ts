@@ -3,9 +3,12 @@ import { ZodError } from "zod";
 
 import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
+import { getUniqueActivitySlug } from "@/lib/activity-slug";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export type ActivityRow = {
     id: string;
+    slug: string | null;
     destinationId: string;
     title: string;
     category: string;
@@ -16,6 +19,8 @@ export type ActivityRow = {
     reviewCount: number;
     sortOrder: number;
     isActive: boolean;
+    seoTitle: string;
+    seoDescription: string;
 };
 
 function jsonWithSource(data: ActivityRow[], source: "db") {
@@ -63,6 +68,10 @@ export async function POST(request: NextRequest) {
 
         const activity = await prisma.activity.create({
             data: {
+                slug: await getUniqueActivitySlug(
+                    validatedData.title,
+                    validatedData.destinationId,
+                ),
                 destinationId: validatedData.destinationId,
                 title: validatedData.title,
                 category: validatedData.category,
@@ -73,8 +82,11 @@ export async function POST(request: NextRequest) {
                 reviewCount: validatedData.reviewCount,
                 sortOrder: validatedData.sortOrder,
                 isActive: validatedData.isActive,
+                seoTitle: validatedData.seoTitle,
+                seoDescription: validatedData.seoDescription,
             },
         });
+        revalidatePublicSite();
         return NextResponse.json(activity, { status: 201 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {

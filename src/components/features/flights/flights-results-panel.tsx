@@ -24,6 +24,7 @@ import {
   getAirlineCode,
   getAirlineLogoSrc,
 } from "@/lib/flights/airline-branding";
+import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 type FlightsResultsPanelProps = {
   offers: FlightOffer[];
@@ -360,18 +361,18 @@ export function FlightsResultsPanel({
   }, [mobileFiltersOpen]);
 
   const mobileChipClass =
-    "inline-flex h-11 items-center gap-2 rounded-xl border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-sm";
+    "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-sm font-semibold text-foreground";
 
   return (
     <section className="section-shell mt-6 pb-40">
       <div className="mb-4 space-y-3 lg:hidden">
         <div
-          className="sticky z-30 -mx-1 flex items-center gap-2 overflow-x-auto bg-base-100/95 px-1 py-1 backdrop-blur lg:hidden"
+          className="sticky z-30 -mx-1 flex items-center gap-2 overflow-x-auto bg-white px-1 py-2 lg:hidden"
           style={{ top: "var(--app-header-height, 63px)" }}
         >
           <button
             type="button"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-base-300 bg-base-100 text-base-content shadow-sm"
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-white text-foreground"
             onClick={() => {
               setMobileFilterFocus("all");
               setMobileFiltersOpen(true);
@@ -419,12 +420,12 @@ export function FlightsResultsPanel({
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-[1.65rem] font-bold leading-none text-base-content">
+          <p className="text-lg font-bold leading-none text-foreground">
             {filteredOffers.length} results
           </p>
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-sm font-semibold text-base-content shadow-sm"
+            className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-foreground"
             onClick={() => {
               setSortBy((current) => {
                 if (current === "recommended") return "lowest-price";
@@ -449,15 +450,15 @@ export function FlightsResultsPanel({
 
       {mobileFiltersOpen ? (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/40 p-3 lg:hidden"
+          className="fixed inset-0 z-50 flex items-end bg-navy/40 lg:hidden"
           onClick={() => setMobileFiltersOpen(false)}
         >
           <div
-            className="mx-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-base-100 p-3 shadow-2xl"
+            className="max-h-[85vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 pb-8 shadow-raised"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between px-1 py-1">
-              <h3 className="text-sm font-semibold text-base-content">
+              <h3 className="text-base font-semibold text-foreground">
                 {mobileFilterFocus === "stops"
                   ? "Stops"
                   : mobileFilterFocus === "price"
@@ -468,7 +469,7 @@ export function FlightsResultsPanel({
               </h3>
               <button
                 type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-line"
                 onClick={() => setMobileFiltersOpen(false)}
                 aria-label="Close filters"
               >
@@ -508,19 +509,8 @@ export function FlightsResultsPanel({
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
         <div className="hidden space-y-4 lg:block">
-          <aside className="surface ring-soft rounded-2xl border border-white/70 p-4">
-            <div className="mt-3 rounded-xl border border-base-300 bg-base-200/40 px-3 py-2">
-              <p className="text-xs uppercase tracking-widest text-base-content/50">
-                Total flights found
-              </p>
-              <p className="mt-1 text-base font-semibold text-base-content">
-                {filteredOffers.length}
-              </p>
-            </div>
-          </aside>
-
           <FlightFiltersPanel
             maxPrice={maxPrice}
             priceCap={effectivePriceCap}
@@ -558,10 +548,18 @@ export function FlightsResultsPanel({
             </div>
           ) : null}
 
+          <p className="hidden text-sm text-muted lg:block">
+            <span className="font-semibold text-foreground">
+              {filteredOffers.length}
+            </span>{" "}
+            {filteredOffers.length === 1 ? "flight" : "flights"} found · prices
+            include taxes and fees
+          </p>
+
           {/* ── Quick-sort tab bar ── */}
           {quickSortMeta && (
-            <div className="surface ring-soft hidden overflow-hidden rounded-2xl border border-white/70 sm:block">
-              <div className="grid grid-cols-2 divide-x divide-base-200 sm:grid-cols-4">
+            <div className="hidden overflow-hidden rounded-2xl border border-line bg-white sm:block">
+              <div className="grid grid-cols-2 divide-x divide-line sm:grid-cols-4">
                 {(
                   [
                     {
@@ -581,7 +579,7 @@ export function FlightsResultsPanel({
                     },
                     {
                       key: "earliest",
-                      label: "Sort By Departure Time",
+                      label: "Earliest departure",
                       price: quickSortMeta.earliest.price,
                     },
                   ] as { key: SortBy; label: string; price: number }[]
@@ -592,22 +590,21 @@ export function FlightsResultsPanel({
                       setSortBy(tab.key);
                       setPage(1);
                     }}
-                    className={`flex flex-col gap-1 px-4 py-3 text-left transition-colors ${
+                    aria-pressed={sortBy === tab.key}
+                    className={`relative flex flex-col gap-0.5 px-4 py-3 text-left transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] ${
                       sortBy === tab.key
-                        ? "bg-neutral text-neutral-content"
-                        : "bg-base-100/60 text-base-content/70 hover:bg-base-200/60"
+                        ? "bg-brand-soft after:bg-brand"
+                        : "bg-white hover:bg-subtle after:bg-transparent"
                     }`}
                   >
                     <span
                       className={`text-sm font-semibold ${
-                        sortBy === tab.key
-                          ? "text-neutral-content"
-                          : "text-foreground"
+                        sortBy === tab.key ? "text-brand" : "text-foreground"
                       }`}
                     >
                       {tab.label}
                     </span>
-                    <span className="text-xs font-medium opacity-70">
+                    <span className="text-sm text-muted">
                       {formatQuickPrice(tab.price, currency)}
                     </span>
                   </button>
@@ -617,7 +614,8 @@ export function FlightsResultsPanel({
           )}
 
           {filteredOffers.length === 0 ? (
-            <div className="surface ring-soft rounded-3xl border border-white/70 p-8 text-center">
+            <div className="rounded-2xl border border-line bg-subtle p-10 text-center">
+              <EmptyStateImage slot="emptyFlights" />
               <p className="font-medium text-foreground">
                 No fares match your filters.
               </p>
@@ -640,7 +638,7 @@ export function FlightsResultsPanel({
               ))}
 
               {totalPages > 1 && (
-                <div className="surface ring-soft flex items-center justify-between rounded-3xl border border-white/70 px-5 py-3">
+                <div className="flex items-center justify-between rounded-2xl border border-line bg-white px-5 py-3">
                   <p className="text-sm text-muted">
                     Showing {(page - 1) * PAGE_SIZE + 1}–
                     {Math.min(page * PAGE_SIZE, filteredOffers.length)} of{" "}
@@ -683,8 +681,8 @@ export function FlightsResultsPanel({
       </div>
 
       {selectedOffer && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-base-300 bg-base-100/97 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
-          <div className="mx-auto w-full max-w-295 px-4 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white shadow-[0_-4px_24px_rgba(12,14,28,0.08)]">
+          <div className="section-shell py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-4">
               {selectedOfferLegs.map((leg, index) => (
                 <div
@@ -722,7 +720,7 @@ export function FlightsResultsPanel({
                 </div>
                 <button
                   type="button"
-                  className="btn btn-primary min-w-24 rounded-xl shadow-sm"
+                  className="min-w-28 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
                   onClick={() => router.push(buildBookingUrl(selectedOffer.id))}
                 >
                   Book now
@@ -787,11 +785,10 @@ function StickyLegPill({
               className="h-full w-full object-contain"
               width={40}
               height={40}
-              unoptimized
             />
           </div>
         ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-soft text-sm font-bold text-brand">
             {code.slice(0, 2)}
           </div>
         )}
@@ -838,13 +835,13 @@ function StickyLegPill({
           <span
             className={`flex items-center gap-1 ${
               isMultiStop
-                ? "font-medium text-amber-600"
-                : "text-emerald-600 font-medium"
+                ? "font-medium text-foreground"
+                : "font-medium text-success"
             }`}
           >
             <span
               className={`inline-block h-1.5 w-1.5 rounded-full ${
-                isMultiStop ? "bg-amber-500" : "bg-emerald-500"
+                isMultiStop ? "bg-muted" : "bg-success"
               }`}
             />
             {stopsLabel}

@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 
+import type { ActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import type {
     BaggageAllowance,
     CabinClass,
@@ -11,91 +12,32 @@ import type {
 } from "@/lib/flights/types";
 
 const SABRE_AUTH_PATH = "/v2/auth/token";
-const DEFAULT_SHOP_PATH = "/v5/offers/shop";
-const DEFAULT_FARE_CALENDAR_PATH = "/v6.1.0/shop/altdates/flights?mode=live";
 const TOKEN_BUFFER_MS = 20_000;
-const DEFAULT_VENDOR_CODES = [
-    "AZ",
-    "CX",
-    "CZ",
-    "EK",
-    "EY",
-    "GF",
-    "KL",
-    "KU",
-    "LX",
-    "PK",
-    "QR",
-    "SV",
-    "TG",
-    "TK",
-    "UL",
-    "6S",
-    "YO",
-    "FZ",
-    "HY",
-    "LH",
-    "WY",
-    "PC",
-    "VS",
-    "KQ",
-    "AC",
-    "AF",
-    "SQ",
-    "DV",
-    "GP",
-    "ET",
-    "DL",
-    "AT",
-    "J2",
-    "PF",
-    "HR",
-    "MS",
-    "ER",
-    "SZ",
-    "XY",
-    "PR",
-    "OD",
-    "RJ",
-] as const;
 
 type SabreTokenCache = {
     token: string;
     expiresAt: number;
+    credentialsKey: string;
 };
 
 let cachedToken: SabreTokenCache | null = null;
 
-function getSabreEnv() {
-    const baseUrl = process.env.SABRE_BASE_URL?.trim();
-    const clientId = process.env.SABRE_CLIENT_ID?.trim();
-    const clientSecret = process.env.SABRE_CLIENT_SECRET?.trim();
-    const cpaId = process.env.SABRE_CPA_ID?.trim() || clientId;
-    const pseudoCityCode =
-        process.env.SABRE_PCC?.trim() || clientId?.split(":")?.[2] || "";
-    const requestorCompanyCode =
-        process.env.SABRE_REQUESTOR_COMPANY_CODE?.trim() || "TN";
-    const isoCountry = process.env.SABRE_ISO_COUNTRY?.trim() || "PK";
-    const isoCurrency = process.env.SABRE_ISO_CURRENCY?.trim() || "PKR";
-    const includeVendorCodes =
-        process.env.SABRE_INCLUDE_VENDOR_CODES?.split(",")
-            .map((code) => code.trim().toUpperCase())
-            .filter(Boolean) || [...DEFAULT_VENDOR_CODES];
+type SabreEnv = ReturnType<typeof toSabreEnv>;
 
-    if (!baseUrl || !clientId || !clientSecret) {
-        return null;
-    }
-
+function toSabreEnv(settings: ActiveSabreSettings) {
     return {
-        baseUrl,
-        clientId,
-        clientSecret,
-        cpaId,
-        pseudoCityCode,
-        requestorCompanyCode,
-        isoCountry,
-        isoCurrency,
-        includeVendorCodes,
+        baseUrl: settings.baseUrl,
+        clientId: settings.clientId,
+        clientSecret: settings.clientSecret,
+        cpaId: settings.cpaId,
+        pseudoCityCode: settings.pseudoCityCode,
+        requestorCompanyCode: settings.requestorCompanyCode,
+        isoCountry: settings.isoCountry,
+        isoCurrency: settings.isoCurrency,
+        ndcEnabled: settings.ndcEnabled,
+        includeVendorCodes: settings.includeVendorCodes,
+        flightSearchPath: settings.flightSearchPath,
+        fareCalendarPath: settings.fareCalendarPath,
     };
 }
 
@@ -114,15 +56,18 @@ async function requestWithTimeout(
     }
 }
 
-async function getSabreAccessToken() {
+async function getSabreAccessToken(env: SabreEnv, { useCache = true } = {}) {
     const now = Date.now();
-    if (cachedToken && cachedToken.expiresAt - TOKEN_BUFFER_MS > now) {
+    // Credentials can change from the admin panel, so a cached token only
+    // counts when it was issued for the same account.
+    const credentialsKey = `${env.baseUrl}|${env.clientId}|${env.clientSecret}`;
+    if (
+        useCache &&
+        cachedToken &&
+        cachedToken.credentialsKey === credentialsKey &&
+        cachedToken.expiresAt - TOKEN_BUFFER_MS > now
+    ) {
         return cachedToken.token;
-    }
-
-    const env = getSabreEnv();
-    if (!env) {
-        throw new Error("Sabre credentials are missing in environment variables.");
     }
 
     const nestedBasicToken = Buffer.from(
@@ -156,6 +101,7 @@ async function getSabreAccessToken() {
     cachedToken = {
         token: payload.access_token,
         expiresAt: now + (payload.expires_in ?? 300) * 1000,
+        credentialsKey,
     };
 
     return payload.access_token;
@@ -176,7 +122,7 @@ function mapCabinClass(cabinClass: FlightSearchQuery["cabinClass"]) {
 
 function buildSabreSearchCorePayload(
     query: FlightSearchQuery,
-    env: NonNullable<ReturnType<typeof getSabreEnv>>,
+    env: SabreEnv,
 ) {
     const requestedCurrency = query.currency?.toUpperCase() || env.isoCurrency;
     const passengers = [
@@ -294,8 +240,8 @@ function buildSabreSearchCorePayload(
                     ATPCO: "Enable",
                     LCC: "Enable",
                     // NDC requires IATA NDC certification on the Sabre account.
-                    // Set SABRE_NDC_ENABLED=true in env to turn it on.
-                    NDC: process.env.SABRE_NDC_ENABLED === "true" ? "Enable" : "Disable",
+                    // Turned on from the admin Sabre settings.
+                    NDC: env.ndcEnabled ? "Enable" : "Disable",
                 },
                 OnlineIndicator: {
                     Ind: false,
@@ -346,7 +292,7 @@ function buildSabreSearchCorePayload(
 
 function buildSabreSearchPayload(
     query: FlightSearchQuery,
-    env: NonNullable<ReturnType<typeof getSabreEnv>>,
+    env: SabreEnv,
 ) {
     const core = buildSabreSearchCorePayload(query, env);
 
@@ -630,18 +576,19 @@ function mapSabreResponseToOffers(data: unknown): FlightOffer[] {
     return offers;
 }
 
+/** Requests a fresh token to confirm the credentials are accepted by Sabre. */
+export async function testSabreCredentials(settings: ActiveSabreSettings) {
+    await getSabreAccessToken(toSabreEnv(settings), { useCache: false });
+}
+
 export async function searchSabreFlights(
     query: FlightSearchQuery,
+    settings: ActiveSabreSettings,
 ): Promise<FlightOffer[]> {
-    const env = getSabreEnv();
-    if (!env) {
-        return [];
-    }
+    const env = toSabreEnv(settings);
+    const token = await getSabreAccessToken(env);
 
-    const token = await getSabreAccessToken();
-
-    const endpointPath =
-        process.env.SABRE_FLIGHT_SEARCH_PATH?.trim() || DEFAULT_SHOP_PATH;
+    const endpointPath = env.flightSearchPath;
     const payload = buildSabreSearchPayload(query, env);
 
     const headers: Record<string, string> = {
@@ -782,15 +729,10 @@ export async function searchSabreFareCalendar(params: {
     cabinClass?: FlightSearchQuery["cabinClass"];
     tripType?: FlightSearchQuery["tripType"];
     currency?: string;
-}): Promise<FareCalendarEntry[]> {
-    const env = getSabreEnv();
-    if (!env) {
-        return [];
-    }
-
-    const token = await getSabreAccessToken();
-    const endpointPath =
-        process.env.SABRE_FARE_CALENDAR_PATH?.trim() || DEFAULT_FARE_CALENDAR_PATH;
+}, settings: ActiveSabreSettings): Promise<FareCalendarEntry[]> {
+    const env = toSabreEnv(settings);
+    const token = await getSabreAccessToken(env);
+    const endpointPath = env.fareCalendarPath;
     const requestedCurrency = params.currency?.toUpperCase() || env.isoCurrency;
 
     const departureDateTime = `${params.departureDate}T00:00:00`;
