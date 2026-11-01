@@ -23,6 +23,12 @@ const remotePatterns = [
     protocol: "https",
     hostname: "media.easytrip.com.pk",
   },
+  {
+    // Stored image URLs use this host, so allow it even if the build env
+    // points CLOUDFLARE_R2_PUBLIC_URL at the r2.dev address.
+    protocol: "https",
+    hostname: "storage.easytrip.com.pk",
+  },
   ...(cloudflareHost
     ? [
       {
