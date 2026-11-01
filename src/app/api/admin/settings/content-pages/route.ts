@@ -65,7 +65,6 @@ export async function PUT(request: NextRequest) {
                 body: body.careers?.body ?? "",
                 ctaLabel: body.careers?.ctaLabel ?? "",
                 ctaHref: body.careers?.ctaHref ?? "",
-                jobs: Array.isArray(body.careers?.jobs) ? body.careers.jobs : [],
             },
             termsConditions: {
                 eyebrow: body.termsConditions?.eyebrow ?? "",

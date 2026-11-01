@@ -69,7 +69,7 @@ export default async function UserDashboardPage() {
           <div className="mt-4">
             <Link
               href="/flights"
-              className="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="inline-flex items-center rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong"
             >
               Find flights
             </Link>

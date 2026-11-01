@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { CardCarousel } from "@/components/shared/card-carousel";
-import { getPublishedBlogPosts, isDemoPost } from "@/lib/blog";
+import { getPublishedBlogPosts } from "@/lib/blog";
 
 const CATEGORY_LABELS: Record<string, string> = {
   travel: "Travel",
@@ -35,13 +35,6 @@ export async function BlogSlider() {
       subtitle="Guides, tips and destination ideas from our team"
       href="/blog"
       hrefLabel="Visit the blog"
-      badge={
-        posts.some(isDemoPost) ? (
-          <span className="inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-700">
-            Sample content · add posts in Admin
-          </span>
-        ) : undefined
-      }
       scrollLabel="blog posts"
     >
       {posts.map((post) => (

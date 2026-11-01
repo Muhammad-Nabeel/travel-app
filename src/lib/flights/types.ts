@@ -123,6 +123,8 @@ export type FlightSearchSuccessResult = {
     results: FlightOffer[];
     source: "sabre" | "amadeus" | "mock";
     warnings: string[];
+    /** False when Sabre is switched off in admin; the site takes a fare request instead. */
+    liveSearchEnabled: boolean;
 };
 
 export type FlightSearchErrorResult = {

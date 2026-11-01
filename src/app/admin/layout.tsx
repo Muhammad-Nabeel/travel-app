@@ -12,9 +12,5 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen bg-linear-to-b from-blue-50 via-sky-50 to-white">
-      <AdminShell>{children}</AdminShell>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

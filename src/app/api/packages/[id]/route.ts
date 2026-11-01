@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { packageSchema } from "@/lib/validations/package";
-import { DUMMY_PACKAGES, type PackageRow } from "../route";
+import type { PackageRow } from "../route";
 
 export async function GET(
     _request: NextRequest,
@@ -11,11 +11,7 @@ export async function GET(
     const { id } = await context.params;
 
     if (shouldBypassDatabase()) {
-        const pkg = DUMMY_PACKAGES.find((p) => p.id === id || p.slug === id);
-        if (!pkg) {
-            return NextResponse.json({ ok: false, error: "Package not found" }, { status: 404 });
-        }
-        return NextResponse.json(pkg);
+        return NextResponse.json({ ok: false, error: "Package not found" }, { status: 404 });
     }
 
     try {

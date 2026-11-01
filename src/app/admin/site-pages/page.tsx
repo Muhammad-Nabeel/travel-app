@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
+import Link from "next/link";
+
 import type {
-  CareerJob,
   ContactUsPageContent,
-  CareersPageContent,
+  ManagedPageContent,
   SitePagesSettings,
 } from "@/lib/admin-settings/site-pages-settings";
 
@@ -55,7 +56,6 @@ const EMPTY_PAGES_FORM: SitePagesSettings = {
     body: "",
     ctaLabel: "",
     ctaHref: "",
-    jobs: [],
   },
   termsConditions: {
     eyebrow: "",
@@ -131,78 +131,72 @@ function StaticPageSection({
   onChange,
 }: StaticPageSectionProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+    <section className="rounded-2xl border border-line bg-subtle p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
         {label}
       </p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
 
       <div className="mt-4 grid gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Eyebrow</span>
+          <span className="text-xs font-semibold text-muted">Eyebrow</span>
           <input
             value={value.eyebrow}
             onChange={(event) =>
               onChange(pageKey, "eyebrow", event.target.value)
             }
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Title</span>
+          <span className="text-xs font-semibold text-muted">Title</span>
           <input
             value={value.title}
             onChange={(event) => onChange(pageKey, "title", event.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Intro</span>
+          <span className="text-xs font-semibold text-muted">Intro</span>
           <textarea
             value={value.intro}
             onChange={(event) => onChange(pageKey, "intro", event.target.value)}
-            className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-24 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">
-            Body Content
-          </span>
+          <span className="text-xs font-semibold text-muted">Body Content</span>
           <textarea
             value={value.body}
             onChange={(event) => onChange(pageKey, "body", event.target.value)}
-            className="min-h-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-40 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              CTA Label
-            </span>
+            <span className="text-xs font-semibold text-muted">CTA Label</span>
             <input
               value={value.ctaLabel}
               onChange={(event) =>
                 onChange(pageKey, "ctaLabel", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              CTA Link
-            </span>
+            <span className="text-xs font-semibold text-muted">CTA Link</span>
             <input
               value={value.ctaHref}
               onChange={(event) =>
                 onChange(pageKey, "ctaHref", event.target.value)
               }
               placeholder="/contact-us or tel:+441234567"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
@@ -218,64 +212,62 @@ type ContactUsSectionProps = {
 
 function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+    <section className="rounded-2xl border border-line bg-subtle p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
         Contact Us
       </p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
+      <p className="mt-2 text-sm leading-6 text-muted">
         Manage the exact content and labels shown on the contact page layout.
       </p>
 
       <div className="mt-4 grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              Eyebrow
-            </span>
+            <span className="text-xs font-semibold text-muted">Eyebrow</span>
             <input
               value={value.eyebrow}
               onChange={(event) => onChange("eyebrow", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">Title</span>
+            <span className="text-xs font-semibold text-muted">Title</span>
             <input
               value={value.title}
               onChange={(event) => onChange("title", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Subtitle</span>
+          <span className="text-xs font-semibold text-muted">Subtitle</span>
           <textarea
             value={value.intro}
             onChange={(event) => onChange("intro", event.target.value)}
-            className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-24 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
-        <p className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+        <p className="rounded-lg bg-brand-soft px-3 py-2 text-xs text-brand-strong">
           The phone number, address and email shown on this page are edited in
           Settings → Contact Details.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Phone Label
             </span>
             <input
               value={value.phoneLabel}
               onChange={(event) => onChange("phoneLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Location Label
             </span>
             <input
@@ -283,24 +275,24 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               onChange={(event) =>
                 onChange("locationLabel", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Email Label
             </span>
             <input
               value={value.emailLabel}
               onChange={(event) => onChange("emailLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Full Name Label
             </span>
             <input
@@ -308,11 +300,11 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               onChange={(event) =>
                 onChange("fullNameLabel", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Full Name Placeholder
             </span>
             <input
@@ -320,14 +312,14 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               onChange={(event) =>
                 onChange("fullNamePlaceholder", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Email Field Label
             </span>
             <input
@@ -335,11 +327,11 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               onChange={(event) =>
                 onChange("emailFieldLabel", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Email Field Placeholder
             </span>
             <input
@@ -347,36 +339,36 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
               onChange={(event) =>
                 onChange("emailFieldPlaceholder", event.target.value)
               }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 sm:col-span-1">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Message Label
             </span>
             <input
               value={value.messageLabel}
               onChange={(event) => onChange("messageLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5 sm:col-span-1">
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-muted">
               Submit Button Label
             </span>
             <input
               value={value.submitLabel}
               onChange={(event) => onChange("submitLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">
+          <span className="text-xs font-semibold text-muted">
             Message Placeholder
           </span>
           <textarea
@@ -384,7 +376,7 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
             onChange={(event) =>
               onChange("messagePlaceholder", event.target.value)
             }
-            className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-24 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
       </div>
@@ -393,221 +385,90 @@ function ContactUsSection({ value, onChange }: ContactUsSectionProps) {
 }
 
 type CareersSectionProps = {
-  value: CareersPageContent;
-  onChange: (field: keyof CareersPageContent, nextValue: string) => void;
-  onJobChange: (
-    index: number,
-    field: keyof CareerJob,
-    nextValue: string,
-  ) => void;
-  onAddJob: () => void;
-  onRemoveJob: (index: number) => void;
+  value: ManagedPageContent;
+  onChange: (field: keyof ManagedPageContent, nextValue: string) => void;
 };
 
-function CareersSection({
-  value,
-  onChange,
-  onJobChange,
-  onAddJob,
-  onRemoveJob,
-}: CareersSectionProps) {
+function CareersSection({ value, onChange }: CareersSectionProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+    <section className="rounded-2xl border border-line bg-subtle p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Careers
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Manage the careers page and current job openings.
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Manage the careers page text. Open roles are managed under{" "}
+            <Link
+              href="/admin/careers"
+              className="font-medium text-brand hover:underline"
+            >
+              Careers
+            </Link>
+            .
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onAddJob}
-          className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-        >
-          <Plus className="h-4 w-4" />
-          Add job
-        </button>
       </div>
 
       <div className="mt-4 grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              Eyebrow
-            </span>
+            <span className="text-xs font-semibold text-muted">Eyebrow</span>
             <input
               value={value.eyebrow}
               onChange={(event) => onChange("eyebrow", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">Title</span>
+            <span className="text-xs font-semibold text-muted">Title</span>
             <input
               value={value.title}
               onChange={(event) => onChange("title", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Intro</span>
+          <span className="text-xs font-semibold text-muted">Intro</span>
           <textarea
             value={value.intro}
             onChange={(event) => onChange("intro", event.target.value)}
-            className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-24 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-slate-600">Body</span>
+          <span className="text-xs font-semibold text-muted">Body</span>
           <textarea
             value={value.body}
             onChange={(event) => onChange("body", event.target.value)}
-            className="min-h-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="min-h-32 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              CTA Label
-            </span>
+            <span className="text-xs font-semibold text-muted">CTA Label</span>
             <input
               value={value.ctaLabel}
               onChange={(event) => onChange("ctaLabel", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-600">
-              CTA Link
+            <span className="text-xs font-semibold text-muted">
+              Application Email Link
             </span>
             <input
               value={value.ctaHref}
+              placeholder="mailto:careers@yourdomain.com"
               onChange={(event) => onChange("ctaHref", event.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </label>
         </div>
-      </div>
-
-      <div className="mt-5 space-y-4">
-        {value.jobs.map((job, index) => (
-          <div
-            key={`${job.title}-${index}`}
-            className="rounded-2xl border border-slate-200 bg-white p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-900">
-                Job {index + 1}
-              </p>
-              <button
-                type="button"
-                onClick={() => onRemoveJob(index)}
-                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-rose-600 transition hover:bg-rose-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Remove
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Title
-                </span>
-                <input
-                  value={job.title}
-                  onChange={(event) =>
-                    onJobChange(index, "title", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Location
-                </span>
-                <input
-                  value={job.location}
-                  onChange={(event) =>
-                    onJobChange(index, "location", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Team
-                </span>
-                <input
-                  value={job.team}
-                  onChange={(event) =>
-                    onJobChange(index, "team", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Type
-                </span>
-                <input
-                  value={job.type}
-                  onChange={(event) =>
-                    onJobChange(index, "type", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-            </div>
-
-            <label className="mt-4 flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-600">
-                Summary
-              </span>
-              <textarea
-                value={job.summary}
-                onChange={(event) =>
-                  onJobChange(index, "summary", event.target.value)
-                }
-                className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-              />
-            </label>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Apply Label
-                </span>
-                <input
-                  value={job.applyLabel}
-                  onChange={(event) =>
-                    onJobChange(index, "applyLabel", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
-                  Apply Link
-                </span>
-                <input
-                  value={job.applyHref}
-                  onChange={(event) =>
-                    onJobChange(index, "applyHref", event.target.value)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                />
-              </label>
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -666,59 +527,12 @@ export default function AdminSitePagesPage() {
     }));
   }
 
-  function updateCareers(field: keyof CareersPageContent, nextValue: string) {
+  function updateCareers(field: keyof ManagedPageContent, nextValue: string) {
     setForm((current) => ({
       ...current,
       careers: {
         ...current.careers,
         [field]: nextValue,
-      },
-    }));
-  }
-
-  function updateCareerJob(
-    index: number,
-    field: keyof CareerJob,
-    nextValue: string,
-  ) {
-    setForm((current) => ({
-      ...current,
-      careers: {
-        ...current.careers,
-        jobs: current.careers.jobs.map((job, jobIndex) =>
-          jobIndex === index ? { ...job, [field]: nextValue } : job,
-        ),
-      },
-    }));
-  }
-
-  function addCareerJob() {
-    setForm((current) => ({
-      ...current,
-      careers: {
-        ...current.careers,
-        jobs: [
-          ...current.careers.jobs,
-          {
-            title: "",
-            location: "",
-            team: "",
-            type: "",
-            summary: "",
-            applyLabel: "Apply",
-            applyHref: "",
-          },
-        ],
-      },
-    }));
-  }
-
-  function removeCareerJob(index: number) {
-    setForm((current) => ({
-      ...current,
-      careers: {
-        ...current.careers,
-        jobs: current.careers.jobs.filter((_, jobIndex) => jobIndex !== index),
       },
     }));
   }
@@ -805,22 +619,17 @@ export default function AdminSitePagesPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
-      <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-          Administration
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
-          Site Pages
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
+      <header>
+        <h1 className="text-xl font-semibold text-navy">Site Pages</h1>
+        <p className="mt-1 max-w-3xl text-sm text-muted">
           Manage the database-backed content for About Us, Contact Us, Arrange a
           Call, FAQ, and legal pages.
         </p>
-      </section>
+      </header>
 
       <section className="grid gap-4 lg:grid-cols-[16rem_1fr]">
-        <aside className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+        <aside className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Page Sections
           </p>
           <div className="mt-3 space-y-2">
@@ -829,8 +638,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("aboutUs")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "aboutUs"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               About Us
@@ -840,8 +649,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("arrangeCall")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "arrangeCall"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Arrange a Call
@@ -851,8 +660,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("contactUs")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "contactUs"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Contact Us
@@ -862,8 +671,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("faq")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "faq"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               FAQ
@@ -873,8 +682,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("careers")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "careers"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Careers
@@ -884,8 +693,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("termsConditions")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "termsConditions"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Terms & Conditions
@@ -895,8 +704,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("privacyPolicy")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "privacyPolicy"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Privacy Policy
@@ -906,8 +715,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("refundPolicy")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "refundPolicy"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Refund Policy
@@ -917,8 +726,8 @@ export default function AdminSitePagesPage() {
               onClick={() => setActivePanel("cookiePolicy")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "cookiePolicy"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Cookie Policy
@@ -926,11 +735,11 @@ export default function AdminSitePagesPage() {
           </div>
         </aside>
 
-        <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
           {loading ? (
-            <p className="text-sm text-slate-500">Loading page content...</p>
+            <p className="text-sm text-muted">Loading page content...</p>
           ) : activePanel === null ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               Select any section from the left to start editing content.
             </p>
           ) : (
@@ -963,13 +772,13 @@ export default function AdminSitePagesPage() {
               ) : null}
 
               {activePanel === "faq" ? (
-                <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <section className="rounded-2xl border border-line bg-subtle p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                         FAQ
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                      <p className="mt-2 text-sm leading-6 text-muted">
                         Manage the page header and frequently asked questions
                         shown publicly.
                       </p>
@@ -977,7 +786,7 @@ export default function AdminSitePagesPage() {
                     <button
                       type="button"
                       onClick={addFaqItem}
-                      className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                      className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand-soft"
                     >
                       <Plus className="h-4 w-4" />
                       Add FAQ
@@ -986,7 +795,7 @@ export default function AdminSitePagesPage() {
 
                   <div className="mt-4 grid gap-4">
                     <label className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-xs font-semibold text-muted">
                         Eyebrow
                       </span>
                       <input
@@ -994,12 +803,12 @@ export default function AdminSitePagesPage() {
                         onChange={(event) =>
                           updateFaqMeta("eyebrow", event.target.value)
                         }
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                       />
                     </label>
 
                     <label className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-xs font-semibold text-muted">
                         Title
                       </span>
                       <input
@@ -1007,12 +816,12 @@ export default function AdminSitePagesPage() {
                         onChange={(event) =>
                           updateFaqMeta("title", event.target.value)
                         }
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                       />
                     </label>
 
                     <label className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-xs font-semibold text-muted">
                         Intro
                       </span>
                       <textarea
@@ -1020,7 +829,7 @@ export default function AdminSitePagesPage() {
                         onChange={(event) =>
                           updateFaqMeta("intro", event.target.value)
                         }
-                        className="min-h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        className="min-h-24 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                       />
                     </label>
                   </div>
@@ -1029,16 +838,16 @@ export default function AdminSitePagesPage() {
                     {form.faq.faqs.map((item, index) => (
                       <div
                         key={`${index}-${item.question}`}
-                        className="rounded-2xl border border-slate-200 bg-white p-4"
+                        className="rounded-2xl border border-line bg-white p-4"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-navy">
                             FAQ {index + 1}
                           </p>
                           <button
                             type="button"
                             onClick={() => removeFaqItem(index)}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-rose-600 transition hover:bg-rose-50"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-deal transition hover:bg-deal/6"
                           >
                             <Trash2 className="h-4 w-4" />
                             Remove
@@ -1047,7 +856,7 @@ export default function AdminSitePagesPage() {
 
                         <div className="mt-4 grid gap-4">
                           <label className="flex flex-col gap-1.5">
-                            <span className="text-xs font-semibold text-slate-600">
+                            <span className="text-xs font-semibold text-muted">
                               Question
                             </span>
                             <input
@@ -1059,12 +868,12 @@ export default function AdminSitePagesPage() {
                                   event.target.value,
                                 )
                               }
-                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                              className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                             />
                           </label>
 
                           <label className="flex flex-col gap-1.5">
-                            <span className="text-xs font-semibold text-slate-600">
+                            <span className="text-xs font-semibold text-muted">
                               Answer
                             </span>
                             <textarea
@@ -1076,7 +885,7 @@ export default function AdminSitePagesPage() {
                                   event.target.value,
                                 )
                               }
-                              className="min-h-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                              className="min-h-28 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                             />
                           </label>
                         </div>
@@ -1087,13 +896,7 @@ export default function AdminSitePagesPage() {
               ) : null}
 
               {activePanel === "careers" ? (
-                <CareersSection
-                  value={form.careers}
-                  onChange={updateCareers}
-                  onJobChange={updateCareerJob}
-                  onAddJob={addCareerJob}
-                  onRemoveJob={removeCareerJob}
-                />
+                <CareersSection value={form.careers} onChange={updateCareers} />
               ) : null}
 
               {activePanel === "termsConditions" ? (
@@ -1137,12 +940,12 @@ export default function AdminSitePagesPage() {
               ) : null}
 
               {message ? (
-                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {message}
                 </p>
               ) : null}
               {error ? (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {error}
                 </p>
               ) : null}
@@ -1152,7 +955,7 @@ export default function AdminSitePagesPage() {
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {saving ? "Saving..." : "Save Site Pages"}
                 </button>

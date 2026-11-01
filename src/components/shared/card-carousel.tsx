@@ -36,7 +36,7 @@ export function CardCarousel({ ariaLabel, children, ...header }: CardCarouselPro
   };
 
   return (
-    <section className="section-shell py-12 md:py-16" aria-label={ariaLabel}>
+    <section className="section-shell py-6 md:py-8" aria-label={ariaLabel}>
       <SectionHeader
         {...header}
         onPrev={() => scroll("left")}

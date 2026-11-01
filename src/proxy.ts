@@ -8,6 +8,7 @@ const ADMIN_CONTENT_APIS = [
     "/api/packages",
     "/api/destinations",
     "/api/activities",
+    "/api/tour-packages",
     "/api/blog",
     "/api/reviews",
 ];
@@ -96,6 +97,7 @@ export const config = {
         "/api/packages/:path*",
         "/api/destinations/:path*",
         "/api/activities/:path*",
+        "/api/tour-packages/:path*",
         "/api/blog/:path*",
         "/api/reviews/:path*",
     ],

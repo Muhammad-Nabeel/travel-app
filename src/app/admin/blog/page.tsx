@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Pencil, Plus, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { Pencil, Plus, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { blogPostSchema } from "@/lib/validations/blog";
 import { useBrand } from "@/components/shared/brand-provider";
 import { MediaUrlInput } from "@/components/admin/media-picker";
@@ -39,9 +38,9 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-slate-100 text-slate-600",
-  PUBLISHED: "bg-emerald-100 text-emerald-700",
-  ARCHIVED: "bg-amber-100 text-amber-700",
+  DRAFT: "bg-line/50 text-muted",
+  PUBLISHED: "bg-success/12 text-success",
+  ARCHIVED: "bg-gold/15 text-gold-strong",
 };
 
 const EMPTY_FORM = {
@@ -70,7 +69,6 @@ export default function AdminBlogPage() {
   const brand = useBrand();
   const emptyForm = { ...EMPTY_FORM, author: `${brand.name} Travel Team` };
   const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [isDummy, setIsDummy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -82,11 +80,11 @@ export default function AdminBlogPage() {
   const fetchPosts = async () => {
     try {
       const res = await fetch("/api/blog?all=true");
-      setIsDummy(res.headers.get("x-blog-source") === "dummy");
       const data = await res.json();
-      setPosts(Array.isArray(data) ? data : []);
-    } catch {
-      setError("Could not load blog posts.");
+      if (!res.ok) throw new Error(data.error ?? "Could not load blog posts.");
+      setPosts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load blog posts.");
     } finally {
       setLoading(false);
     }
@@ -212,31 +210,16 @@ export default function AdminBlogPage() {
   };
 
   return (
-    <main className="section-shell flex-1 py-14">
-      <div className="surface ring-soft rounded-4xl border border-white/80 p-8">
+    <main className="mx-auto w-full max-w-7xl">
+      <div className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <Link
-              href="/admin"
-              className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Admin hub
-            </Link>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Administration
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+            <h1 className="text-xl font-semibold text-navy">
               Blog Management
             </h1>
             <p className="mt-2 text-sm text-muted">
               Manage editorial content displayed in the homepage blog section.
-              {isDummy && (
-                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  Showing sample data · add your first post below
-                </span>
-              )}
             </p>
           </div>
           <button
@@ -249,29 +232,29 @@ export default function AdminBlogPage() {
         </div>
 
         {error && !showForm && (
-          <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          <p className="mb-4 rounded-xl bg-deal/6 px-4 py-3 text-sm text-deal">
             {error}
           </p>
         )}
 
         {/* Form */}
         {showForm && (
-          <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-8 rounded-2xl border border-line bg-white p-6 shadow-card">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">
+              <h2 className="text-lg font-semibold text-navy">
                 {editingId ? "Edit Post" : "Create Post"}
               </h2>
               <button
                 onClick={closeForm}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100"
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-line/50"
                 aria-label="Close form"
               >
-                <X className="h-4 w-4 text-slate-500" />
+                <X className="h-4 w-4 text-muted" />
               </button>
             </div>
 
             {error && (
-              <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">
+              <p className="mb-4 rounded-xl bg-deal/6 px-4 py-2.5 text-sm text-deal">
                 {error}
               </p>
             )}
@@ -280,7 +263,7 @@ export default function AdminBlogPage() {
               {/* Title + auto-slug */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Title *
                   </label>
                   <input
@@ -292,7 +275,7 @@ export default function AdminBlogPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Slug *
                   </label>
                   <input
@@ -309,7 +292,7 @@ export default function AdminBlogPage() {
 
               {/* Excerpt */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Excerpt *
                 </label>
                 <textarea
@@ -325,9 +308,9 @@ export default function AdminBlogPage() {
 
               {/* Content */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Content *{" "}
-                  <span className="font-normal normal-case text-slate-400">
+                  <span className="font-normal normal-case text-muted/70">
                     (HTML or plain text)
                   </span>
                 </label>
@@ -344,7 +327,7 @@ export default function AdminBlogPage() {
 
               {/* Cover image */}
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Cover image *
                 </span>
                 <MediaUrlInput
@@ -363,7 +346,7 @@ export default function AdminBlogPage() {
               {/* Author / Category / Status / Sort */}
               <div className="grid gap-4 sm:grid-cols-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Author
                   </label>
                   <input
@@ -376,7 +359,7 @@ export default function AdminBlogPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Category
                   </label>
                   <select
@@ -394,7 +377,7 @@ export default function AdminBlogPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Status
                   </label>
                   <select
@@ -412,7 +395,7 @@ export default function AdminBlogPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Sort order
                   </label>
                   <input
@@ -429,9 +412,9 @@ export default function AdminBlogPage() {
 
               {/* Tags */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Tags{" "}
-                  <span className="font-normal normal-case text-slate-400">
+                  <span className="font-normal normal-case text-muted/70">
                     (comma-separated)
                   </span>
                 </label>
@@ -478,7 +461,7 @@ export default function AdminBlogPage() {
             No posts yet.{" "}
             <button
               onClick={openNew}
-              className="font-semibold text-teal-600 hover:underline"
+              className="font-semibold text-brand hover:underline"
             >
               Create the first one.
             </button>
@@ -488,10 +471,10 @@ export default function AdminBlogPage() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4"
+                className="flex items-start gap-4 rounded-2xl border border-line bg-white p-4"
               >
                 {/* Thumbnail */}
-                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-line bg-subtle">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={post.coverImageUrl}
@@ -509,15 +492,15 @@ export default function AdminBlogPage() {
                     >
                       {post.status}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted/70">
                       {post.category}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted/70">
                       Sort: {post.sortOrder}
                     </span>
                   </div>
-                  <p className="font-semibold text-slate-800">{post.title}</p>
-                  <p className="line-clamp-1 text-xs text-slate-500">
+                  <p className="font-semibold text-navy">{post.title}</p>
+                  <p className="line-clamp-1 text-xs text-muted">
                     /{post.slug}
                   </p>
                 </div>
@@ -529,7 +512,7 @@ export default function AdminBlogPage() {
                     title={
                       post.status === "PUBLISHED" ? "Unpublish" : "Publish"
                     }
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
                     disabled={post.status === "ARCHIVED"}
                   >
                     {post.status === "PUBLISHED" ? (
@@ -541,7 +524,7 @@ export default function AdminBlogPage() {
                   <button
                     onClick={() => openEdit(post)}
                     title="Edit"
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -549,7 +532,7 @@ export default function AdminBlogPage() {
                     onClick={() => handleDelete(post.id)}
                     title="Delete"
                     disabled={deletingId === post.id}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-deal/6 hover:text-deal"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

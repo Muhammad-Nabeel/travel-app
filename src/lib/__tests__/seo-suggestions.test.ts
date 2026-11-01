@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { DUMMY_PACKAGES } from "@/app/api/packages/route";
 import { defaultVisaCountries } from "@/lib/admin-settings/visa-settings";
 import {
     seoTitleBudget,
@@ -86,7 +85,7 @@ describe("SEO suggestions", () => {
 });
 
 describe("built-in demo content", () => {
-    it.each([...DUMMY_PACKAGES, ...defaultVisaCountries()].map((item) => [item.seoTitle, item]))(
+    it.each(defaultVisaCountries().map((item) => [item.seoTitle, item]))(
         "%s has valid SEO fields",
         (_title, item) => {
             expect(seoSchema.safeParse(item).success).toBe(true);

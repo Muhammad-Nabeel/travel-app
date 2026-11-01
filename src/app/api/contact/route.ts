@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ ok: true }, { status: 200 });
-    } catch {
+    } catch (error) {
+        console.error("[contact] Resend send failed:", error);
         return NextResponse.json(
             { ok: false, error: "Unable to send your message." },
             { status: 502 },

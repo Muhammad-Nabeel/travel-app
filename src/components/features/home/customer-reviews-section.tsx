@@ -36,7 +36,7 @@ export async function CustomerReviewsSection() {
   if (reviews.length === 0) return null;
 
   return (
-    <section className="section-shell py-12 md:py-16" aria-label="Customer reviews">
+    <section className="section-shell py-6 md:py-8" aria-label="Customer reviews">
       <div>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>

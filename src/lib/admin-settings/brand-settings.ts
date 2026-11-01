@@ -1,7 +1,12 @@
 import { cache } from "react";
 
 import { getStoredMediaSettings } from "@/lib/admin-settings/media-settings";
-import { sanitizeBrandAssets, type BrandAssets } from "@/lib/brand-assets";
+import {
+    sanitizeBrandAssets,
+    sanitizeFooterBadges,
+    type BrandAssets,
+    type FooterBadge,
+} from "@/lib/brand-assets";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { SITE_NAME } from "@/lib/seo";
 
@@ -12,10 +17,12 @@ export type BrandSettings = {
     logoKey: string | null;
     /** Service icons, favicon and empty-state images from Admin → Media. */
     assets: BrandAssets;
+    /** Payment and accreditation badges in the footer, in display order. */
+    footerBadges: FooterBadge[];
 };
 
 /** What the browser needs; the storage key stays on the server. */
-export type PublicBrand = Pick<BrandSettings, "name" | "logoUrl" | "assets">;
+export type PublicBrand = Pick<BrandSettings, "name" | "logoUrl" | "assets" | "footerBadges">;
 
 const BRAND_SETTINGS_KEY = "brand_settings";
 
@@ -28,7 +35,7 @@ function sanitizeOptional(value: unknown): string | null {
 }
 
 export function defaultBrandSettings(): BrandSettings {
-    return { name: SITE_NAME, logoUrl: null, logoKey: null, assets: {} };
+    return { name: SITE_NAME, logoUrl: null, logoKey: null, assets: {}, footerBadges: [] };
 }
 
 async function readBrandSettings(): Promise<BrandSettings> {
@@ -52,6 +59,7 @@ async function readBrandSettings(): Promise<BrandSettings> {
             logoUrl: logoUrl ?? (await getStoredMediaSettings()).websiteLogo,
             logoKey: logoUrl ? sanitizeOptional(parsed.logoKey) : null,
             assets: sanitizeBrandAssets(parsed.assets),
+            footerBadges: sanitizeFooterBadges(parsed.footerBadges),
         };
     } catch (err) {
         markDatabaseUnavailable(err);
@@ -63,8 +71,8 @@ async function readBrandSettings(): Promise<BrandSettings> {
 export const getStoredBrandSettings = cache(readBrandSettings);
 
 export async function getPublicBrand(): Promise<PublicBrand> {
-    const { name, logoUrl, assets } = await getStoredBrandSettings();
-    return { name, logoUrl, assets };
+    const { name, logoUrl, assets, footerBadges } = await getStoredBrandSettings();
+    return { name, logoUrl, assets, footerBadges };
 }
 
 export async function saveStoredBrandSettings(
@@ -80,6 +88,10 @@ export async function saveStoredBrandSettings(
         logoUrl: input.logoUrl === undefined ? current.logoUrl : sanitizeOptional(input.logoUrl),
         logoKey: input.logoKey === undefined ? current.logoKey : sanitizeOptional(input.logoKey),
         assets: input.assets === undefined ? current.assets : sanitizeBrandAssets(input.assets),
+        footerBadges:
+            input.footerBadges === undefined
+                ? current.footerBadges
+                : sanitizeFooterBadges(input.footerBadges),
     };
 
     await prisma.adminSetting.upsert({

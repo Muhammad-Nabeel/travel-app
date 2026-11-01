@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   CalendarDays,
@@ -10,13 +11,13 @@ import {
   Users,
 } from "lucide-react";
 
-import { HeroBackdrop } from "@/components/shared/hero-backdrop";
+import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
+import { ProductTabs } from "../product-tabs";
 import styles from "./hotel-search-engine.module.css";
 
 type StayType = "hotel-only" | "hotel+flight";
 
-type HotelSearchEngineProps = {
-  variant?: "hero" | "embedded";
+type HotelSearchEngineProps = HeroBannerProps & {
   initialValues?: {
     destination?: string;
     checkIn?: string;
@@ -49,6 +50,7 @@ const trendingDestinations = [
 
 export function HotelSearchEngine({
   variant = "hero",
+  heroImage,
   initialValues,
   onSearch,
 }: HotelSearchEngineProps) {
@@ -64,6 +66,7 @@ export function HotelSearchEngine({
   const [children, setChildren] = useState(initialValues?.children ?? 0);
   const [rooms, setRooms] = useState(initialValues?.rooms ?? 1);
   const [showGuests, setShowGuests] = useState(false);
+  const router = useRouter();
 
   const guestsRef = useRef<HTMLDivElement>(null);
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -98,15 +101,23 @@ export function HotelSearchEngine({
       window.alert("Check-out date must be after check-in date.");
       return;
     }
-    onSearch?.({
-      destination,
+    const search = {
+      destination: destination.trim(),
       checkIn,
       checkOut,
       adults,
       children,
       rooms,
       stayType,
-    });
+    };
+    if (onSearch) {
+      onSearch(search);
+      return;
+    }
+    const params = new URLSearchParams(
+      Object.entries(search).map(([key, value]) => [key, String(value)]),
+    );
+    router.push(`/hotels?${params.toString()}`);
   };
 
   const isHero = variant === "hero";
@@ -116,7 +127,7 @@ export function HotelSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Hotel search engine"
     >
-      {isHero ? <HeroBackdrop src="/images/hero-madinah.webp" /> : null}
+      {heroImage ? <HeroBackdrop src={heroImage} /> : null}
 
       <div
         className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}
@@ -133,6 +144,8 @@ export function HotelSearchEngine({
         ) : null}
 
         <form className={styles.searchCard} onSubmit={handleSubmit}>
+          {isHero ? <ProductTabs active="hotels" /> : null}
+
           {/* Controls row */}
           <div className={styles.controlsRow}>
             <div className={styles.stayTypeTabs}>

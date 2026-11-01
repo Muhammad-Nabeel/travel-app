@@ -1,5 +1,10 @@
 import Image from "next/image";
 
+/** A search engine's hero variant needs its page's banner; the embedded one has none. */
+export type HeroBannerProps =
+  | { variant?: "hero"; heroImage: string }
+  | { variant: "embedded"; heroImage?: never };
+
 /**
  * Full-bleed hero photo behind a search engine. A real <Image> (not a CSS
  * background) so the browser can preload it and next/image serves WebP at the

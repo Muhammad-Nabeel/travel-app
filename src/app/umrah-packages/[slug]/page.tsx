@@ -119,8 +119,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getPublishedUmrahPackageBySlug(slug);
-  if (!result)
+  const pkg = await getPublishedUmrahPackageBySlug(slug);
+  if (!pkg)
     return buildMetadata({
       title: "Package not found",
       description: "The requested Umrah package could not be found.",
@@ -128,14 +128,11 @@ export async function generateMetadata({
       noIndex: true,
     });
 
-  const { pkg, isDummy } = result;
   return buildMetadata({
     title: pkg.seoTitle,
     description: pkg.seoDescription,
     path: getUmrahPackagePath(pkg.slug),
     keywords: ["Umrah package", pkg.departureCity, "pilgrimage"],
-    // Demo packages (no published rows in the database) must not be indexed.
-    noIndex: isDummy,
   });
 }
 
@@ -151,12 +148,11 @@ export default async function UmrahPackageDetailPage({
   const { slug } = await params;
   const sp = await searchParams;
 
-  const [result, { packages }] = await Promise.all([
+  const [pkg, packages] = await Promise.all([
     getPublishedUmrahPackageBySlug(slug),
     getPublishedUmrahPackages(),
   ]);
-  if (!result) notFound();
-  const { pkg } = result;
+  if (!pkg) notFound();
   const packagePath = getUmrahPackagePath(pkg.slug);
 
   // Config from URL params (set by the configurator card link)

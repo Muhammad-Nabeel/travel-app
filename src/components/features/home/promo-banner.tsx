@@ -4,7 +4,7 @@ import { MoonStar } from "lucide-react";
 
 export function PromoBanner() {
   return (
-    <section className="section-shell py-6" aria-label="Umrah packages offer">
+    <section className="section-shell py-6 md:py-8" aria-label="Umrah packages offer">
       <div className="relative overflow-hidden rounded-3xl bg-navy px-6 py-10 text-white sm:px-10 md:flex md:items-center md:justify-between md:gap-10 md:py-12">
         <div
           aria-hidden

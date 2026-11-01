@@ -10,7 +10,6 @@ import {
   getPrimaryPhone,
   getStoredSupportContactSettings,
 } from "@/lib/admin-settings/support-contact-settings";
-import { ContactForm } from "@/components/features/contact/contact-form";
 import { createWebPageSchema } from "@/lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 
@@ -53,10 +52,10 @@ export default async function ContactUsPage() {
       />
 
       <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
-          <div>
+        <div>
+          <div className="min-w-0">
             {page.eyebrow ? (
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-strong">
                 {page.eyebrow}
               </p>
             ) : null}
@@ -68,19 +67,19 @@ export default async function ContactUsPage() {
               {page.intro}
             </p>
 
-            <div className="mt-10 space-y-6">
+            <div className="mt-10 grid gap-6 lg:grid-cols-3">
               {phone ? (
-                <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                    <Phone className="h-5 w-5" />
+                <div className="flex items-center gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm">
+                    <Phone className="h-[22px] w-[22px]" strokeWidth={2.25} aria-hidden="true" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-base font-medium text-slate-800">
                       {page.phoneLabel}
                     </p>
                     <a
                       href={getTelHref(phone)}
-                      className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-blue-600"
+                      className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-brand"
                     >
                       {phone}
                     </a>
@@ -89,53 +88,38 @@ export default async function ContactUsPage() {
               ) : null}
 
               {contact.address ? (
-                <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                    <MapPin className="h-5 w-5" />
+                <div className="flex items-center gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm">
+                    <MapPin className="h-[22px] w-[22px]" strokeWidth={2.25} aria-hidden="true" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-base font-medium text-slate-800">
                       {page.locationLabel}
                     </p>
-                    <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
+                    <p className="mt-1 break-words text-xl font-semibold tracking-tight text-slate-950">
                       {contact.address}
                     </p>
                   </div>
                 </div>
               ) : null}
 
-              <div className="flex items-start gap-4 rounded-2xl bg-slate-50 px-4 py-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                  <Mail className="h-5 w-5" />
+              <div className="flex items-center gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm">
+                  <Mail className="h-[22px] w-[22px]" strokeWidth={2.25} aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="text-base font-medium text-slate-800">
                     {page.emailLabel}
                   </p>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="mt-1 block text-xl font-semibold tracking-tight text-slate-950 transition hover:text-blue-600"
+                    className="mt-1 block break-all text-lg font-semibold tracking-tight text-slate-950 transition hover:text-brand sm:text-xl"
                   >
                     {contact.email}
                   </a>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div>
-            <ContactForm
-              labels={{
-                fullNameLabel: page.fullNameLabel,
-                fullNamePlaceholder: page.fullNamePlaceholder,
-                emailFieldLabel: page.emailFieldLabel,
-                emailFieldPlaceholder: page.emailFieldPlaceholder,
-                messageLabel: page.messageLabel,
-                messagePlaceholder: page.messagePlaceholder,
-                submitLabel: page.submitLabel,
-              }}
-              supportEmail={contact.email}
-            />
           </div>
         </div>
       </section>

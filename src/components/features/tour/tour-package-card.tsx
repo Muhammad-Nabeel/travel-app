@@ -23,7 +23,7 @@ export function TourPackageCard({
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised">
       <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-brand to-navy">
         <Image
-          src={pkg.image}
+          src={pkg.imageUrl}
           alt={pkg.destination}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -37,7 +37,7 @@ export function TourPackageCard({
       <div className="flex flex-1 flex-col p-5">
         <h3 className="text-lg font-semibold leading-snug text-foreground">
           <Link
-            href={getTourPackagePath(pkg.title)}
+            href={getTourPackagePath(pkg.slug)}
             className="after:absolute after:inset-0 group-hover:text-brand"
           >
             {pkg.title}
@@ -56,7 +56,7 @@ export function TourPackageCard({
             {pkg.rating.toFixed(1)}
             <Star className="size-3 fill-white" />
           </span>
-          <span className="text-xs text-muted">{pkg.reviews} reviews</span>
+          <span className="text-xs text-muted">{pkg.reviewCount} reviews</span>
         </div>
 
         {!compact ? (

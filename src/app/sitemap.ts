@@ -5,13 +5,13 @@ import { getPublishedBlogPosts } from "@/lib/blog";
 import { BLOG_CATEGORIES, getBlogCategoryPath } from "@/lib/blog-categories";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { getActivityHref } from "@/lib/activity-href";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, resolveImageUrl } from "@/lib/seo";
 import {
     CATALOG_INDEXING,
     STATIC_PAGE_SEO,
     type StaticPageKey,
 } from "@/lib/seo-copy";
-import { tourPackageResults } from "@/lib/mock-data";
+import { getActiveTourPackages } from "@/lib/tour-package-data";
 import { getTourPackagePath } from "@/lib/tour-packages";
 import { getPublishedUmrahPackages, getUmrahPackagePath } from "@/lib/umrah-packages";
 import { getVisaPath } from "@/lib/visa";
@@ -85,23 +85,23 @@ async function getDatabaseEntries(): Promise<SitemapEntry[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [posts, umrah, visas, databaseEntries] = await Promise.all([
+    const [posts, umrah, tours, visas, databaseEntries] = await Promise.all([
         getPublishedBlogPosts(),
         getPublishedUmrahPackages(),
+        getActiveTourPackages(),
         getStoredVisaCountries(),
         getDatabaseEntries(),
     ]);
 
     const excluded = new Set<StaticPageKey>();
     if (!CATALOG_INDEXING.hotels) excluded.add("hotels");
-    if (!CATALOG_INDEXING.tourPackages) excluded.add("tourPackages");
-    if (umrah.isDummy) excluded.add("umrahPackages");
+    if (tours.length === 0) excluded.add("tourPackages");
+    if (umrah.length === 0) excluded.add("umrahPackages");
 
     const contentDates: Partial<Record<StaticPageKey, Date | undefined>> = {
         blog: latest(posts.map((post) => post.updatedAt)),
-        umrahPackages: umrah.isDummy
-            ? undefined
-            : latest(umrah.packages.map((pkg) => pkg.updatedAt)),
+        umrahPackages: latest(umrah.map((pkg) => pkg.updatedAt)),
+        tourPackages: latest(tours.map((pkg) => pkg.updatedAt)),
     };
 
     const staticEntries: SitemapEntry[] = (
@@ -134,14 +134,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })
         .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
-    const umrahEntries: SitemapEntry[] = umrah.isDummy
-        ? []
-        : umrah.packages.map((pkg) => ({
-            url: absoluteUrl(getUmrahPackagePath(pkg.slug)),
-            lastModified: pkg.updatedAt,
-            changeFrequency: "weekly",
-            priority: 0.8,
-        }));
+    const umrahEntries: SitemapEntry[] = umrah.map((pkg) => ({
+        url: absoluteUrl(getUmrahPackagePath(pkg.slug)),
+        lastModified: pkg.updatedAt,
+        changeFrequency: "weekly",
+        priority: 0.8,
+    }));
 
     const visaEntries: SitemapEntry[] = visas
         .filter((visa) => visa.isActive)
@@ -150,12 +148,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         }));
 
-    const tourEntries: SitemapEntry[] = CATALOG_INDEXING.tourPackages
-        ? tourPackageResults.map((pkg) => ({
-            url: absoluteUrl(getTourPackagePath(pkg.title)),
-            priority: 0.7,
-        }))
-        : [];
+    const tourEntries: SitemapEntry[] = tours.map((pkg) => ({
+        url: absoluteUrl(getTourPackagePath(pkg.slug)),
+        lastModified: pkg.updatedAt,
+        changeFrequency: "weekly",
+        priority: 0.7,
+        images: [resolveImageUrl(pkg.imageUrl)],
+    }));
 
     return [
         ...staticEntries,

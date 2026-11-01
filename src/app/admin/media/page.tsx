@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck,
+  Briefcase,
   ChevronDown,
   Compass,
   Copy,
   Download,
   ExternalLink,
   ImageUp,
+  LayoutPanelTop,
+  PanelBottom,
   Loader2,
   MapPin,
   MoonStar,
@@ -19,14 +22,19 @@ import {
 } from "lucide-react";
 
 import { BrandAssetsPanel } from "@/components/admin/brand-assets-panel";
+import { FooterMediaPanel } from "@/components/admin/footer-media-panel";
+import { PageBannersPanel } from "@/components/admin/page-banners-panel";
 
 type MediaType =
   | "website-logo"
   | "brand-assets"
+  | "footer-media"
+  | "page-banners"
   | "blog-media"
   | "umrah-images"
   | "destination-images"
   | "activities-images"
+  | "tour-images"
   | "general";
 
 type MediaFile = {
@@ -40,10 +48,13 @@ type MediaFile = {
 type MediaSection =
   | "logo-settings"
   | "brand-assets"
+  | "footer"
+  | "page-banners"
   | "blog-images"
   | "umrah-images"
   | "destination-images"
-  | "activities-images";
+  | "activities-images"
+  | "tour-images";
 
 const MEDIA_SECTIONS: Record<
   MediaSection,
@@ -61,6 +72,20 @@ const MEDIA_SECTIONS: Record<
     icon: Palette,
     description:
       "Favicon, service icons and empty-state images. Empty slots keep the built-in icons.",
+  },
+  footer: {
+    label: "Footer",
+    type: "footer-media",
+    icon: PanelBottom,
+    description:
+      "Contact and help-link icons, plus the payment and accreditation badges.",
+  },
+  "page-banners": {
+    label: "Page Banners",
+    type: "page-banners",
+    icon: LayoutPanelTop,
+    description:
+      "Hero banner for the home, flights, Umrah, tours, hotels, visa and things-to-do pages.",
   },
   "blog-images": {
     label: "Blog Images",
@@ -85,6 +110,12 @@ const MEDIA_SECTIONS: Record<
     type: "activities-images",
     icon: Compass,
     description: "Images for excursions, tours and experiences.",
+  },
+  "tour-images": {
+    label: "Tour Package Images",
+    type: "tour-images",
+    icon: Briefcase,
+    description: "Card and gallery images for tour package pages.",
   },
 };
 
@@ -313,6 +344,12 @@ export default function AdminMediaPage() {
     if (section === "brand-assets") {
       return <BrandAssetsPanel />;
     }
+    if (section === "footer") {
+      return <FooterMediaPanel />;
+    }
+    if (section === "page-banners") {
+      return <PageBannersPanel />;
+    }
 
     const sectionFiles = filesBySection[section];
     const isLogo = section === "logo-settings";
@@ -320,8 +357,8 @@ export default function AdminMediaPage() {
     return (
       <div className="space-y-5">
         {isLogo ? (
-          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex h-14 w-28 items-center justify-center rounded-xl border border-slate-200 bg-white p-2">
+          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-subtle p-4">
+            <div className="flex h-14 w-28 items-center justify-center rounded-xl border border-line bg-white p-2">
               {websiteLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element -- logo is hosted on R2
                 <img
@@ -330,14 +367,14 @@ export default function AdminMediaPage() {
                   className="max-h-full max-w-full object-contain"
                 />
               ) : (
-                <span className="text-xs text-slate-400">None</span>
+                <span className="text-xs text-muted/70">None</span>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-navy">
                 Current header logo
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 {websiteLogo
                   ? "Pick another logo below to replace it."
                   : "No logo selected. The brand name is shown instead."}
@@ -348,7 +385,7 @@ export default function AdminMediaPage() {
                 type="button"
                 onClick={() => updateLogo(null)}
                 disabled={savingLogo}
-                className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                className="rounded-xl border border-deal/20 bg-white px-3 py-2 text-xs font-semibold text-deal hover:bg-deal/6 disabled:opacity-60"
               >
                 Clear logo
               </button>
@@ -368,16 +405,14 @@ export default function AdminMediaPage() {
             void uploadFiles(section, Array.from(event.dataTransfer.files));
           }}
           className={`flex flex-col items-center justify-between gap-3 rounded-2xl border-2 border-dashed px-5 py-4 text-center transition sm:flex-row sm:text-left ${
-            dragging
-              ? "border-blue-400 bg-blue-50"
-              : "border-slate-200 bg-slate-50/60"
+            dragging ? "border-brand bg-brand-soft" : "border-line bg-subtle/60"
           }`}
         >
           <div>
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-sm font-semibold text-navy">
               Drop images here or upload from your computer
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               PNG, JPG, GIF or WebP, up to 50 MB each
             </p>
           </div>
@@ -396,7 +431,7 @@ export default function AdminMediaPage() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
           >
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -409,10 +444,10 @@ export default function AdminMediaPage() {
 
         {loading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-400" />
+            <Loader2 className="h-7 w-7 animate-spin text-muted/70" />
           </div>
         ) : sectionFiles.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">
+          <p className="py-8 text-center text-sm text-muted">
             Nothing here yet. Uploaded images will appear in this gallery.
           </p>
         ) : (
@@ -426,11 +461,11 @@ export default function AdminMediaPage() {
                   key={file.key}
                   className={`group overflow-hidden rounded-2xl border bg-white transition hover:shadow-md ${
                     isCurrentLogo
-                      ? "border-blue-400 ring-2 ring-blue-100"
-                      : "border-slate-200"
+                      ? "border-brand ring-2 ring-brand/15"
+                      : "border-line"
                   }`}
                 >
-                  <div className="relative flex aspect-[4/3] items-center justify-center bg-slate-50">
+                  <div className="relative flex aspect-[4/3] items-center justify-center bg-subtle">
                     {IMAGE_EXTENSION.test(file.key) ? (
                       // eslint-disable-next-line @next/next/no-img-element -- image is hosted on R2
                       <img
@@ -440,22 +475,34 @@ export default function AdminMediaPage() {
                         className={`max-h-full max-w-full ${isLogo ? "object-contain p-3" : "h-full w-full object-cover"}`}
                       />
                     ) : (
-                      <span className="text-xs font-medium uppercase text-slate-400">
+                      <span className="text-xs font-medium uppercase text-muted/70">
                         {name.split(".").pop()}
                       </span>
                     )}
 
                     {isCurrentLogo ? (
-                      <span className="absolute left-2 top-2 rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      <span className="absolute left-2 top-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
                         In use
                       </span>
                     ) : null}
 
-                    <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-slate-900/60 to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                    <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-navy/60 to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
                       {[
-                        { label: "Copy URL", icon: Copy, onClick: () => copyToClipboard(file.url) },
-                        { label: "Open", icon: ExternalLink, onClick: () => window.open(file.url, "_blank") },
-                        { label: "Download", icon: Download, onClick: () => downloadFile(file) },
+                        {
+                          label: "Copy URL",
+                          icon: Copy,
+                          onClick: () => copyToClipboard(file.url),
+                        },
+                        {
+                          label: "Open",
+                          icon: ExternalLink,
+                          onClick: () => window.open(file.url, "_blank"),
+                        },
+                        {
+                          label: "Download",
+                          icon: Download,
+                          onClick: () => downloadFile(file),
+                        },
                       ].map((action) => (
                         <button
                           key={action.label}
@@ -463,7 +510,7 @@ export default function AdminMediaPage() {
                           onClick={action.onClick}
                           title={action.label}
                           aria-label={`${action.label}: ${name}`}
-                          className="rounded-lg bg-white/90 p-1.5 text-slate-700 hover:bg-white"
+                          className="rounded-lg bg-white/90 p-1.5 text-navy/80 hover:bg-white"
                         >
                           <action.icon className="h-3.5 w-3.5" />
                         </button>
@@ -474,7 +521,7 @@ export default function AdminMediaPage() {
                         disabled={deletingKey === file.key}
                         title="Delete"
                         aria-label={`Delete ${name}`}
-                        className="rounded-lg bg-white/90 p-1.5 text-rose-600 hover:bg-white disabled:opacity-60"
+                        className="rounded-lg bg-white/90 p-1.5 text-deal hover:bg-white disabled:opacity-60"
                       >
                         {deletingKey === file.key ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -487,10 +534,13 @@ export default function AdminMediaPage() {
 
                   <div className="flex items-center justify-between gap-2 px-3 py-2">
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-slate-700" title={name}>
+                      <p
+                        className="truncate text-xs font-medium text-navy/80"
+                        title={name}
+                      >
                         {name}
                       </p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-muted/70">
                         {formatFileSize(file.size)}
                       </p>
                     </div>
@@ -499,7 +549,7 @@ export default function AdminMediaPage() {
                         type="button"
                         onClick={() => updateLogo(file.url)}
                         disabled={savingLogo}
-                        className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                        className="shrink-0 rounded-lg bg-brand-soft px-2 py-1 text-[11px] font-semibold text-brand-strong hover:bg-brand-soft disabled:opacity-60"
                       >
                         Use
                       </button>
@@ -517,23 +567,20 @@ export default function AdminMediaPage() {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-          Media Library
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-950">Media</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-xl font-semibold text-navy">Media Library</h1>
+        <p className="mt-1 text-sm text-muted">
           Images stored on Cloudflare R2. Anything uploaded here can be picked
           from the &ldquo;Choose from library&rdquo; button on admin forms.
         </p>
       </div>
 
       {message && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mb-4 rounded-xl border border-success/25 bg-success/8 px-4 py-3 text-sm text-success">
           {message}
         </div>
       )}
       {error && (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mb-4 rounded-xl border border-deal/20 bg-deal/6 px-4 py-3 text-sm text-deal">
           {error}
         </div>
       )}
@@ -548,44 +595,47 @@ export default function AdminMediaPage() {
             <div
               key={section}
               className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
-                isOpen ? "border-blue-200" : "border-slate-200"
+                isOpen ? "border-line" : "border-line"
               }`}
             >
               <button
                 type="button"
                 onClick={() => setOpenSection(isOpen ? null : section)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+                className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-subtle"
               >
                 <span
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                    isOpen ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
+                    isOpen ? "bg-brand text-white" : "bg-brand-soft text-brand"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-slate-900">
+                  <span className="block text-sm font-semibold text-navy">
                     {label}
                   </span>
-                  <span className="block truncate text-xs text-slate-500">
+                  <span className="block truncate text-xs text-muted">
                     {description}
                   </span>
                 </span>
-                {section !== "brand-assets" && !loading ? (
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                {section !== "brand-assets" &&
+                section !== "footer" &&
+                section !== "page-banners" &&
+                !loading ? (
+                  <span className="shrink-0 rounded-full bg-line/50 px-2.5 py-0.5 text-xs font-semibold text-muted">
                     {count}
                   </span>
                 ) : null}
                 <ChevronDown
-                  className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${
+                  className={`h-5 w-5 shrink-0 text-muted/70 transition-transform ${
                     isOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {isOpen ? (
-                <div className="border-t border-slate-100 p-5">
+                <div className="border-t border-line p-5">
                   {renderSectionBody(section)}
                 </div>
               ) : null}

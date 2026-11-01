@@ -6,7 +6,12 @@ import type { PublicBrand } from "@/lib/admin-settings/brand-settings";
 import type { BrandAssetSlot } from "@/lib/brand-assets";
 import { SITE_NAME } from "@/lib/seo";
 
-const BrandContext = createContext<PublicBrand>({ name: SITE_NAME, logoUrl: null, assets: {} });
+const BrandContext = createContext<PublicBrand>({
+    name: SITE_NAME,
+    logoUrl: null,
+    assets: {},
+    footerBadges: [],
+});
 
 /** Gives client components the brand name and logo set in Admin → Settings → Brand. */
 export function BrandProvider({

@@ -38,26 +38,12 @@ export type FaqPageContent = {
     faqs: FaqItem[];
 };
 
-export type CareerJob = {
-    title: string;
-    location: string;
-    team: string;
-    type: string;
-    summary: string;
-    applyLabel: string;
-    applyHref: string;
-};
-
-export type CareersPageContent = ManagedPageContent & {
-    jobs: CareerJob[];
-};
-
 export type SitePagesSettings = {
     aboutUs: ManagedPageContent;
     contactUs: ContactUsPageContent;
     arrangeCall: ManagedPageContent;
     faq: FaqPageContent;
-    careers: CareersPageContent;
+    careers: ManagedPageContent;
     termsConditions: ManagedPageContent;
     privacyPolicy: ManagedPageContent;
     refundPolicy: ManagedPageContent;
@@ -93,58 +79,6 @@ function sanitizeFaqItems(value: unknown): FaqItem[] {
         .filter((item): item is FaqItem => item !== null);
 
     return items.length > 0 ? items : defaultSitePagesSettings().faq.faqs;
-}
-
-function sanitizeCareerJobs(value: unknown): CareerJob[] {
-    if (!Array.isArray(value)) {
-        return defaultSitePagesSettings().careers.jobs;
-    }
-
-    const items = value
-        .map((item) => {
-            if (!item || typeof item !== "object") {
-                return null;
-            }
-
-            const job = item as Partial<CareerJob>;
-            const title = sanitizeText(job.title);
-            const location = sanitizeText(job.location);
-            const team = sanitizeText(job.team);
-            const type = sanitizeText(job.type);
-            const summary = sanitizeText(job.summary);
-            const applyLabel = sanitizeText(job.applyLabel) || "Apply";
-            const applyHref = sanitizeText(job.applyHref);
-
-            if (!title || !location || !type || !summary) {
-                return null;
-            }
-
-            return {
-                title,
-                location,
-                team,
-                type,
-                summary,
-                applyLabel,
-                applyHref,
-            } satisfies CareerJob;
-        })
-        .filter((item): item is CareerJob => item !== null);
-
-    return items.length > 0 ? items : defaultSitePagesSettings().careers.jobs;
-}
-
-function sanitizeCareersContent(
-    value: unknown,
-    fallback: CareersPageContent,
-): CareersPageContent {
-    const base = sanitizePageContent(value, fallback);
-    const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-
-    return {
-        ...base,
-        jobs: sanitizeCareerJobs(source.jobs),
-    };
 }
 
 function sanitizePageContent(value: unknown, fallback: ManagedPageContent): ManagedPageContent {
@@ -255,29 +189,7 @@ export function defaultSitePagesSettings(): SitePagesSettings {
             body:
                 "Join a team focused on improving how people book flights, hotels, Umrah journeys, and tours. We value ownership, clear communication, and a customer-first mindset.",
             ctaLabel: "Email your resume",
-            ctaHref: "mailto:careers@safartravel.com",
-            jobs: [
-                {
-                    title: "Travel Consultant",
-                    location: "Lahore, PK",
-                    team: "Customer Success",
-                    type: "Full-time",
-                    summary:
-                        "Support travelers with flight, hotel, and Umrah bookings while ensuring a smooth end-to-end experience.",
-                    applyLabel: "Apply",
-                    applyHref: "mailto:careers@safartravel.com",
-                },
-                {
-                    title: "Operations Coordinator",
-                    location: "Islamabad, PK",
-                    team: "Operations",
-                    type: "Full-time",
-                    summary:
-                        "Coordinate vendor confirmations, manage booking pipelines, and keep travel operations on schedule.",
-                    applyLabel: "Apply",
-                    applyHref: "mailto:careers@safartravel.com",
-                },
-            ],
+            ctaHref: "",
         },
         termsConditions: {
             eyebrow: "Legal",
@@ -351,7 +263,7 @@ async function readSitePagesSettings(): Promise<SitePagesSettings> {
                 intro: sanitizeText(parsed.faq?.intro) || defaults.faq.intro,
                 faqs: sanitizeFaqItems(parsed.faq?.faqs),
             },
-            careers: sanitizeCareersContent(parsed.careers, defaults.careers),
+            careers: sanitizePageContent(parsed.careers, defaults.careers),
             termsConditions: sanitizePageContent(
                 parsed.termsConditions,
                 defaults.termsConditions,
@@ -393,7 +305,7 @@ export async function saveStoredSitePagesSettings(
             intro: sanitizeText(input.faq.intro) || defaults.faq.intro,
             faqs: sanitizeFaqItems(input.faq.faqs),
         },
-        careers: sanitizeCareersContent(input.careers, defaults.careers),
+        careers: sanitizePageContent(input.careers, defaults.careers),
         termsConditions: sanitizePageContent(
             input.termsConditions,
             defaults.termsConditions,

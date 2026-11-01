@@ -339,28 +339,25 @@ export default function AdminDestinationsPage() {
   });
 
   return (
-    <main className="section-shell flex-1 py-10">
+    <main className="mx-auto w-full max-w-7xl">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/admin"
-          className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
+          className="flex items-center gap-1.5 text-sm text-muted hover:text-navy"
         >
           <ArrowLeft className="h-4 w-4" />
           Admin
         </Link>
-        <span className="text-slate-300">/</span>
-        <span className="text-sm font-semibold text-slate-900">
+        <span className="text-muted/50">/</span>
+        <span className="text-sm font-semibold text-navy">
           Destinations
         </span>
       </div>
 
-      <div className="surface ring-soft rounded-4xl border border-white/80 p-6 md:p-8">
+      <div className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Administration
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+            <h1 className="text-xl font-semibold text-navy">
               Destination Management
             </h1>
             <p className="mt-2 text-sm text-muted">
@@ -378,7 +375,7 @@ export default function AdminDestinationsPage() {
                 setShowCitySuggestions(false);
                 setCityLookupLoading(false);
               }}
-              className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy/85"
             >
               <Plus className="h-4 w-4" />
               Add Destination
@@ -388,25 +385,25 @@ export default function AdminDestinationsPage() {
 
         {/* Form */}
         {editingId !== null && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="mt-6 rounded-2xl border border-line bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-navy/80">
                 {editingId === "new" ? "New destination" : "Edit destination"}
               </h2>
               <button onClick={cancelEdit} aria-label="Cancel">
-                <X className="h-4 w-4 text-slate-500 hover:text-slate-900" />
+                <X className="h-4 w-4 text-muted hover:text-navy" />
               </button>
             </div>
 
             {error && (
-              <p className="mb-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+              <p className="mb-4 rounded-lg bg-deal/6 px-4 py-2.5 text-sm text-deal">
                 {error}
               </p>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   City *
                 </span>
                 <label className="relative" ref={cityFieldRef}>
@@ -421,14 +418,14 @@ export default function AdminDestinationsPage() {
                     placeholder="e.g. Dubai"
                     maxLength={80}
                     autoComplete="off"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
 
                   {showCitySuggestions &&
                     (cityLookupLoading || citySuggestions.length > 0) && (
-                      <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-xl">
+                      <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-line bg-white p-1.5 shadow-xl">
                         {cityLookupLoading ? (
-                          <p className="px-2 py-2 text-xs text-slate-500">
+                          <p className="px-2 py-2 text-xs text-muted">
                             Searching cities...
                           </p>
                         ) : (
@@ -437,12 +434,12 @@ export default function AdminDestinationsPage() {
                               key={`${item.city}-${item.country}-${item.iata}`}
                               type="button"
                               onClick={() => handleCitySuggestionSelect(item)}
-                              className="w-full rounded-md px-2 py-1.5 text-left hover:bg-slate-50"
+                              className="w-full rounded-md px-2 py-1.5 text-left hover:bg-subtle"
                             >
-                              <p className="text-sm font-semibold text-slate-800">
+                              <p className="text-sm font-semibold text-navy">
                                 {item.city}
                               </p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-muted">
                                 {item.country} - {item.iata}
                               </p>
                             </button>
@@ -453,74 +450,74 @@ export default function AdminDestinationsPage() {
                 </label>
               </div>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Country *
                 </span>
                 <input
                   {...field("country")}
                   placeholder="e.g. UAE"
                   maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Scope *
                 </span>
                 <select
                   {...field("scope")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 >
                   <option value="DOMESTIC">Domestic</option>
                   <option value="INTERNATIONAL">International</option>
                 </select>
               </label>
               <label className="flex flex-col gap-1.5 lg:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Tagline
                 </span>
                 <input
                   {...field("tagline")}
                   placeholder="e.g. Skyline luxury and desert adventure"
                   maxLength={120}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   IATA Code
                 </span>
                 <input
                   {...field("iataCode")}
                   placeholder="e.g. DXB"
                   maxLength={4}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm uppercase outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Fare *
                 </span>
                 <input
                   {...field("fare")}
                   placeholder="e.g. PKR 38,400"
                   maxLength={40}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Notes
                 </span>
                 <input
                   {...field("notes")}
                   placeholder="e.g. Round-trip flights"
                   maxLength={120}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5 lg:col-span-3">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Overview
                 </span>
                 <textarea
@@ -528,86 +525,86 @@ export default function AdminDestinationsPage() {
                   rows={4}
                   maxLength={5000}
                   placeholder="Rich summary for the destination details page"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5 lg:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Highlights (comma separated)
                 </span>
                 <input
                   {...field("highlightsInput")}
                   placeholder="Burj Khalifa, Desert Safari, Dubai Mall"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5 lg:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Travel Tips (comma separated)
                 </span>
                 <input
                   {...field("travelTipsInput")}
                   placeholder="Carry passport copy, Use metro card"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Best Time To Visit
                 </span>
                 <input
                   {...field("bestTimeToVisit")}
                   placeholder="November to March"
                   maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Ideal Stay
                 </span>
                 <input
                   {...field("idealStay")}
                   placeholder="4-5 days"
                   maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Currency
                 </span>
                 <input
                   {...field("currency")}
                   placeholder="AED"
                   maxLength={40}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Timezone
                 </span>
                 <input
                   {...field("timezone")}
                   placeholder="GST (UTC+4)"
                   maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Language
                 </span>
                 <input
                   {...field("language")}
                   placeholder="Arabic, English"
                   maxLength={80}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <div className="flex flex-col gap-1.5 lg:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Image
                 </span>
                 <MediaUrlInput
@@ -621,18 +618,18 @@ export default function AdminDestinationsPage() {
                 />
               </div>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Sort Order
                 </span>
                 <input
                   type="number"
                   min={0}
                   {...field("sortOrder")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Card Gradient
                 </span>
                 <div className="flex items-center gap-2">
@@ -646,7 +643,7 @@ export default function AdminDestinationsPage() {
                   />
                   <select
                     {...field("gradient")}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="flex-1 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   >
                     {GRADIENT_OPTIONS.map((g) => (
                       <option key={g.value} value={g.value}>
@@ -663,9 +660,9 @@ export default function AdminDestinationsPage() {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, isActive: e.target.checked }))
                   }
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-line-strong"
                 />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-navy/80">
                   Active (visible on homepage)
                 </span>
               </label>
@@ -687,7 +684,7 @@ export default function AdminDestinationsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy/85 disabled:opacity-50"
               >
                 {saving
                   ? "Saving…"
@@ -697,7 +694,7 @@ export default function AdminDestinationsPage() {
               </button>
               <button
                 onClick={cancelEdit}
-                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium text-navy/80 transition hover:bg-subtle"
               >
                 Cancel
               </button>
@@ -706,16 +703,16 @@ export default function AdminDestinationsPage() {
         )}
 
         {/* Table */}
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-100">
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-line">
           {loading ? (
-            <p className="p-6 text-sm text-slate-500">Loading destinations…</p>
+            <p className="p-6 text-sm text-muted">Loading destinations…</p>
           ) : destinations.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">
+            <p className="p-6 text-sm text-muted">
               No destinations yet. Add one above.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-line bg-subtle text-left text-xs font-semibold uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3">City</th>
                   <th className="px-4 py-3">Image</th>
@@ -729,13 +726,13 @@ export default function AdminDestinationsPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {destinations.map((d) => (
                   <tr
                     key={d.id}
-                    className="bg-white transition hover:bg-slate-50"
+                    className="bg-white transition hover:bg-subtle"
                   >
-                    <td className="px-4 py-3 font-medium text-slate-900">
+                    <td className="px-4 py-3 font-medium text-navy">
                       {d.city}
                     </td>
                     <td className="px-4 py-3">
@@ -747,17 +744,17 @@ export default function AdminDestinationsPage() {
                           className="h-10 w-14 rounded-md object-cover"
                         />
                       ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="text-xs text-muted/70">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{d.country}</td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-muted">{d.country}</td>
+                    <td className="px-4 py-3 text-muted">
                       {d.scope === "DOMESTIC" ? "Domestic" : "International"}
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-600">
+                    <td className="px-4 py-3 font-mono text-muted">
                       {d.iataCode ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{d.fare}</td>
+                    <td className="px-4 py-3 text-muted">{d.fare}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span
@@ -768,18 +765,18 @@ export default function AdminDestinationsPage() {
                               GRADIENT_PREVIEW.blue,
                           }}
                         />
-                        <span className="capitalize text-slate-500">
+                        <span className="capitalize text-muted">
                           {d.gradient}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{d.sortOrder}</td>
+                    <td className="px-4 py-3 text-muted">{d.sortOrder}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           d.isActive
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? "bg-success/8 text-success"
+                            : "bg-line/50 text-muted"
                         }`}
                       >
                         {d.isActive ? "Active" : "Hidden"}
@@ -789,14 +786,14 @@ export default function AdminDestinationsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => startEdit(d)}
-                          className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-navy/80 transition hover:bg-line/50"
                         >
                           <Pencil className="h-3 w-3" />
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(d.id, d.city)}
-                          className="flex items-center gap-1 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                          className="flex items-center gap-1 rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
                         >
                           <Trash2 className="h-3 w-3" />
                           Delete
@@ -811,12 +808,12 @@ export default function AdminDestinationsPage() {
         </div>
 
         {!loading && isDummyMode && (
-          <p className="mt-3 text-xs text-amber-600">
+          <p className="mt-3 text-xs text-gold-strong">
             ⚠ Showing dummy data — write operations are currently unavailable.
             Confirm your database server is running and that{" "}
-            <code className="rounded bg-amber-50 px-1">DATABASE_URL</code> is
+            <code className="rounded bg-gold/10 px-1">DATABASE_URL</code> is
             set and{" "}
-            <code className="rounded bg-amber-50 px-1">
+            <code className="rounded bg-gold/10 px-1">
               npm run prisma:migrate
             </code>{" "}
             is run.

@@ -20,9 +20,7 @@ import { PhotoGallery } from "@/components/features/detail/photo-gallery";
 import { TourEnquiryForm } from "@/components/features/tour/tour-enquiry-form";
 import { TourPackageCard } from "@/components/features/tour/tour-package-card";
 import { SectionHeader } from "@/components/shared/section-header";
-import { tourPackageResults } from "@/lib/mock-data";
 import { StructuredData } from "@/components/shared/structured-data";
-import { CATALOG_INDEXING, fitTitle } from "@/lib/seo-copy";
 import {
   absoluteUrl,
   buildMetadata,
@@ -30,8 +28,10 @@ import {
   createWebPageSchema,
 } from "@/lib/seo";
 import {
-  type TourPackage,
-  findTourPackageBySlug,
+  getActiveTourPackageBySlug,
+  getActiveTourPackages,
+} from "@/lib/tour-package-data";
+import {
   getTourPackageGallery,
   getTourPackagePath,
 } from "@/lib/tour-packages";
@@ -51,10 +51,6 @@ const TRUST_NOTES = [
   "A travel adviser replies within 24 hours",
 ];
 
-function packageDescription(pkg: TourPackage) {
-  return `Explore ${pkg.destination} with our ${pkg.duration}-day ${pkg.title} itinerary featuring ${pkg.highlights.slice(0, 2).join(" and ")}.`;
-}
-
 // Render each page on its first visit, then serve it from the ISR cache
 // (metadata lands in <head>; admin saves revalidate the site).
 export async function generateStaticParams() {
@@ -65,7 +61,7 @@ export async function generateMetadata({
   params,
 }: TourPackagePageProps): Promise<Metadata> {
   const { id: slug } = await params;
-  const pkg = findTourPackageBySlug(slug);
+  const pkg = await getActiveTourPackageBySlug(slug);
 
   if (!pkg) {
     return buildMetadata({
@@ -76,18 +72,12 @@ export async function generateMetadata({
     });
   }
 
-  const city = pkg.destination.split(",")[0].trim();
-
   return buildMetadata({
-    title: fitTitle(
-      `${pkg.title} – ${pkg.duration}-Day ${city} Package`,
-      `${pkg.title} – ${pkg.duration}-Day Package`,
-      pkg.title,
-    ),
-    description: packageDescription(pkg),
-    path: getTourPackagePath(pkg.title),
+    title: pkg.seoTitle,
+    description: pkg.seoDescription,
+    path: getTourPackagePath(pkg.slug),
+    image: pkg.imageUrl,
     keywords: [pkg.destination, `${pkg.duration} day tour`, pkg.tourType],
-    noIndex: !CATALOG_INDEXING.tourPackages,
   });
 }
 
@@ -95,17 +85,19 @@ export default async function TourPackageDetailsPage({
   params,
 }: TourPackagePageProps) {
   const { id: slug } = await params;
-  const pkg = findTourPackageBySlug(slug);
+  const [pkg, packages, brand] = await Promise.all([
+    getActiveTourPackageBySlug(slug),
+    getActiveTourPackages(),
+    getStoredBrandSettings(),
+  ]);
 
   if (!pkg) {
     notFound();
   }
 
-  const brand = await getStoredBrandSettings();
-
-  const packagePath = getTourPackagePath(pkg.title);
+  const packagePath = getTourPackagePath(pkg.slug);
   const fromPrice = `${pkg.currency} ${pkg.pricePerAdult.toLocaleString()}`;
-  const related = tourPackageResults
+  const related = packages
     .filter((other) => other.id !== pkg.id)
     .sort(
       (a, b) =>
@@ -119,7 +111,7 @@ export default async function TourPackageDetailsPage({
         data={[
           createWebPageSchema({
             title: pkg.title,
-            description: packageDescription(pkg),
+            description: pkg.description,
             path: packagePath,
           }),
           createBreadcrumbSchema([
@@ -131,7 +123,7 @@ export default async function TourPackageDetailsPage({
             "@context": "https://schema.org",
             "@type": "TouristTrip",
             name: pkg.title,
-            description: packageDescription(pkg),
+            description: pkg.description,
             itinerary: pkg.highlights,
             provider: {
               "@type": "TravelAgency",
@@ -165,7 +157,7 @@ export default async function TourPackageDetailsPage({
                   {pkg.rating.toFixed(1)}
                   <Star className="size-3 fill-white" />
                 </span>
-                <span className="text-muted">{pkg.reviews} reviews</span>
+                <span className="text-muted">{pkg.reviewCount} reviews</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-4 text-muted" />
@@ -205,7 +197,7 @@ export default async function TourPackageDetailsPage({
         >
           <DetailSection title="Overview">
             <p className="text-base leading-7 text-foreground">
-              {packageDescription(pkg)}
+              {pkg.description}
             </p>
             <div className="mt-6">
               <FactGrid
@@ -220,7 +212,7 @@ export default async function TourPackageDetailsPage({
                   {
                     icon: Star,
                     label: "Guest rating",
-                    value: `${pkg.rating.toFixed(1)} / 5 · ${pkg.reviews} reviews`,
+                    value: `${pkg.rating.toFixed(1)} / 5 · ${pkg.reviewCount} reviews`,
                   },
                 ]}
               />

@@ -24,7 +24,7 @@
   box-shadow: var(--shadow-raised);
   padding: 16px 18px 18px;
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
 }
 
 .controlsRow {
@@ -101,7 +101,7 @@
   color: var(--text);
   padding: 6px 11px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   background: #ffffff;
   cursor: pointer;
   white-space: nowrap;
@@ -125,7 +125,7 @@
   top: calc(100% + 8px);
   right: 0;
   background: #ffffff;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
@@ -173,7 +173,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-color);
   background: #ffffff;
   color: var(--text);
   font-size: 1.1rem;
@@ -253,7 +253,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 8px 14px;
   background: #ffffff;
@@ -363,7 +363,7 @@
   width: min(720px, 92vw);
   max-height: calc(100vh - 36px);
   overflow: auto;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-subtle);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
@@ -389,7 +389,7 @@
 }
 
 .fareNavBtn {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   background: #ffffff;
   font-size: 1.05rem;
   font-weight: 700;
@@ -433,7 +433,7 @@
 
 .fareMonth {
   background: #ffffff;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 8px;
 }
@@ -559,7 +559,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-color);
   background: #ffffff;
   color: var(--primary);
   cursor: pointer;
@@ -644,7 +644,7 @@
 
 .multiCityAddBtn,
 .multiCityRemoveBtn {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   background: #ffffff;
   color: var(--text);
   border-radius: 8px;
@@ -672,7 +672,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--border-color);
   border-radius: 10px;
   padding: 8px 10px;
 }
@@ -788,10 +788,21 @@
     gap: 6px;
   }
 
+  .dropdownWrapper {
+    max-width: 100%;
+  }
+
   .ctrlBtn {
     font-size: 0.8rem;
     padding: 6px 12px;
     gap: 4px;
+    max-width: 100%;
+  }
+
+  .ctrlBtn > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .fareNavBtn {
@@ -827,7 +838,7 @@
   .originDestGroup > .field:last-of-type {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-color);
   }
 
   /* Swap button sits absolutely on the right edge between the two fields */
@@ -838,7 +849,7 @@
     transform: translateY(-50%);
     z-index: 10;
     background: #ffffff;
-    border-color: var(--border);
+    border-color: var(--border-color);
     /* Keep it off the grid flow */
     grid-column: unset;
     grid-row: unset;
@@ -867,5 +878,23 @@
   .searchBtn {
     min-height: 52px;
     font-size: 1rem;
+  }
+}
+
+/* Below tablet width the controls wrap unpredictably, so control dropdowns
+   anchor to the row's left edge instead of their button and stay on screen. */
+@media (max-width: 767px) {
+  .controlsRow {
+    position: relative;
+  }
+
+  .controlsRow .dropdownWrapper {
+    position: static;
+  }
+
+  .controlsRow .dropdownPanel {
+    left: 0;
+    right: auto;
+    max-width: 100%;
   }
 }

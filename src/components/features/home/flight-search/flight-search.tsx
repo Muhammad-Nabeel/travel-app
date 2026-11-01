@@ -12,13 +12,14 @@ import {
   Users,
 } from "lucide-react";
 
-import { HeroBackdrop } from "@/components/shared/hero-backdrop";
+import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
 import styles from "./flight-search-engine.module.css";
 import { AirportInput, type Airport } from "../../../shared/airport-input";
 import { TrendingSearches } from "../../../shared/trending-searches";
 import { ProductTabs } from "../product-tabs";
 import type { CabinClass, TripType } from "@/lib/flights/types";
 import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
+import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import { flightSearchSchema } from "@/lib/validations/search";
 import { trackGa4Event } from "@/lib/analytics/ga4-events";
 const CABIN_CLASSES = [
@@ -28,8 +29,7 @@ const CABIN_CLASSES = [
   "First",
 ] as const;
 
-type FlightSearchEngineProps = {
-  variant?: "hero" | "embedded";
+type FlightSearchEngineProps = HeroBannerProps & {
   initialValues?: {
     tripType?: TripType;
     directOnly?: boolean;
@@ -154,10 +154,12 @@ function getMonthCells(monthStart: Date) {
 
 export function FlightSearchEngine({
   variant = "hero",
+  heroImage,
   initialValues,
 }: FlightSearchEngineProps) {
   const router = useRouter();
   const { settings: currencySettings, loading: currencyLoading } = useCurrencySettings();
+  const liveFaresEnabled = useLiveFaresEnabled();
 
   const [tripType, setTripType] = useState<TripType>(
     initialValues?.tripType ?? "one-way",
@@ -477,12 +479,14 @@ export function FlightSearchEngine({
   };
 
   useEffect(() => {
-    if (!showFareCalendar) return;
+    // With live fares off the calendar is a plain date picker; no fare lookup.
+    if (!showFareCalendar || !liveFaresEnabled) return;
     const controller = new AbortController();
     void loadFareCalendar(calendarMonth, controller.signal);
     return () => controller.abort();
   }, [
     showFareCalendar,
+    liveFaresEnabled,
     calendarMonth,
     calendarField,
     calendarLegIndex,
@@ -812,7 +816,7 @@ export function FlightSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Flight search engine"
     >
-      {isHero ? <HeroBackdrop src="/images/hero-madinah.webp" /> : null}
+      {heroImage ? <HeroBackdrop src={heroImage} /> : null}
 
       <div
         className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}

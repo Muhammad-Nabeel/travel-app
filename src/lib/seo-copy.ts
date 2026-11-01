@@ -187,13 +187,12 @@ export function fullTitleLength(title: string, absolute = false) {
     return title.length + (absolute ? 0 : TITLE_SUFFIX_LENGTH);
 }
 
-// Catalog sections still rendered from src/lib/mock-data.ts. They stay
-// noindex (and out of the sitemap) until real inventory is wired up, so
-// Google never indexes demo hotels or tours with made-up prices.
+// Catalog sections with no real inventory yet (they show an empty state).
+// They stay noindex (and out of the sitemap) until inventory is wired up,
+// so Google never indexes an empty listing page.
 // Flip to true once the section reads from the database.
 export const CATALOG_INDEXING = {
     hotels: false,
-    tourPackages: false,
 } as const;
 
 /** First candidate whose full title (with suffix) fits in 60 characters, else the last one. */

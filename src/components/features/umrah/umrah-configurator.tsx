@@ -26,6 +26,7 @@ import {
   nightSplit,
   priceForConfig,
 } from "@/lib/umrah-pricing";
+import { ProductTabs } from "@/components/features/home/product-tabs";
 import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -41,8 +42,9 @@ export type UmrahConfig = {
 
 type Props = {
   packages: PackageRow[];
-  isDummy: boolean;
   initial: UmrahConfig;
+  /** Hero banner from Admin → Media → Page Banners. */
+  heroImage: string;
 };
 
 const STEPS = [
@@ -299,7 +301,7 @@ function PackageCard({ pkg, config }: { pkg: PackageRow; config: UmrahConfig }) 
 
 // ─── Main configurator ──────────────────────────────────────────────────────
 
-export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
+export function UmrahConfigurator({ packages, initial, heroImage }: Props) {
   const [step, setStep] = useState(0);
   const [visited, setVisited] = useState(0);
   const [draft, setDraft] = useState<UmrahConfig>(initial);
@@ -359,7 +361,7 @@ export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
       <section className="relative isolate" aria-label="Plan your Umrah">
         <div className="absolute inset-x-0 top-0 -z-10 h-[340px] overflow-hidden sm:h-[380px]">
           <Image
-            src="/images/hero-madinah.webp"
+            src={heroImage}
             alt=""
             fill
             sizes="100vw"
@@ -372,11 +374,6 @@ export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
 
         <div className="section-shell pb-6 pt-12 sm:pt-16">
           <div className="mx-auto mb-8 max-w-3xl text-center text-white">
-            {isDummy ? (
-              <p className="mb-3 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
-                Showing sample packages
-              </p>
-            ) : null}
             <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
               Plan your Umrah
             </h1>
@@ -388,6 +385,7 @@ export function UmrahConfigurator({ packages, isDummy, initial }: Props) {
 
           {/* ── Stepper card ── */}
           <div className="overflow-hidden rounded-card border border-line bg-white shadow-raised">
+            <ProductTabs active="umrah" className="" />
             <ol className="flex overflow-x-auto border-b border-line px-2 sm:px-4">
               {STEPS.map((s, i) => {
                 const active = i === step;

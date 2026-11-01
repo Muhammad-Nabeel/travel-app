@@ -7,10 +7,16 @@ import {
   type TourType,
 } from "@/components/features/home/package-search/package-search";
 import { TourPackageCard } from "@/components/features/tour/tour-package-card";
-import { tourPackageResults } from "@/lib/mock-data";
+import type { TourPackage } from "@/lib/tour-packages";
 import { EmptyStateImage } from "@/components/shared/empty-state-image";
 
-export function TourPackagesClient() {
+export function TourPackagesClient({
+  packages,
+  heroImage,
+}: {
+  packages: TourPackage[];
+  heroImage: string;
+}) {
   const [searchParams, setSearchParams] = useState<{
     destination: string;
     duration: string;
@@ -19,7 +25,7 @@ export function TourPackagesClient() {
     tourType: TourType;
   } | null>(null);
 
-  const filteredResults = tourPackageResults.filter((pkg) => {
+  const filteredResults = packages.filter((pkg) => {
     if (!searchParams) return true;
 
     const matchesDestination =
@@ -38,7 +44,7 @@ export function TourPackagesClient() {
     return matchesDestination && matchesDuration && matchesType;
   });
 
-  const priceForPax = (pkg: (typeof tourPackageResults)[number]) => {
+  const priceForPax = (pkg: TourPackage) => {
     if (!searchParams) return pkg.pricePerAdult;
     return (
       pkg.pricePerAdult * searchParams.adults +
@@ -50,6 +56,7 @@ export function TourPackagesClient() {
     <div className="flex-1">
       <PackageSearchEngine
         variant="hero"
+        heroImage={heroImage}
         onSearch={(params) => setSearchParams(params)}
       />
 

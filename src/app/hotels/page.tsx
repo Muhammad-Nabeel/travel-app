@@ -1,122 +1,106 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import { BedDouble, Footprints, MapPin, Star } from "lucide-react";
+import { BedDouble } from "lucide-react";
 
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { CATALOG_INDEXING } from "@/lib/seo-copy";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { HotelSearchEngine } from "@/components/features/home/hotel-search/hotel-search";
+import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
+import { HotelEnquiryForm } from "@/components/features/hotels/hotel-enquiry-form";
 import { StructuredData } from "@/components/shared/structured-data";
-import { hotelResults } from "@/lib/mock-data";
-import { createWebPageSchema } from "@/lib/seo";
+import { buildMetadata, createWebPageSchema } from "@/lib/seo";
+import { hotelSearchSchema } from "@/lib/validations/search";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return buildStaticPageMetadata("hotels", {
-    noIndex: !CATALOG_INDEXING.hotels,
+type HotelsPageProps = {
+  searchParams?: Promise<Record<string, string | undefined>>;
+};
+
+export async function generateMetadata({
+  searchParams,
+}: HotelsPageProps): Promise<Metadata> {
+  const params = (await searchParams) ?? {};
+
+  if (!params.destination) {
+    return buildStaticPageMetadata("hotels", {
+      noIndex: !CATALOG_INDEXING.hotels,
+    });
+  }
+
+  // Search result URLs are per-user and infinite; never index them.
+  return buildMetadata({
+    title: `Hotels in ${params.destination}`,
+    description:
+      "Request hotel rates for your dates and our travel team will get back to you.",
+    path: "/hotels",
+    noIndex: true,
   });
 }
 
-// Mock hotels carry no photos yet; use a city photo where we have one.
-const CITY_IMAGES: Record<string, string> = {
-  Madinah: "/images/hero-madinah.webp",
-};
+export default async function HotelsPage({ searchParams }: HotelsPageProps) {
+  const params = (await searchParams) ?? {};
 
-function StarRating({ stars }: { stars: number }) {
-  return (
-    <div className="flex items-center gap-0.5" aria-label={`${stars}-star hotel`}>
-      {Array.from({ length: stars }).map((_, i) => (
-        <Star key={i} className="size-3.5 fill-foreground text-foreground" />
-      ))}
-    </div>
-  );
-}
+  // Until a hotel provider is connected, a search takes a rate request (like
+  // flights with Sabre switched off) instead of listing hotels.
+  if (params.destination) {
+    const result = hotelSearchSchema.safeParse(params);
 
-export default function HotelsPage() {
+    if (!result.success) {
+      return (
+        <div className="section-shell flex-1 py-10">
+          <div className="alert alert-error bg-red-50 text-red-900">
+            <span>
+              Hotel search is invalid. Please review the destination, dates and
+              guest details.
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    const query = result.data;
+    return (
+      <div className="flex-1 py-6">
+        <MobileSearchToggle
+          label="Hotel search"
+          summary={`${query.destination} · ${query.checkIn} → ${query.checkOut}`}
+        >
+          <HotelSearchEngine variant="embedded" initialValues={query} />
+        </MobileSearchToggle>
+        <HotelEnquiryForm query={query} />
+      </div>
+    );
+  }
+
+  const heroImage = await getPageBanner("hotels");
+
   return (
     <div className="flex-1">
       <StructuredData
         data={createWebPageSchema({
           title: "Hotels",
           description:
-            "Browse featured hotels and compare stays for religious and leisure travel plans.",
+            "Search and compare hotel stays for religious and leisure travel plans.",
           path: "/hotels",
           type: "CollectionPage",
         })}
       />
 
       {/* Hero search */}
-      <HotelSearchEngine />
+      <HotelSearchEngine heroImage={heroImage} />
 
-      {/* Featured hotels */}
-      <section className="section-shell py-10" aria-label="Featured hotels">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
-            Featured hotels
-          </h2>
-          <p className="mt-1 text-sm text-muted sm:text-base">
-            Hand-picked stays close to the Haram in Makkah and Madinah
+      {/* Hotel inventory isn't connected yet, so there is nothing to list. */}
+      <section className="section-shell py-10" aria-label="Hotels">
+        <div className="rounded-2xl border border-line bg-subtle px-6 py-16 text-center">
+          <BedDouble className="mx-auto mb-4 size-10 text-muted" />
+          <p className="text-lg font-semibold text-foreground">
+            No hotels found
           </p>
-        </div>
-
-        <div className="space-y-4">
-          {hotelResults.map((hotel) => {
-            const image = CITY_IMAGES[hotel.city];
-            return (
-              <article
-                key={hotel.id}
-                className="group grid overflow-hidden rounded-2xl border border-line bg-white transition hover:shadow-raised sm:grid-cols-[280px_minmax(0,1fr)_200px]"
-              >
-                <div className="relative aspect-video overflow-hidden bg-linear-to-br from-brand to-navy sm:aspect-auto sm:min-h-52">
-                  {image ? (
-                    <Image
-                      src={image}
-                      alt={`${hotel.city} near ${hotel.name}`}
-                      fill
-                      sizes="(min-width: 640px) 280px, 100vw"
-                      className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <BedDouble className="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2 text-white/60" />
-                  )}
-                </div>
-
-                <div className="flex flex-col p-5">
-                  <StarRating stars={hotel.stars} />
-                  <h3 className="mt-2 text-xl font-semibold leading-snug text-foreground">
-                    {hotel.name}
-                  </h3>
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-                    <MapPin className="size-3.5 shrink-0" />
-                    {hotel.city}
-                  </p>
-                  <p className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand">
-                    <Footprints className="size-3.5" />
-                    {hotel.distanceToHaram} from the Haram
-                  </p>
-                  <p className="mt-auto pt-4 text-xs text-muted">
-                    Rates via {hotel.provider}
-                  </p>
-                </div>
-
-                <div className="flex flex-row items-end justify-between gap-3 border-t border-line p-5 sm:flex-col sm:items-end sm:justify-end sm:border-l sm:border-t-0">
-                  <div className="sm:text-right">
-                    <p className="text-2xl font-bold tabular-nums text-foreground">
-                      {hotel.currency} {hotel.nightlyRate}
-                    </p>
-                    <p className="text-xs text-muted">per night</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong sm:w-full"
-                  >
-                    View rooms
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+          <p className="mt-1 text-sm text-muted">
+            We don&apos;t have any hotels to show right now. Please check back soon.
+          </p>
         </div>
       </section>
 

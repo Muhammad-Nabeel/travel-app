@@ -6,6 +6,8 @@ import { SiteFooter } from "@/components/shared/site-footer";
 import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
 import { getPublicBrand } from "@/lib/admin-settings/brand-settings";
 import { BrandProvider } from "@/components/shared/brand-provider";
+import { LiveFaresProvider } from "@/components/shared/live-fares-provider";
+import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 import { Ga4Loader } from "@/components/analytics/ga4-loader";
 import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
@@ -102,9 +104,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [brand, contact] = await Promise.all([
+  const [brand, contact, sabreSettings] = await Promise.all([
     getPublicBrand(),
     getStoredSupportContactSettings(),
+    getActiveSabreSettings(),
   ]);
 
   return (
@@ -116,6 +119,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>
           <BrandProvider brand={brand}>
+          <LiveFaresProvider enabled={sabreSettings !== null}>
           <Ga4Loader />
           <ConditionalNavbar />
           {/* No root Suspense/loading.tsx: a spinner fallback let the footer paint
@@ -126,6 +130,7 @@ export default async function RootLayout({
           <ConditionalFooter>
             <SiteFooter brand={brand} contact={contact} />
           </ConditionalFooter>
+          </LiveFaresProvider>
           </BrandProvider>
         </AuthSessionProvider>
       </body>

@@ -10,13 +10,13 @@ export async function AirlinesSlider() {
   const loopedAirlines = [...airlines, ...airlines];
 
   return (
-    <section className="section-shell py-12 md:py-16" aria-label="Leading airlines">
+    <section className="section-shell py-6 md:py-8" aria-label="Leading airlines">
       <div>
-        <div className="mb-6 text-center">
+        <div className="mb-4 text-center">
           <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
             Book with leading airlines
           </h2>
-          <p className="mt-2 text-sm text-muted sm:text-base">
+          <p className="mt-1 text-sm text-muted sm:text-base">
             Compare fares across top regional and international carriers.
           </p>
         </div>

@@ -1,8 +1,4 @@
-import {
-    toTourPackageSlug,
-    getTourPackagePath,
-    findTourPackageBySlug,
-} from "@/lib/tour-packages";
+import { toTourPackageSlug, getTourPackagePath } from "@/lib/tour-packages";
 
 // ─── toTourPackageSlug ────────────────────────────────────────────────────────
 
@@ -41,26 +37,8 @@ describe("toTourPackageSlug", () => {
 
 describe("getTourPackagePath", () => {
     it("prefixes the slug with /tour-packages/", () => {
-        expect(getTourPackagePath("Mecca City Tour")).toBe(
+        expect(getTourPackagePath("mecca-city-tour")).toBe(
             "/tour-packages/mecca-city-tour"
         );
-    });
-
-    it("handles multi-word titles correctly", () => {
-        expect(getTourPackagePath("Holy Land Journey")).toBe(
-            "/tour-packages/holy-land-journey"
-        );
-    });
-});
-
-// ─── findTourPackageBySlug ────────────────────────────────────────────────────
-
-describe("findTourPackageBySlug", () => {
-    it("returns null for a slug that does not match any package", () => {
-        expect(findTourPackageBySlug("non-existent-package-xyz")).toBeNull();
-    });
-
-    it("returns null for an empty slug", () => {
-        expect(findTourPackageBySlug("")).toBeNull();
     });
 });

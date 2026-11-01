@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
 import { VisaResults } from "@/components/features/visa/visa-results";
@@ -15,7 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function VisaPage() {
-  const visaResults = await getStoredVisaCountries();
+  const [visaResults, heroImage] = await Promise.all([
+    getStoredVisaCountries(),
+    getPageBanner("visa"),
+  ]);
   const activeResults = visaResults
     .filter((item) => item.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -46,6 +50,7 @@ export default async function VisaPage() {
       />
 
       <VisaResults
+        heroImage={heroImage}
         results={activeResults}
         countryOptions={countryOptions}
         popularCountries={popularCountries}

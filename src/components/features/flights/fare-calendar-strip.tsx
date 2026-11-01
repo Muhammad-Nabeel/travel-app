@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarDays, TrendingDown } from "lucide-react";
 
+import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import type { FlightSearchQuery } from "@/lib/flights/types";
 
 type FareCalendarStripProps = {
@@ -131,11 +132,12 @@ export function FareCalendarStripSkeleton() {
 }
 
 export function FareCalendarStrip({ query }: FareCalendarStripProps) {
+  const liveFaresEnabled = useLiveFaresEnabled();
   const [fares, setFares] = useState<FareEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (query.tripType === "multi-city") {
+    if (query.tripType === "multi-city" || !liveFaresEnabled) {
       return;
     }
 
@@ -194,6 +196,7 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       controller.abort();
     };
   }, [
+    liveFaresEnabled,
     query.tripType,
     query.origin,
     query.destination,
@@ -202,7 +205,7 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
     query.cabinClass,
   ]);
 
-  if (query.tripType === "multi-city") return null;
+  if (query.tripType === "multi-city" || !liveFaresEnabled) return null;
   if (loading) return <FareCalendarStripSkeleton />;
   if (!fares || fares.length === 0) return null;
 

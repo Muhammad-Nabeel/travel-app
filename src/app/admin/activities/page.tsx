@@ -237,26 +237,23 @@ export default function AdminActivitiesPage() {
   };
 
   return (
-    <main className="section-shell flex-1 py-10">
+    <main className="mx-auto w-full max-w-7xl">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/admin"
-          className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
+          className="flex items-center gap-1.5 text-sm text-muted hover:text-navy"
         >
           <ArrowLeft className="h-4 w-4" />
           Admin
         </Link>
-        <span className="text-slate-300">/</span>
-        <span className="text-sm font-semibold text-slate-900">Activities</span>
+        <span className="text-muted/50">/</span>
+        <span className="text-sm font-semibold text-navy">Activities</span>
       </div>
 
-      <div className="surface ring-soft rounded-4xl border border-white/80 p-6 md:p-8">
+      <div className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">
-              Administration
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-brand-strong">
+            <h1 className="text-xl font-semibold text-navy">
               Activity Management
             </h1>
             <p className="mt-2 text-sm text-muted">
@@ -271,7 +268,7 @@ export default function AdminActivitiesPage() {
                 setFormData(EMPTY_FORM);
                 setSeoDraft(EMPTY_SEO_DRAFT);
               }}
-              className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy/85"
             >
               <Plus className="h-4 w-4" />
               Add Activity
@@ -281,30 +278,30 @@ export default function AdminActivitiesPage() {
 
         {/* Form */}
         {editingId !== null && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="mt-6 rounded-2xl border border-line bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-navy/80">
                 {editingId === "new" ? "New activity" : "Edit activity"}
               </h2>
               <button onClick={cancelEdit} aria-label="Cancel">
-                <X className="h-4 w-4 text-slate-500 hover:text-slate-900" />
+                <X className="h-4 w-4 text-muted hover:text-navy" />
               </button>
             </div>
 
             {error && (
-              <p className="mb-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+              <p className="mb-4 rounded-lg bg-deal/6 px-4 py-2.5 text-sm text-deal">
                 {error}
               </p>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Destination *
                 </span>
                 <select
                   {...field("destinationId")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 >
                   <option value="">Select destination</option>
                   {destinations.map((d) => (
@@ -316,24 +313,24 @@ export default function AdminActivitiesPage() {
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Title *
                 </span>
                 <input
                   {...field("title")}
                   placeholder="e.g. Desert Safari"
                   maxLength={100}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Category
                 </span>
                 <select
                   {...field("category")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 >
                   {CATEGORY_OPTIONS.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -344,7 +341,7 @@ export default function AdminActivitiesPage() {
               </label>
 
               <div className="flex flex-col gap-1.5 lg:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Image *
                 </span>
                 <MediaUrlInput
@@ -359,19 +356,19 @@ export default function AdminActivitiesPage() {
               </div>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Cost *
                 </span>
                 <input
                   {...field("cost")}
                   placeholder="e.g. PKR 5,000"
                   maxLength={40}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5 lg:col-span-3">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Description
                 </span>
                 <textarea
@@ -379,12 +376,12 @@ export default function AdminActivitiesPage() {
                   placeholder="Describe this activity..."
                   maxLength={500}
                   rows={3}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Rating
                 </span>
                 <input
@@ -393,31 +390,31 @@ export default function AdminActivitiesPage() {
                   max={5}
                   step={0.1}
                   {...field("reviews")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Review Count
                 </span>
                 <input
                   type="number"
                   min={0}
                   {...field("reviewCount")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Sort Order
                 </span>
                 <input
                   type="number"
                   min={0}
                   {...field("sortOrder")}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
 
@@ -428,9 +425,9 @@ export default function AdminActivitiesPage() {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, isActive: e.target.checked }))
                   }
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-line-strong"
                 />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-navy/80">
                   Active (visible on homepage)
                 </span>
               </label>
@@ -452,7 +449,7 @@ export default function AdminActivitiesPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy/85 disabled:opacity-50"
               >
                 {saving
                   ? "Saving…"
@@ -462,7 +459,7 @@ export default function AdminActivitiesPage() {
               </button>
               <button
                 onClick={cancelEdit}
-                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium text-navy/80 transition hover:bg-subtle"
               >
                 Cancel
               </button>
@@ -471,16 +468,16 @@ export default function AdminActivitiesPage() {
         )}
 
         {/* Table */}
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-100">
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-line">
           {loading ? (
-            <p className="p-6 text-sm text-slate-500">Loading activities…</p>
+            <p className="p-6 text-sm text-muted">Loading activities…</p>
           ) : activities.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">
+            <p className="p-6 text-sm text-muted">
               No activities yet. Add one above.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-line bg-subtle text-left text-xs font-semibold uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Destination</th>
@@ -491,33 +488,33 @@ export default function AdminActivitiesPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {activities.map((activity) => (
                   <tr
                     key={activity.id}
-                    className="bg-white transition hover:bg-slate-50"
+                    className="bg-white transition hover:bg-subtle"
                   >
-                    <td className="px-4 py-3 font-medium text-slate-900">
+                    <td className="px-4 py-3 font-medium text-navy">
                       {activity.title}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-muted">
                       {destinationName(activity.destinationId)}
                     </td>
-                    <td className="px-4 py-3 capitalize text-slate-600">
+                    <td className="px-4 py-3 capitalize text-muted">
                       {activity.category.replace("-", " ")}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-muted">
                       {activity.cost}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-muted">
                       {activity.reviews.toFixed(1)} ⭐ ({activity.reviewCount})
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           activity.isActive
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? "bg-success/8 text-success"
+                            : "bg-line/50 text-muted"
                         }`}
                       >
                         {activity.isActive ? "Active" : "Hidden"}
@@ -527,7 +524,7 @@ export default function AdminActivitiesPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => startEdit(activity)}
-                          className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                          className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-navy/80 transition hover:bg-line/50"
                         >
                           <Pencil className="h-3 w-3" />
                           Edit
@@ -536,7 +533,7 @@ export default function AdminActivitiesPage() {
                           onClick={() =>
                             handleDelete(activity.id, activity.title)
                           }
-                          className="flex items-center gap-1 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                          className="flex items-center gap-1 rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
                         >
                           <Trash2 className="h-3 w-3" />
                           Delete
@@ -551,12 +548,12 @@ export default function AdminActivitiesPage() {
         </div>
 
         {!loading && isActivitySourceDummy && (
-          <p className="mt-3 text-xs text-amber-600">
+          <p className="mt-3 text-xs text-gold-strong">
             ⚠ Showing dummy data — write operations are currently unavailable.
             Confirm your database server is running and that{" "}
-            <code className="rounded bg-amber-50 px-1">DATABASE_URL</code> is
+            <code className="rounded bg-gold/10 px-1">DATABASE_URL</code> is
             set and{" "}
-            <code className="rounded bg-amber-50 px-1">
+            <code className="rounded bg-gold/10 px-1">
               npm run prisma:migrate
             </code>{" "}
             is run.

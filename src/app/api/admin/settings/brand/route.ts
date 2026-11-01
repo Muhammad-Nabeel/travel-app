@@ -8,7 +8,7 @@ import {
     type BrandSettings,
 } from "@/lib/admin-settings/brand-settings";
 import { saveStoredMediaSettings } from "@/lib/admin-settings/media-settings";
-import { isBrandAssetSlot } from "@/lib/brand-assets";
+import { isBrandAssetSlot, type FooterBadge } from "@/lib/brand-assets";
 import { isPassthroughImage, optimizeImage } from "@/lib/media/optimize-image";
 import { deleteFromR2, isR2Configured, uploadToR2 } from "@/lib/storage/r2";
 
@@ -21,7 +21,12 @@ const LOGO_TYPES: Record<string, string> = {
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 function toResponse(settings: BrandSettings) {
-    return { name: settings.name, logoUrl: settings.logoUrl, assets: settings.assets };
+    return {
+        name: settings.name,
+        logoUrl: settings.logoUrl,
+        assets: settings.assets,
+        footerBadges: settings.footerBadges,
+    };
 }
 
 function errorResponse(err: unknown, status = 500) {
@@ -59,7 +64,8 @@ function isMediaLibraryUrl(url: string): boolean {
 /**
  * Updates the brand name, selects an image already in the R2 media library as
  * the logo, or sets/clears one brand asset slot (`{ asset, url }`, url null to
- * clear). Library images are not deleted when the selection changes later.
+ * clear), or replaces the footer badge list (`{ footerBadges }`). Library
+ * images are not deleted when the selection changes later.
  */
 export async function PUT(request: NextRequest) {
     try {
@@ -68,7 +74,28 @@ export async function PUT(request: NextRequest) {
             logoUrl?: string;
             asset?: string;
             url?: string | null;
+            footerBadges?: Partial<FooterBadge>[];
         };
+
+        if (body.footerBadges !== undefined) {
+            if (!Array.isArray(body.footerBadges)) {
+                return errorResponse(new Error("Footer badges must be a list."), 400);
+            }
+            for (const badge of body.footerBadges) {
+                if (!badge.label?.trim()) {
+                    return errorResponse(new Error("Every footer badge needs a label."), 400);
+                }
+                if (!badge.url || !isMediaLibraryUrl(badge.url)) {
+                    return errorResponse(new Error("Choose footer badges from the media library."), 400);
+                }
+            }
+
+            const saved = await saveStoredBrandSettings({
+                footerBadges: body.footerBadges as FooterBadge[],
+            });
+            revalidateSite();
+            return NextResponse.json(toResponse(saved));
+        }
 
         if (body.asset !== undefined) {
             if (!isBrandAssetSlot(body.asset)) {

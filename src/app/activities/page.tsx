@@ -1,21 +1,33 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Star, ArrowRight } from "lucide-react";
+import { MapPin, Star, ArrowRight, Search } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 
 import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
+import { ProductTabs } from "@/components/features/home/product-tabs";
+import { HeroBackdrop } from "@/components/shared/hero-backdrop";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
   prisma,
   shouldBypassDatabase,
   markDatabaseUnavailable,
 } from "@/lib/db";
-import {
-  createItemListSchema,
-  createWebPageSchema,
-} from "@/lib/seo";
+import { createItemListSchema, createWebPageSchema } from "@/lib/seo";
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { getActivityHref } from "@/lib/activity-href";
+import {
+  ActivitySearchInput,
+  type ActivitySuggestion,
+} from "@/components/features/activities/activity-search-input";
+
+// Mirrors the field styling of the other services' search cards.
+const fieldClass =
+  "flex min-h-14 min-w-0 cursor-text flex-col justify-center gap-0.5 rounded-xl border border-line bg-white px-3.5 py-2 transition focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/10";
+const fieldLabelClass = "text-xs font-medium text-muted";
+const fieldControlClass =
+  "w-full min-w-0 bg-transparent text-[0.95rem] font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted";
 
 type DestinationSummary = {
   id: string;
@@ -77,9 +89,15 @@ async function getActivitiesWithDestinations(filters: {
   activities: ActivitySummary[];
   destinations: DestinationSummary[];
   categories: string[];
+  suggestions: ActivitySuggestion[];
 }> {
   if (shouldBypassDatabase()) {
-    return { activities: [], destinations: [], categories: [] };
+    return {
+      activities: [],
+      destinations: [],
+      categories: [],
+      suggestions: [],
+    };
   }
 
   try {
@@ -87,7 +105,7 @@ async function getActivitiesWithDestinations(filters: {
       isActive: boolean;
       category?: string;
       destinationId?: string;
-      title?: { contains: string; mode: "insensitive" };
+      OR?: Prisma.ActivityWhereInput[];
       reviews?: { gte: number };
     } = { isActive: true };
 
@@ -98,7 +116,22 @@ async function getActivitiesWithDestinations(filters: {
       where.destinationId = filters.destinationId;
     }
     if (filters.search) {
-      where.title = { contains: filters.search, mode: "insensitive" };
+      // Matches what the autocomplete suggests: title, city, country or category.
+      const contains = {
+        contains: filters.search,
+        mode: "insensitive",
+      } as const;
+      where.OR = [
+        { title: contains },
+        {
+          category: {
+            contains: filters.search.trim().split(" ").join("-"),
+            mode: "insensitive",
+          },
+        },
+        { destination: { city: contains } },
+        { destination: { country: contains } },
+      ];
     }
     if (typeof filters.minRating === "number") {
       where.reviews = { gte: filters.minRating };
@@ -133,21 +166,38 @@ async function getActivitiesWithDestinations(filters: {
         })
       : ([] satisfies DestinationSummary[]);
 
-    const categories = await prisma.activity.findMany({
-      where: { isActive: true },
-      select: { category: true },
+    // Unfiltered, so the search autocomplete always offers every activity.
+    const allActivities = await prisma.activity.findMany({
+      where: { isActive: true, destination: { isActive: true } },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        category: true,
+        destination: { select: { city: true, country: true } },
+      },
     });
 
     return {
       activities,
       destinations,
       categories: Array.from(
-        new Set(categories.map((item) => item.category)),
+        new Set(allActivities.map((item) => item.category)),
       ).sort(),
+      suggestions: allActivities.map(({ destination, ...item }) => ({
+        ...item,
+        location: `${destination.city}, ${destination.country}`,
+      })),
     };
   } catch (error) {
     markDatabaseUnavailable(error);
-    return { activities: [], destinations: [], categories: [] };
+    return {
+      activities: [],
+      destinations: [],
+      categories: [],
+      suggestions: [],
+    };
   }
 }
 
@@ -155,7 +205,10 @@ export default async function ActivitiesPage({
   searchParams,
 }: ActivitiesPageProps) {
   const resolvedParams = (await searchParams) ?? {};
-  const brand = await getStoredBrandSettings();
+  const [brand, heroImage] = await Promise.all([
+    getStoredBrandSettings(),
+    getPageBanner("activities"),
+  ]);
   const category = toSingleValue(resolvedParams.category);
   const destinationId = toSingleValue(resolvedParams.destinationId);
   const search = toSingleValue(resolvedParams.search);
@@ -165,7 +218,7 @@ export default async function ActivitiesPage({
     ? Number(minRatingRaw)
     : undefined;
 
-  const { activities, destinations, categories } =
+  const { activities, destinations, categories, suggestions } =
     await getActivitiesWithDestinations({
       category: category || undefined,
       destinationId: destinationId || undefined,
@@ -179,7 +232,7 @@ export default async function ActivitiesPage({
   );
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
+    <div className="min-h-screen pb-12">
       <StructuredData
         data={[
           createWebPageSchema({
@@ -200,109 +253,110 @@ export default async function ActivitiesPage({
         ]}
       />
 
-      <section className="section-shell">
-        <div className="mb-10 space-y-3">
-          <h1 className="text-4xl font-bold text-slate-900 sm:text-5xl">
-            Activities
-          </h1>
-          <p className="text-lg text-slate-600">
-            Browse experiences curated by your team and book what fits your
-            trip.
-          </p>
+      <section className="relative z-40" aria-label="Things to do">
+        <HeroBackdrop src={heroImage} />
+        <div className="section-shell relative z-10 pb-10 pt-14 md:pb-14 md:pt-20">
+          <div className="mx-auto mb-8 max-w-4xl text-center text-white md:mb-10">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+              Activities
+            </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">
+              Browse experiences curated by your team and book what fits your
+              trip.
+            </p>
+          </div>
+
+          <form className="w-full rounded-card border border-line bg-white px-[18px] pb-[18px] pt-4 shadow-raised">
+            <ProductTabs active="activities" />
+
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto]">
+              <label className={`${fieldClass} relative`}>
+                <span className={fieldLabelClass}>Search</span>
+                <span className="flex items-center gap-2">
+                  <Search className="size-4 shrink-0 text-muted" />
+                  <ActivitySearchInput
+                    name="search"
+                    defaultValue={search}
+                    placeholder="Try Desert Safari, Dubai, adventure…"
+                    className={fieldControlClass}
+                    suggestions={suggestions}
+                  />
+                </span>
+              </label>
+
+              <label className={fieldClass}>
+                <span className={fieldLabelClass}>Category</span>
+                <select
+                  name="category"
+                  defaultValue={category}
+                  className={fieldControlClass}
+                >
+                  <option value="">All categories</option>
+                  {categories.map((item) => (
+                    <option key={item} value={item}>
+                      {formatCategory(item)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={fieldClass}>
+                <span className={fieldLabelClass}>Destination</span>
+                <select
+                  name="destinationId"
+                  defaultValue={destinationId}
+                  className={fieldControlClass}
+                >
+                  <option value="">All destinations</option>
+                  {destinations.map((dest) => (
+                    <option key={dest.id} value={dest.id}>
+                      {dest.city}, {dest.country}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={fieldClass}>
+                <span className={fieldLabelClass}>Min rating</span>
+                <select
+                  name="minRating"
+                  defaultValue={minRatingRaw}
+                  className={fieldControlClass}
+                >
+                  <option value="">Any</option>
+                  <option value="4">4.0+</option>
+                  <option value="4.5">4.5+</option>
+                  <option value="4.8">4.8+</option>
+                </select>
+              </label>
+
+              <label className={fieldClass}>
+                <span className={fieldLabelClass}>Sort</span>
+                <select
+                  name="sort"
+                  defaultValue={sort}
+                  className={fieldControlClass}
+                >
+                  <option value="">Sort order</option>
+                  <option value="rating-desc">Rating (high to low)</option>
+                  <option value="reviews-desc">Reviews (most)</option>
+                  <option value="title-asc">Title (A-Z)</option>
+                </select>
+              </label>
+
+              <button
+                type="submit"
+                className="flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-brand px-7 text-base font-semibold text-white transition hover:bg-brand-strong sm:col-span-2 lg:col-span-1"
+              >
+                <Search className="size-[18px]" />
+                Find activities
+              </button>
+            </div>
+          </form>
         </div>
+      </section>
 
-        <form className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[2fr_1fr_1fr_1fr_auto]">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Search
-            </label>
-            <input
-              type="search"
-              name="search"
-              defaultValue={search}
-              placeholder="Search by title"
-              className="h-11 rounded-xl border border-slate-200 px-3 text-sm text-slate-700 focus:border-slate-300"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Category
-            </label>
-            <select
-              name="category"
-              defaultValue={category}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-300"
-            >
-              <option value="">All categories</option>
-              {categories.map((item) => (
-                <option key={item} value={item}>
-                  {formatCategory(item)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Destination
-            </label>
-            <select
-              name="destinationId"
-              defaultValue={destinationId}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-300"
-            >
-              <option value="">All destinations</option>
-              {destinations.map((dest) => (
-                <option key={dest.id} value={dest.id}>
-                  {dest.city}, {dest.country}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Min rating
-            </label>
-            <select
-              name="minRating"
-              defaultValue={minRatingRaw}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-300"
-            >
-              <option value="">Any</option>
-              <option value="4">4.0+</option>
-              <option value="4.5">4.5+</option>
-              <option value="4.8">4.8+</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Sort
-            </label>
-            <select
-              name="sort"
-              defaultValue={sort}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-300"
-            >
-              <option value="">Sort order</option>
-              <option value="rating-desc">Rating (high to low)</option>
-              <option value="reviews-desc">Reviews (most)</option>
-              <option value="title-asc">Title (A-Z)</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              type="submit"
-              className="h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Apply
-            </button>
-          </div>
-        </form>
-
+      <section className="section-shell pt-4">
         {activities.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
             <p className="text-slate-600">No activities available yet.</p>

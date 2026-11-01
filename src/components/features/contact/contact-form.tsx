@@ -17,7 +17,7 @@ type ContactFormProps = {
 };
 
 const INPUT_CLASS =
-  "rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white";
+  "rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand focus:bg-white";
 
 export function ContactForm({ labels, supportEmail }: ContactFormProps) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
@@ -126,7 +126,7 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-[#1f57ae] px-6 text-lg font-semibold text-white transition hover:bg-[#194896] disabled:opacity-70"
+        className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-lg font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
       >
         {status === "submitting" ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
         {labels.submitLabel}

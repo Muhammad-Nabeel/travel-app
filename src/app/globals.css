@@ -11,7 +11,7 @@
   --color-base-200: #f5f6f8;
   --color-base-300: #dfe0e4;
   --color-base-content: #191e3b;
-  --color-primary: #1668e3;
+  --color-primary: #1e426f;
   --color-primary-content: #ffffff;
   --color-secondary: #191e3b;
   --color-secondary-content: #ffffff;
@@ -19,7 +19,7 @@
   --color-accent-content: #ffffff;
   --color-neutral: #191e3b;
   --color-neutral-content: #ffffff;
-  --color-info: #1668e3;
+  --color-info: #1e426f;
   --color-info-content: #ffffff;
   --color-success: #227950;
   --color-success-content: #ffffff;
@@ -45,14 +45,15 @@
   --bg: #ffffff;
   --bg-subtle: #f5f6f8;
   --surface: #ffffff;
-  --border: #dfe0e4;
+  --border-color: #dfe0e4; /* not --border: DaisyUI uses that as the border width */
+  --border-strong: #c4c7d0; /* form controls */
   --text: #191e3b;
   --text-muted: #5f6377;
 
-  /* Brand */
-  --primary: #1668e3;
-  --primary-hover: #0d4eaf;
-  --primary-soft: #e8f0fd;
+  /* Brand (matches the logo) */
+  --primary: #1e426f; /* EasyTrip logo navy */
+  --primary-hover: #15304f;
+  --primary-soft: #e8edf4;
   --gold: #b8913a;
   --gold-strong: #7a5f1f; /* gold text on light backgrounds (AA) */
   --deal: #d1173a;
@@ -73,7 +74,7 @@
   --brand: var(--primary);
   --brand-strong: var(--primary-hover);
   --accent: var(--gold);
-  --ring: rgba(22, 104, 227, 0.22);
+  --ring: rgba(30, 66, 111, 0.22);
 }
 
 @theme inline {
@@ -81,7 +82,8 @@
   --color-foreground: var(--text);
   --color-subtle: var(--bg-subtle);
   --color-card: var(--surface);
-  --color-line: var(--border);
+  --color-line: var(--border-color);
+  --color-line-strong: var(--border-strong);
   --color-muted: var(--text-muted);
   --color-brand: var(--primary);
   --color-brand-strong: var(--primary-hover);
@@ -153,8 +155,8 @@ body {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(22, 104, 227, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(22, 104, 227, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(30, 66, 111, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 66, 111, 0.06) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
@@ -227,8 +229,12 @@ textarea:focus {
   }
 }
 
-/* Keep the floating widgets clear of a detail page's mobile booking bar. */
+/* Keep the footer and floating widgets clear of a detail page's mobile booking bar. */
 @media (max-width: 1023px) {
+  body:has([data-booking-bar]) {
+    padding-bottom: 4.5rem;
+  }
+
   body:has([data-booking-bar]) .floating-widget-stack {
     bottom: 5.5rem;
   }

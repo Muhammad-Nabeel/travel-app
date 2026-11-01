@@ -14,6 +14,12 @@ import {
   buildStaticPageMetadata,
   getStaticPageSeo,
 } from "@/lib/admin-settings/seo-settings";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
+import {
+  getPrimaryPhone,
+  getStoredSupportContactSettings,
+} from "@/lib/admin-settings/support-contact-settings";
 import { createWebPageSchema, createWebsiteSchema } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,10 +27,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [seo, organizationJsonLd] = await Promise.all([
-    getStaticPageSeo("home"),
-    buildOrganizationJsonLd(),
-  ]);
+  const [seo, organizationJsonLd, heroImage, contact, brand] =
+    await Promise.all([
+      getStaticPageSeo("home"),
+      buildOrganizationJsonLd(),
+      getPageBanner("home"),
+      getStoredSupportContactSettings(),
+      getStoredBrandSettings(),
+    ]);
 
   return (
     <div className="flex-1">
@@ -40,7 +50,15 @@ export default async function Home() {
         ]}
       />
 
-      <FlightSearchEngine />
+      <FlightSearchEngine heroImage={heroImage} />
+
+      <WhyBookSection
+        brandName={seo.siteName}
+        phone={getPrimaryPhone(contact)}
+        assets={brand.assets}
+      />
+
+      <AirlinesSlider />
 
       <DestinationsSlider />
 
@@ -48,13 +66,9 @@ export default async function Home() {
 
       <ActivitiesSlider />
 
-      <WhyBookSection brandName={seo.siteName} />
-
       <CustomerReviewsSection />
 
       <BlogSlider />
-
-      <AirlinesSlider />
     </div>
   );
 }

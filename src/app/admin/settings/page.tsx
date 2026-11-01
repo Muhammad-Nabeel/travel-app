@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { BrandSettingsPanel } from "@/components/admin/brand-settings-panel";
+import { SabreSettingsPanel } from "@/components/admin/sabre-settings-panel";
 
 const EMPTY_FORM = {
   provider: "ga4" as "ga4" | "gtm",
@@ -77,6 +78,7 @@ type SettingsPanel =
   | "branches"
   | "support"
   | "currency"
+  | "sabre"
   | null;
 
 export default function AdminSettingsPage() {
@@ -519,22 +521,19 @@ export default function AdminSettingsPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6">
-      <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-          Administration
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+      <header>
+        <h1 className="text-xl font-semibold text-navy">
           Platform Settings
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
+        <p className="mt-1 max-w-3xl text-sm text-muted">
           Manage analytics credentials and pricing controls from a single
           administrative workspace.
         </p>
-      </section>
+      </header>
 
       <section className="grid gap-4 lg:grid-cols-[16rem_1fr]">
-        <aside className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+        <aside className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Configuration Areas
           </p>
           <div className="mt-3 space-y-2">
@@ -543,8 +542,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("brand")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "brand"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Brand
@@ -554,8 +553,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("ga4")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "ga4"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Analytics
@@ -565,8 +564,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("pricing")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "pricing"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Pricing
@@ -576,8 +575,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("payments")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "payments"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Payments
@@ -587,8 +586,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("branches")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "branches"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Branches
@@ -598,8 +597,8 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("support")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "support"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Contact Details
@@ -609,39 +608,52 @@ export default function AdminSettingsPage() {
               onClick={() => setActivePanel("currency")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "currency"
-                  ? "border-blue-200 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
               Currency
             </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("sabre")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "sabre"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Flight Provider (Sabre)
+            </button>
           </div>
         </aside>
 
-        <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
           {loading ? (
-            <p className="text-sm text-slate-500">Loading settings...</p>
+            <p className="text-sm text-muted">Loading settings...</p>
           ) : activePanel === null ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               Select any settings option from the left to start configuring.
             </p>
           ) : activePanel === "brand" ? (
             <BrandSettingsPanel />
+          ) : activePanel === "sabre" ? (
+            <SabreSettingsPanel />
           ) : activePanel === "ga4" ? (
             <div className="grid gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Analytics
               </p>
-              <h2 className="text-xl font-semibold text-blue-950">
+              <h2 className="text-xl font-semibold text-navy">
                 Tracking Provider
               </h2>
-              <p className="text-sm text-blue-800/80">
+              <p className="text-sm text-muted">
                 Choose GA4 or Google Tag Manager. The selected provider is used
                 across public pages including flights, hotels, and payment.
               </p>
 
-              <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+              <div className="grid gap-2 rounded-xl border border-line bg-subtle p-3 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-navy/80">
                   <input
                     type="radio"
                     name="provider"
@@ -652,11 +664,11 @@ export default function AdminSettingsPage() {
                         provider: "ga4",
                       }))
                     }
-                    className="h-4 w-4 border-slate-300 text-blue-600"
+                    className="h-4 w-4 border-line-strong text-brand"
                   />
                   Google Analytics 4
                 </label>
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-navy/80">
                   <input
                     type="radio"
                     name="provider"
@@ -667,14 +679,14 @@ export default function AdminSettingsPage() {
                         provider: "gtm",
                       }))
                     }
-                    className="h-4 w-4 border-slate-300 text-blue-600"
+                    className="h-4 w-4 border-line-strong text-brand"
                   />
                   Google Tag Manager
                 </label>
               </div>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   GTM Container ID
                 </span>
                 <input
@@ -686,19 +698,19 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="GTM-XXXXXXX"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   Required when provider is Google Tag Manager.
                 </p>
               </label>
 
               {formData.provider === "gtm" && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber-700">
+                <div className="rounded-xl border border-gold/30 bg-gold/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gold-strong">
                     GTM Setup Guide
                   </p>
-                  <p className="mt-2 text-sm text-amber-900">
+                  <p className="mt-2 text-sm text-gold-strong">
                     After saving, create Custom Event triggers in GTM using the
                     exact event names below, then attach GA4 Event tags.
                   </p>
@@ -706,22 +718,22 @@ export default function AdminSettingsPage() {
                     {GTM_EVENT_NAMES.map((eventName) => (
                       <div
                         key={eventName}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
+                        className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-white px-3 py-2"
                       >
-                        <p className="text-sm font-medium text-amber-900">
+                        <p className="text-sm font-medium text-gold-strong">
                           {eventName}
                         </p>
                         <button
                           type="button"
                           onClick={() => void handleCopyEventName(eventName)}
-                          className="rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-200"
+                          className="rounded-md border border-gold/40 bg-gold/15 px-2.5 py-1 text-xs font-semibold text-gold-strong transition hover:bg-gold/25"
                         >
                           {copiedEventName === eventName ? "Copied" : "Copy"}
                         </button>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-xs text-amber-800">
+                  <p className="mt-3 text-xs text-gold-strong">
                     Recommended in GTM: one trigger + one GA4 Event tag per
                     event name, then publish the container.
                   </p>
@@ -729,7 +741,7 @@ export default function AdminSettingsPage() {
               )}
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Measurement ID
                 </span>
                 <input
@@ -742,12 +754,12 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="G-XXXXXXXXXX"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100 disabled:text-slate-400"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Property ID
                 </span>
                 <input
@@ -760,12 +772,12 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="123456789"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100 disabled:text-slate-400"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Service Account Email
                 </span>
                 <input
@@ -778,12 +790,12 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="analytics-reader@project.iam.gserviceaccount.com"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100 disabled:text-slate-400"
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Service Account Private Key
                 </span>
                 <textarea
@@ -796,32 +808,32 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
-                  className="min-h-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100 disabled:text-slate-400"
+                  className="min-h-40 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
                 />
                 {hasStoredPrivateKey && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     A private key is already saved. Leave this blank to keep it.
                   </p>
                 )}
               </label>
 
               {message && (
-                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {message}
                 </p>
               )}
               {error && (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {error}
                 </p>
               )}
               {testMessage && (
-                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {testMessage}
                 </p>
               )}
               {testError && (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {testError}
                 </p>
               )}
@@ -831,7 +843,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handleTestConnection()}
                   disabled={testing || formData.provider !== "ga4"}
-                  className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-70"
+                  className="rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand-soft disabled:opacity-70"
                 >
                   {testing ? "Testing..." : "Test Connection"}
                 </button>
@@ -839,7 +851,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {saving ? "Saving..." : "Save Analytics Settings"}
                 </button>
@@ -847,20 +859,20 @@ export default function AdminSettingsPage() {
             </div>
           ) : activePanel === "pricing" ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Pricing
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+              <h2 className="mt-2 text-xl font-semibold text-navy">
                 Service Charge Configuration
               </h2>
-              <p className="mt-1 text-sm text-blue-800/80">
+              <p className="mt-1 text-sm text-muted">
                 Define the service charge percentage applied during booking
                 total calculation.
               </p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5 sm:max-w-sm">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Service Charge Percent
                   </span>
                   <input
@@ -875,18 +887,18 @@ export default function AdminSettingsPage() {
                         serviceChargePercent: e.target.value,
                       }))
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
               </div>
 
               {pricingMessage && (
-                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {pricingMessage}
                 </p>
               )}
               {pricingError && (
-                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {pricingError}
                 </p>
               )}
@@ -896,7 +908,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handlePricingSave()}
                   disabled={pricingSaving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {pricingSaving ? "Saving..." : "Save Site Pricing"}
                 </button>
@@ -904,18 +916,18 @@ export default function AdminSettingsPage() {
             </div>
           ) : activePanel === "payments" ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Payments
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+              <h2 className="mt-2 text-xl font-semibold text-navy">
                 Payment Method Availability
               </h2>
-              <p className="mt-1 text-sm text-blue-800/80">
+              <p className="mt-1 text-sm text-muted">
                 Turn payment options on or off for checkout, including Cash on
                 Delivery and Pay at Branch.
               </p>
 
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="mt-4 rounded-lg border border-line bg-subtle px-4 py-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
                     { key: "enableCashOnDelivery", label: "Cash on Delivery" },
@@ -928,9 +940,9 @@ export default function AdminSettingsPage() {
                   ].map((item) => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2"
+                      className="flex items-center justify-between rounded-md border border-line bg-white px-3 py-2"
                     >
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-navy/80">
                         {item.label}
                       </span>
                       <input
@@ -942,7 +954,7 @@ export default function AdminSettingsPage() {
                             [item.key]: e.target.checked,
                           }))
                         }
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                       />
                     </label>
                   ))}
@@ -950,12 +962,12 @@ export default function AdminSettingsPage() {
               </div>
 
               {paymentMessage && (
-                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {paymentMessage}
                 </p>
               )}
               {paymentError && (
-                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {paymentError}
                 </p>
               )}
@@ -965,7 +977,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handlePaymentSave()}
                   disabled={paymentSaving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {paymentSaving ? "Saving..." : "Save Payment Methods"}
                 </button>
@@ -973,19 +985,19 @@ export default function AdminSettingsPage() {
             </div>
           ) : activePanel === "branches" ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Branches
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+              <h2 className="mt-2 text-xl font-semibold text-navy">
                 Branch Locations
               </h2>
-              <p className="mt-1 text-sm text-blue-800/80">
+              <p className="mt-1 text-sm text-muted">
                 Manage branch options shown in the Pay at Branch checkout flow.
               </p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Name
                   </span>
                   <input
@@ -997,11 +1009,11 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="Main Branch"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     City
                   </span>
                   <input
@@ -1013,11 +1025,11 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="Lahore"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 sm:col-span-2">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Address
                   </span>
                   <textarea
@@ -1030,11 +1042,11 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="Full branch address"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Phone
                   </span>
                   <input
@@ -1046,11 +1058,11 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="+92 ..."
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Sort Order
                   </span>
                   <input
@@ -1062,10 +1074,10 @@ export default function AdminSettingsPage() {
                         sortOrder: e.target.value,
                       }))
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-navy/80 sm:col-span-2">
                   <input
                     type="checkbox"
                     checked={branchForm.isActive}
@@ -1075,19 +1087,19 @@ export default function AdminSettingsPage() {
                         isActive: e.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                   />
                   Active branch
                 </label>
               </div>
 
               {branchMessage && (
-                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {branchMessage}
                 </p>
               )}
               {branchError && (
-                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {branchError}
                 </p>
               )}
@@ -1097,7 +1109,7 @@ export default function AdminSettingsPage() {
                   <button
                     type="button"
                     onClick={resetBranchForm}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="rounded-xl border border-line-strong bg-white px-4 py-2 text-sm font-semibold text-navy/80 hover:bg-subtle"
                   >
                     Cancel Edit
                   </button>
@@ -1106,7 +1118,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handleBranchSave()}
                   disabled={branchSaving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {branchSaving
                     ? "Saving..."
@@ -1116,30 +1128,30 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
 
-              <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
+              <div className="mt-5 overflow-x-auto rounded-xl border border-line">
+                <table className="min-w-full divide-y divide-line text-sm">
+                  <thead className="bg-subtle">
                     <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">
+                      <th className="px-3 py-2 text-left font-semibold text-muted">
                         Name
                       </th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">
+                      <th className="px-3 py-2 text-left font-semibold text-muted">
                         City
                       </th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">
+                      <th className="px-3 py-2 text-left font-semibold text-muted">
                         Status
                       </th>
-                      <th className="px-3 py-2 text-right font-semibold text-slate-600">
+                      <th className="px-3 py-2 text-right font-semibold text-muted">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                  <tbody className="divide-y divide-line bg-white">
                     {branches.length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
-                          className="px-3 py-4 text-center text-slate-500"
+                          className="px-3 py-4 text-center text-muted"
                         >
                           No branches configured yet.
                         </td>
@@ -1148,17 +1160,17 @@ export default function AdminSettingsPage() {
                       branches.map((branch) => (
                         <tr key={branch.id}>
                           <td className="px-3 py-2">
-                            <p className="font-semibold text-slate-800">
+                            <p className="font-semibold text-navy">
                               {branch.name}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-muted">
                               {branch.phone ?? "No phone"}
                             </p>
                           </td>
-                          <td className="px-3 py-2 text-slate-700">
+                          <td className="px-3 py-2 text-navy/80">
                             {branch.city}
                           </td>
-                          <td className="px-3 py-2 text-slate-700">
+                          <td className="px-3 py-2 text-navy/80">
                             {branch.isActive ? "Active" : "Inactive"}
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -1166,7 +1178,7 @@ export default function AdminSettingsPage() {
                               <button
                                 type="button"
                                 onClick={() => startEditBranch(branch)}
-                                className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-navy/80 hover:bg-subtle"
                               >
                                 Edit
                               </button>
@@ -1175,7 +1187,7 @@ export default function AdminSettingsPage() {
                                 onClick={() =>
                                   void handleBranchDelete(branch.id)
                                 }
-                                className="rounded-md border border-rose-200 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                className="rounded-md border border-deal/20 px-2 py-1 text-xs font-semibold text-deal hover:bg-deal/6"
                               >
                                 Delete
                               </button>
@@ -1190,20 +1202,20 @@ export default function AdminSettingsPage() {
             </div>
           ) : activePanel === "support" ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Support
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+              <h2 className="mt-2 text-xl font-semibold text-navy">
                 Contact Details
               </h2>
-              <p className="mt-1 text-sm text-blue-800/80">
+              <p className="mt-1 text-sm text-muted">
                 Shown on the Contact Us page, the footer, the Arrange a Call
                 page and in search-engine business details.
               </p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Support Email
                   </span>
                   <input
@@ -1216,12 +1228,12 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="support@easytrip.com.pk"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     WhatsApp Number
                   </span>
                   <input
@@ -1233,12 +1245,12 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="+92 300 1234567"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Mobile Number
                   </span>
                   <input
@@ -1250,12 +1262,12 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="+92 300 1234567"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Landline Number
                   </span>
                   <input
@@ -1267,12 +1279,12 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="+92 42 12345678"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1.5 sm:col-span-2">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Office Address
                   </span>
                   <input
@@ -1284,18 +1296,18 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     placeholder="Office address shown on the Contact Us page"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </label>
               </div>
 
               {supportMessage && (
-                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {supportMessage}
                 </p>
               )}
               {supportError && (
-                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {supportError}
                 </p>
               )}
@@ -1305,7 +1317,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handleSupportSave()}
                   disabled={supportSaving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {supportSaving ? "Saving..." : "Save Contact Details"}
                 </button>
@@ -1313,13 +1325,13 @@ export default function AdminSettingsPage() {
             </div>
           ) : activePanel === "currency" ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                 Currency
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-blue-950">
+              <h2 className="mt-2 text-xl font-semibold text-navy">
                 Currency Settings
               </h2>
-              <p className="mt-1 text-sm text-blue-800/80">
+              <p className="mt-1 text-sm text-muted">
                 Configure currency selector for flight searches and set the default currency.
               </p>
 
@@ -1334,20 +1346,20 @@ export default function AdminSettingsPage() {
                         currencySelectorEnabled: e.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                   />
                   <div>
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-navy/80">
                       Enable Currency Selector
                     </span>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       Allow users to select currency for flight searches in the navbar
                     </p>
                   </div>
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Default Currency
                   </span>
                   <select
@@ -1358,7 +1370,7 @@ export default function AdminSettingsPage() {
                         defaultCurrency: e.target.value,
                       }))
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                   >
                     {currencyForm.availableCurrencies.map((currency) => (
                       <option key={currency} value={currency}>
@@ -1369,10 +1381,10 @@ export default function AdminSettingsPage() {
                 </label>
 
                 <div>
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-muted">
                     Available Currencies
                   </span>
-                  <p className="text-xs text-slate-500 mb-2">
+                  <p className="text-xs text-muted mb-2">
                     Currencies users can select from
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -1390,9 +1402,9 @@ export default function AdminSettingsPage() {
                                 : prev.availableCurrencies.filter((c) => c !== currency),
                             }));
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                         />
-                        <span className="text-sm text-slate-700">{currency}</span>
+                        <span className="text-sm text-navy/80">{currency}</span>
                       </label>
                     ))}
                   </div>
@@ -1400,12 +1412,12 @@ export default function AdminSettingsPage() {
               </div>
 
               {currencyMessage && (
-                <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
                   {currencyMessage}
                 </p>
               )}
               {currencyError && (
-                <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
                   {currencyError}
                 </p>
               )}
@@ -1415,7 +1427,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => void handleCurrencySave()}
                   disabled={currencySaving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
                 >
                   {currencySaving ? "Saving..." : "Save Currency Settings"}
                 </button>

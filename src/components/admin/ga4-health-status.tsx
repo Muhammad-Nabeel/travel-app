@@ -99,18 +99,18 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         : "Disconnected";
   const statusTextClass =
     status === "ok"
-      ? "text-emerald-700"
+      ? "text-success"
       : status === "checking"
-        ? "text-amber-700"
-        : "text-rose-700";
+        ? "text-gold-strong"
+        : "text-deal";
 
   if (compact) {
     return (
       <div
-        className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5"
+        className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-2.5 py-1.5"
         title={message}
       >
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
           GA4
         </span>
         <span className={`text-xs font-semibold ${statusTextClass}`}>
@@ -119,7 +119,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         <button
           type="button"
           onClick={() => void checkGa4Health()}
-          className="rounded-md p-0.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-md p-0.5 text-muted transition hover:bg-line/50 hover:text-navy/80"
           aria-label="Refresh GA4 health"
         >
           <RefreshCw
@@ -131,15 +131,15 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
   }
 
   return (
-    <div className="rounded-xl border border-blue-100 bg-white px-3 py-2.5">
+    <div className="rounded-xl border border-line bg-white px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted">
           GA4 Health
         </p>
         <button
           type="button"
           onClick={() => void checkGa4Health()}
-          className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-md p-1 text-muted transition hover:bg-line/50 hover:text-navy/80"
           aria-label="Refresh GA4 health"
         >
           <RefreshCw
@@ -152,7 +152,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         {statusText}
       </p>
 
-      <p className="mt-1 text-[11px] leading-4 text-slate-500">{message}</p>
+      <p className="mt-1 text-[11px] leading-4 text-muted">{message}</p>
     </div>
   );
 }

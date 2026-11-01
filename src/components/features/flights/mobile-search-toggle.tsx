@@ -5,11 +5,14 @@ import { ChevronDown, ChevronUp, Search } from "lucide-react";
 
 type MobileSearchToggleProps = {
   summary: string;
+  /** Names the search in the collapsed bar, e.g. "Hotel search". */
+  label?: string;
   children: React.ReactNode;
 };
 
 export function MobileSearchToggle({
   summary,
+  label = "Flight search",
   children,
 }: MobileSearchToggleProps) {
   const [open, setOpen] = useState(false);
@@ -22,11 +25,11 @@ export function MobileSearchToggle({
           className="flex w-full items-center justify-between rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-left shadow-sm"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          aria-label="Toggle flight search"
+          aria-label={`Toggle ${label.toLowerCase()}`}
         >
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-base-content/60">
-              Flight search
+              {label}
             </p>
             <p className="truncate text-sm font-semibold text-base-content">
               {summary}

@@ -15,14 +15,24 @@ async function readResponse(res: Response): Promise<PublicBrand> {
   if (!res.ok) {
     throw new Error(json.error ?? "Request failed.");
   }
-  return { name: json.name ?? "", logoUrl: json.logoUrl ?? null, assets: json.assets ?? {} };
+  return {
+    name: json.name ?? "",
+    logoUrl: json.logoUrl ?? null,
+    assets: json.assets ?? {},
+    footerBadges: json.footerBadges ?? [],
+  };
 }
 
 /** Brand name and logo (stored on Cloudflare R2), used across the whole site. */
 export function BrandSettingsPanel() {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [brand, setBrand] = useState<PublicBrand>({ name: "", logoUrl: null, assets: {} });
+  const [brand, setBrand] = useState<PublicBrand>({
+    name: "",
+    logoUrl: null,
+    assets: {},
+    footerBadges: [],
+  });
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"name" | "upload" | "library" | "remove" | null>(null);
@@ -105,23 +115,23 @@ export function BrandSettingsPanel() {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading brand settings...</p>;
+    return <p className="text-sm text-muted">Loading brand settings...</p>;
   }
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
         Brand
       </p>
-      <h2 className="mt-2 text-xl font-semibold text-blue-950">Brand Name & Logo</h2>
-      <p className="mt-1 text-sm text-blue-800/80">
+      <h2 className="mt-2 text-xl font-semibold text-navy">Brand Name & Logo</h2>
+      <p className="mt-1 text-sm text-muted">
         Shown in the header, footer, page titles, emails and search results.
         Logos are stored on Cloudflare R2.
       </p>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <label htmlFor="brand-name" className="text-xs font-semibold text-slate-600">
+          <label htmlFor="brand-name" className="text-xs font-semibold text-muted">
             Brand Name
           </label>
           <input
@@ -130,14 +140,14 @@ export function BrandSettingsPanel() {
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
             placeholder="EasyTrip"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+            className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
           />
           <div>
             <button
               type="button"
               onClick={saveName}
               disabled={busy !== null || !name.trim() || name.trim() === brand.name}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+              className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
             >
               {busy === "name" ? "Saving..." : "Save Name"}
             </button>
@@ -145,16 +155,16 @@ export function BrandSettingsPanel() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-slate-600">Logo</span>
-          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+          <span className="text-xs font-semibold text-muted">Logo</span>
+          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-line-strong bg-subtle p-3">
             {brand.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- logo is hosted on R2
               <img src={brand.logoUrl} alt={`${brand.name} logo`} className="max-h-full w-auto object-contain" />
             ) : (
-              <span className="text-sm text-slate-500">No logo. The brand name is shown instead.</span>
+              <span className="text-sm text-muted">No logo. The brand name is shown instead.</span>
             )}
           </div>
-          <p className="text-xs text-slate-500">PNG, JPG, WebP or SVG, up to 2 MB. A wide logo about 36 px tall works best.</p>
+          <p className="text-xs text-muted">PNG, JPG, WebP or SVG, up to 2 MB. A wide logo about 36 px tall works best.</p>
           <input
             ref={fileInput}
             type="file"
@@ -171,7 +181,7 @@ export function BrandSettingsPanel() {
               type="button"
               onClick={() => fileInput.current?.click()}
               disabled={busy !== null}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
             >
               {busy === "upload" ? <Loader2 className="size-4 animate-spin" /> : <ImageUp className="size-4" />}
               {brand.logoUrl ? "Replace Logo" : "Upload Logo"}
@@ -180,7 +190,7 @@ export function BrandSettingsPanel() {
               type="button"
               onClick={() => setPickerOpen(true)}
               disabled={busy !== null}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-line-strong bg-white px-4 py-2 text-sm font-semibold text-navy/80 transition hover:border-brand hover:text-brand-strong disabled:opacity-60"
             >
               {busy === "library" ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}
               From Library
@@ -190,7 +200,7 @@ export function BrandSettingsPanel() {
                 type="button"
                 onClick={removeLogo}
                 disabled={busy !== null}
-                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl border border-deal/20 bg-white px-4 py-2 text-sm font-semibold text-deal transition hover:bg-deal/6 disabled:opacity-60"
               >
                 <Trash2 className="size-4" />
                 {busy === "remove" ? "Removing..." : "Remove"}
@@ -209,10 +219,10 @@ export function BrandSettingsPanel() {
       />
 
       {message ? (
-        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>
+        <p className="mt-4 rounded-lg bg-success/8 px-3 py-2 text-sm text-success">{message}</p>
       ) : null}
       {error ? (
-        <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+        <p className="mt-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">{error}</p>
       ) : null}
     </div>
   );

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
 import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
+import {
+  FlightEnquiryForm,
+  type FlightEnquiryLeg,
+} from "@/components/features/flights/flight-enquiry-form";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
@@ -13,10 +18,11 @@ import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { searchFlights } from "@/lib/flights/search-service";
 import { buildMetadata } from "@/lib/seo";
 
-function HomeLayout() {
+async function HomeLayout() {
+  const heroImage = await getPageBanner("flights");
   return (
     <div className="flex-1">
-      <FlightSearchEngine />
+      <FlightSearchEngine heroImage={heroImage} />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />
@@ -195,6 +201,35 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
     : query.destination;
   const searchSummary = `${originLabel} -> ${destinationLabel} · ${query.departureDate}${query.returnDate ? ` · ${query.returnDate}` : ""}`;
 
+  const toEnquiryLeg = (leg: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+  }): FlightEnquiryLeg => {
+    const from = getAirportDisplay(leg.origin);
+    const to = getAirportDisplay(leg.destination);
+    return {
+      ...leg,
+      originLabel: from ? `${from.city} (${leg.origin})` : leg.origin,
+      destinationLabel: to ? `${to.city} (${leg.destination})` : leg.destination,
+    };
+  };
+  const enquiryLegs =
+    query.tripType === "multi-city"
+      ? (query.legs ?? []).map(toEnquiryLeg)
+      : [
+          toEnquiryLeg(query),
+          ...(query.tripType === "round-trip" && query.returnDate
+            ? [
+                toEnquiryLeg({
+                  origin: query.destination,
+                  destination: query.origin,
+                  departureDate: query.returnDate,
+                }),
+              ]
+            : []),
+        ];
+
   return (
     <div className="flex-1 py-6">
       <MobileSearchToggle summary={searchSummary}>
@@ -238,14 +273,20 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
         />
       </MobileSearchToggle>
 
-      <FareCalendarStrip query={query} />
+      {result.liveSearchEnabled ? (
+        <>
+          <FareCalendarStrip query={query} />
 
-      <FlightsResultsPanel
-        offers={result.results}
-        query={result.query}
-        source={result.source}
-        warnings={result.warnings}
-      />
+          <FlightsResultsPanel
+            offers={result.results}
+            query={result.query}
+            source={result.source}
+            warnings={result.warnings}
+          />
+        </>
+      ) : (
+        <FlightEnquiryForm query={query} legs={enquiryLegs} />
+      )}
     </div>
   );
 }

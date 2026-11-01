@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Globe2, Search, Users } from "lucide-react";
 
 import type { VisaType } from "@/lib/admin-settings/visa-settings";
-import { HeroBackdrop } from "@/components/shared/hero-backdrop";
+import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
+import { ProductTabs } from "@/components/features/home/product-tabs";
 import styles from "./visa-search-engine.module.css";
 
 type SearchVisaType = VisaType | "any";
 
-type VisaSearchEngineProps = {
-  variant?: "hero" | "embedded";
+type VisaSearchEngineProps = HeroBannerProps & {
   countryOptions?: string[];
   popularCountries?: string[];
   initialValues?: {
@@ -39,6 +39,7 @@ export function VisaSearchEngine({
   variant = "hero",
   countryOptions,
   popularCountries,
+  heroImage,
   initialValues,
   onSearch,
 }: VisaSearchEngineProps) {
@@ -102,7 +103,7 @@ export function VisaSearchEngine({
       className={isHero ? styles.homeHero : styles.embeddedSearch}
       aria-label="Visa search engine"
     >
-      {isHero ? <HeroBackdrop src="/images/hero-flight.webp" /> : null}
+      {heroImage ? <HeroBackdrop src={heroImage} /> : null}
 
       <div
         className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}
@@ -119,6 +120,8 @@ export function VisaSearchEngine({
         ) : null}
 
         <form className={styles.searchCard} onSubmit={handleSubmit}>
+          {isHero ? <ProductTabs active="visa" /> : null}
+
           <div className={styles.controlsRow}>
             <div className={styles.stayTypeTabs}>
               {(

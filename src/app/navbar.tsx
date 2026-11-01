@@ -14,7 +14,6 @@ import {
   Briefcase,
   ChevronDown,
   FileCheck2,
-  Headphones,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -33,12 +32,48 @@ const links: {
   icon: typeof Plane;
   asset: BrandAssetSlot;
 }[] = [
-  { href: "/flights", label: "Flights", description: "Search and compare fares", icon: Plane, asset: "flights" },
-  { href: "/umrah-packages", label: "Umrah packages", description: "Makkah & Madinah stays", icon: MoonStar, asset: "umrah" },
-  { href: "/tour-packages", label: "Tour packages", description: "Curated holidays", icon: Briefcase, asset: "tours" },
-  { href: "/hotels", label: "Hotels", description: "Stays near the Haram", icon: BedDouble, asset: "hotels" },
-  { href: "/visa", label: "Visa", description: "Applications made simple", icon: FileCheck2, asset: "visa" },
-  { href: "/activities", label: "Things to do", description: "Tours and experiences", icon: Ticket, asset: "activities" },
+  {
+    href: "/flights",
+    label: "Flights",
+    description: "Search and compare fares",
+    icon: Plane,
+    asset: "flights",
+  },
+  {
+    href: "/umrah-packages",
+    label: "Umrah packages",
+    description: "Makkah & Madinah stays",
+    icon: MoonStar,
+    asset: "umrah",
+  },
+  {
+    href: "/tour-packages",
+    label: "Tour packages",
+    description: "Curated holidays",
+    icon: Briefcase,
+    asset: "tours",
+  },
+  {
+    href: "/hotels",
+    label: "Hotels",
+    description: "Stays near the Haram",
+    icon: BedDouble,
+    asset: "hotels",
+  },
+  {
+    href: "/visa",
+    label: "Visa",
+    description: "Applications made simple",
+    icon: FileCheck2,
+    asset: "visa",
+  },
+  {
+    href: "/activities",
+    label: "Things to do",
+    description: "Tours and experiences",
+    icon: Ticket,
+    asset: "activities",
+  },
 ];
 
 const NavBar = () => {
@@ -53,7 +88,8 @@ const NavBar = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const shopMenuRef = useRef<HTMLDivElement>(null);
 
-  const { settings: currencySettings, loading: currencyLoading } = useCurrencySettings();
+  const { settings: currencySettings, loading: currencyLoading } =
+    useCurrencySettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -210,32 +246,40 @@ const NavBar = () => {
               </button>
               {shopMenuOpen && (
                 <div className="absolute left-0 top-full z-50 mt-2 w-80 rounded-2xl border border-line bg-white p-2 shadow-raised">
-                  {links.map(({ href, label, description, icon: Icon, asset }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setShopMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-subtle ${
-                        isActive(href) ? "bg-brand-soft" : ""
-                      }`}
-                    >
-                      {brand.assets[asset] ? (
-                        <Image src={brand.assets[asset]} alt="" width={36} height={36} className="size-9 shrink-0 object-contain" />
-                      ) : (
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
-                          <Icon className="size-4.5" />
+                  {links.map(
+                    ({ href, label, description, icon: Icon, asset }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setShopMenuOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-subtle ${
+                          isActive(href) ? "bg-brand-soft" : ""
+                        }`}
+                      >
+                        {brand.assets[asset] ? (
+                          <Image
+                            src={brand.assets[asset]}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="size-9 shrink-0 object-contain"
+                          />
+                        ) : (
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                            <Icon className="size-4.5" />
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-foreground">
+                            {label}
+                          </span>
+                          <span className="block text-xs text-muted">
+                            {description}
+                          </span>
                         </span>
-                      )}
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-foreground">
-                          {label}
-                        </span>
-                        <span className="block text-xs text-muted">
-                          {description}
-                        </span>
-                      </span>
-                    </Link>
-                  ))}
+                      </Link>
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -251,7 +295,15 @@ const NavBar = () => {
               href="/contact-us"
               className="hidden items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-foreground transition hover:bg-subtle lg:flex"
             >
-              <Headphones className="size-4" />
+              {brand.assets.support ? (
+                <Image
+                  src={brand.assets.support}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="size-5 object-contain"
+                />
+              ) : null}
               Support
             </Link>
 
@@ -266,9 +318,19 @@ const NavBar = () => {
                     onClick={() => setUserMenuOpen((v) => !v)}
                     className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-foreground transition hover:bg-subtle"
                   >
-                    <span className="flex size-7 items-center justify-center rounded-full bg-brand-soft text-brand">
-                      <User className="size-4" />
-                    </span>
+                    {brand.assets.account ? (
+                      <Image
+                        src={brand.assets.account}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="size-7 rounded-full object-contain"
+                      />
+                    ) : (
+                      <span className="flex size-7 items-center justify-center rounded-full bg-brand-soft text-brand">
+                        <User className="size-4" />
+                      </span>
+                    )}
                     <span className="max-w-30 truncate">
                       {session.user.name ?? session.user.email}
                     </span>
@@ -335,11 +397,11 @@ const NavBar = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="absolute inset-0 bg-navy/40"
           />
-          <div
-            className="absolute inset-y-0 right-0 flex w-[min(22rem,88vw)] flex-col bg-white shadow-raised"
-          >
+          <div className="absolute inset-y-0 right-0 flex w-[min(22rem,88vw)] flex-col bg-white shadow-raised">
             <div className="flex h-16 items-center justify-between border-b border-line px-4">
-              <span className="text-base font-semibold text-foreground">Menu</span>
+              <span className="text-base font-semibold text-foreground">
+                Menu
+              </span>
               <button
                 type="button"
                 aria-label="Close menu"
@@ -366,7 +428,13 @@ const NavBar = () => {
                   }`}
                 >
                   {brand.assets[asset] ? (
-                    <Image src={brand.assets[asset]} alt="" width={24} height={24} className="size-6 object-contain" />
+                    <Image
+                      src={brand.assets[asset]}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="size-6 object-contain"
+                    />
                   ) : (
                     <Icon className="size-5" />
                   )}
@@ -381,7 +449,15 @@ const NavBar = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-foreground transition hover:bg-subtle"
               >
-                <Headphones className="size-5" />
+                {brand.assets.support ? (
+                  <Image
+                    src={brand.assets.support}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="size-6 object-contain"
+                  />
+                ) : null}
                 Support
               </Link>
 
@@ -410,9 +486,19 @@ const NavBar = () => {
             <div className="border-t border-line p-4">
               {session?.user ? (
                 <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-brand">
-                    <User className="size-4" />
-                  </span>
+                  {brand.assets.account ? (
+                    <Image
+                      src={brand.assets.account}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="size-9 rounded-full object-contain"
+                    />
+                  ) : (
+                    <span className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-brand">
+                      <User className="size-4" />
+                    </span>
+                  )}
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">
                       {session.user.name}

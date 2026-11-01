@@ -1,17 +1,12 @@
 import { cache } from "react";
 import type { UmrahPackage } from "@prisma/client";
 
-import { DUMMY_PACKAGES, type PackageRow } from "@/app/api/packages/route";
+import type { PackageRow } from "@/app/api/packages/route";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 // Server-side reads for public Umrah pages. Pages call these directly rather
 // than fetching their own /api/packages over HTTP, and only PUBLISHED
 // packages are ever returned.
-
-export type PublicPackages = {
-    packages: PackageRow[];
-    isDummy: boolean;
-};
 
 export function toPackageRow(pkg: UmrahPackage): PackageRow {
     return {
@@ -40,16 +35,9 @@ export function toPackageRow(pkg: UmrahPackage): PackageRow {
     };
 }
 
-function publishedDummyPackages(): PublicPackages {
-    return {
-        packages: DUMMY_PACKAGES.filter((pkg) => pkg.status === "PUBLISHED"),
-        isDummy: true,
-    };
-}
-
-export const getPublishedUmrahPackages = cache(async (): Promise<PublicPackages> => {
+export const getPublishedUmrahPackages = cache(async (): Promise<PackageRow[]> => {
     if (shouldBypassDatabase()) {
-        return publishedDummyPackages();
+        return [];
     }
 
     try {
@@ -58,28 +46,17 @@ export const getPublishedUmrahPackages = cache(async (): Promise<PublicPackages>
             orderBy: { startDate: "asc" },
         });
 
-        if (rows.length === 0) {
-            return publishedDummyPackages();
-        }
-
-        return { packages: rows.map(toPackageRow), isDummy: false };
+        return rows.map(toPackageRow);
     } catch (err) {
         markDatabaseUnavailable(err);
-        return publishedDummyPackages();
+        return [];
     }
 });
 
 export const getPublishedUmrahPackageBySlug = cache(
-    async (slug: string): Promise<{ pkg: PackageRow; isDummy: boolean } | null> => {
-        const findDummy = () => {
-            const pkg = DUMMY_PACKAGES.find(
-                (item) => item.slug === slug && item.status === "PUBLISHED",
-            );
-            return pkg ? { pkg, isDummy: true } : null;
-        };
-
+    async (slug: string): Promise<PackageRow | null> => {
         if (shouldBypassDatabase()) {
-            return findDummy();
+            return null;
         }
 
         try {
@@ -87,10 +64,10 @@ export const getPublishedUmrahPackageBySlug = cache(
                 where: { status: "PUBLISHED", OR: [{ slug }, { id: slug }] },
             });
 
-            return row ? { pkg: toPackageRow(row), isDummy: false } : null;
+            return row ? toPackageRow(row) : null;
         } catch (err) {
             markDatabaseUnavailable(err);
-            return findDummy();
+            return null;
         }
     },
 );

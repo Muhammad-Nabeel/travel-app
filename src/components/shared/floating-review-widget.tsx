@@ -16,6 +16,9 @@ const TRIP_TYPES = [
   "Other",
 ];
 
+// Chatbot launcher is hidden for now; set to true to bring it back.
+const CHATBOT_ENABLED = false;
+
 export function FloatingReviewWidget() {
   const pathname = usePathname();
   const brand = useBrand();
@@ -196,7 +199,7 @@ export function FloatingReviewWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="rounded-full bg-blue-600 p-3 text-white shadow-lg transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="rounded-full bg-brand p-3 text-white shadow-lg transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/40"
           aria-label="Write a review"
           title="Write a review"
         >
@@ -220,15 +223,17 @@ export function FloatingReviewWidget() {
           </svg>
         </a>
 
-        <button
-          type="button"
-          onClick={() => setIsChatOpen(true)}
-          className="rounded-full bg-slate-900 p-3 text-white shadow-lg transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
-          aria-label="Open chatbot"
-          title="Chatbot"
-        >
-          <MessageCircle className="h-5 w-5" />
-        </button>
+        {CHATBOT_ENABLED ? (
+          <button
+            type="button"
+            onClick={() => setIsChatOpen(true)}
+            className="rounded-full bg-slate-900 p-3 text-white shadow-lg transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            aria-label="Open chatbot"
+            title="Chatbot"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </button>
+        ) : null}
       </div>
 
       {isChatOpen && (
@@ -634,7 +639,7 @@ export function FloatingReviewWidget() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong disabled:opacity-70"
                 >
                   {submitting ? "Submitting..." : "Submit Review"}
                 </button>

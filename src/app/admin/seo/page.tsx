@@ -30,7 +30,7 @@ const EMPTY_FORM: SeoSettings = {
 };
 
 const inputClass =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500";
+  "rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand";
 
 function LengthHint({
   length,
@@ -43,7 +43,7 @@ function LengthHint({
 }) {
   const ok = length <= max && (min === undefined || length >= min);
   return (
-    <span className={`text-xs ${ok ? "text-emerald-600" : "text-amber-600"}`}>
+    <span className={`text-xs ${ok ? "text-success" : "text-gold-strong"}`}>
       {length} / {min !== undefined ? `${min}–` : ""}
       {max}
     </span>
@@ -71,17 +71,17 @@ function SeoPageCard({
   const shownTitle = absolute ? title : `${title} | ${brandName}`;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+    <section className="rounded-2xl border border-line bg-subtle p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
           {defaults.label}
         </p>
-        <code className="text-xs text-slate-500">{defaults.path}</code>
+        <code className="text-xs text-muted">{defaults.path}</code>
       </div>
 
       <div className="mt-4 grid gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="flex items-center justify-between text-xs font-semibold text-slate-600">
+          <span className="flex items-center justify-between text-xs font-semibold text-muted">
             <span>
               Search title{" "}
               {absolute ? "(shown exactly)" : `(“ | ${brandName}” is added)`}
@@ -100,7 +100,7 @@ function SeoPageCard({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="flex items-center justify-between text-xs font-semibold text-slate-600">
+          <span className="flex items-center justify-between text-xs font-semibold text-muted">
             <span>Meta description</span>
             <LengthHint
               length={description.length}
@@ -116,10 +116,10 @@ function SeoPageCard({
           />
         </label>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">Google preview</p>
+        <div className="rounded-lg border border-line bg-white p-3">
+          <p className="text-xs text-muted">Google preview</p>
           <p className="mt-1 truncate text-lg text-[#1a0dab]">{shownTitle}</p>
-          <p className="line-clamp-2 text-sm text-slate-600">{description}</p>
+          <p className="line-clamp-2 text-sm text-muted">{description}</p>
         </div>
       </div>
     </section>
@@ -221,37 +221,34 @@ export default function AdminSeoPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      <section className="rounded-3xl border border-blue-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
-          Administration
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-blue-950 sm:text-3xl">
+      <header>
+        <h1 className="text-xl font-semibold text-navy">
           SEO
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80 sm:text-base">
+        <p className="mt-1 max-w-3xl text-sm text-muted">
           Search titles and descriptions for each page, and the business details
           Google shows about your company. Leave a field empty to use the
           recommended default shown in grey. Use {"{year}"} to insert the current
           booking season year.
         </p>
-      </section>
+      </header>
 
       {loading ? (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-muted">Loading…</p>
       ) : (
         <>
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+          <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
               Business profile (structured data)
             </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-2 text-sm leading-6 text-muted">
               Only fill in details that are accurate. Empty fields are left out
               of the data sent to Google. Branch addresses come from
               Settings → Branches.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Registered company name
                 </span>
                 <input
@@ -263,7 +260,7 @@ export default function AdminSeoPage() {
                 />
               </label>
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Logo URL (https)
                 </span>
                 <MediaUrlInput
@@ -274,7 +271,7 @@ export default function AdminSeoPage() {
                 />
               </div>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Customer service phone
                 </span>
                 <input
@@ -287,7 +284,7 @@ export default function AdminSeoPage() {
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Customer service email
                 </span>
                 <input
@@ -299,7 +296,7 @@ export default function AdminSeoPage() {
                 />
               </label>
               <label className="flex flex-col gap-1.5 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-600">
+                <span className="text-xs font-semibold text-muted">
                   Social and listing profiles (one https URL per line: Facebook,
                   Instagram, Google Business Profile…)
                 </span>
@@ -323,17 +320,17 @@ export default function AdminSeoPage() {
             ))}
           </div>
 
-          <div className="sticky bottom-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg">
+          <div className="sticky bottom-4 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-lg">
             <button
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+              className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save SEO settings"}
             </button>
-            {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {message ? <p className="text-sm text-success">{message}</p> : null}
+            {error ? <p className="text-sm text-deal">{error}</p> : null}
           </div>
         </>
       )}

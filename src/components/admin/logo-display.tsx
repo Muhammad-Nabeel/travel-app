@@ -50,10 +50,10 @@ export function LogoDisplay({
   if (loading) {
     return (
       <div
-        className={`flex items-center justify-center rounded-lg bg-slate-100 ${className}`}
+        className={`flex items-center justify-center rounded-lg bg-line/50 ${className}`}
         style={{ width, height }}
       >
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted/70" />
       </div>
     );
   }
@@ -61,7 +61,7 @@ export function LogoDisplay({
   if (error || !logoUrl) {
     return (
       <div
-        className={`flex items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-500 ${className}`}
+        className={`flex items-center justify-center rounded-lg bg-line/50 text-xs text-muted ${className}`}
         style={{ width, height }}
       >
         {error || "Logo not found"}

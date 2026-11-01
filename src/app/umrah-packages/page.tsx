@@ -4,6 +4,7 @@ import {
   buildStaticPageMetadata,
   getStaticPageSeo,
 } from "@/lib/admin-settings/seo-settings";
+import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
 import { UmrahConfigurator } from "@/components/features/umrah/umrah-configurator";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
@@ -17,9 +18,11 @@ import {
 import { toDuration, toStarRating } from "@/lib/umrah-pricing";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { isDummy } = await getPublishedUmrahPackages();
-  // Only index the listing once it shows real, published packages.
-  return buildStaticPageMetadata("umrahPackages", { noIndex: isDummy });
+  const packages = await getPublishedUmrahPackages();
+  // Only index the listing once it shows published packages.
+  return buildStaticPageMetadata("umrahPackages", {
+    noIndex: packages.length === 0,
+  });
 }
 
 export default async function UmrahPackagesPage({
@@ -37,9 +40,10 @@ export default async function UmrahPackagesPage({
     makkahStars: toStarRating(sp.makkahStars),
     madinahStars: toStarRating(sp.madinahStars),
   };
-  const [{ packages, isDummy }, seo] = await Promise.all([
+  const [packages, seo, heroImage] = await Promise.all([
     getPublishedUmrahPackages(),
     getStaticPageSeo("umrahPackages"),
+    getPageBanner("umrah"),
   ]);
 
   return (
@@ -63,7 +67,7 @@ export default async function UmrahPackagesPage({
       />
       <UmrahConfigurator
         packages={packages}
-        isDummy={isDummy}
+        heroImage={heroImage}
         initial={initial}
       />
     </>

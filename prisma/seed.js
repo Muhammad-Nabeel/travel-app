@@ -538,331 +538,81 @@ const ACTIVITIES_SEED = [
   },
 ];
 
-const UMRAH_PACKAGES_SEED = [
-  // ── 10-Day packages ──────────────────────────────────────────────
+const TOUR_PACKAGES_SEED = [
   {
-    id: "umr-10-isl",
-    slug: "10-day-umrah-islamabad",
-    title: "10 Days Umrah Package from Islamabad",
-    subtitle: "5 Nights Makkah · 4 Nights Madinah",
-    description:
-      "A complete 10-day Umrah experience departing from Islamabad. Enjoy 5 spiritual nights in Makkah close to Masjid al-Haram and 4 serene nights in Madinah near Masjid an-Nabawi, with return airfare and full guidance from our certified Umrah guide.",
-    makkahNights: 5,
-    madinahNights: 4,
-    departureCity: "Islamabad",
-    airlineNotes: "PIA or Saudi Airlines (direct flight)",
-    hotelSummary:
-      "4-star hotel within 500 m of Masjid al-Haram in Makkah; 4-star hotel within 300 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Islamabad",
-      "Umrah visa",
-      "4-star hotel accommodation (9 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-    ],
-    exclusions: [
-      "Personal expenses and shopping",
-      "Meals (unless specified)",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 1850,
-    currency: "USD",
-    seatsAvailable: 30,
-    startDate: new Date("2026-06-01"),
-    endDate: new Date("2026-06-10"),
-    status: "PUBLISHED",
+    title: "Golden Dubai Explorer",
+    destination: "Dubai, UAE",
+    tourType: "luxury",
+    duration: 7,
+    pricePerAdult: 1299,
+    pricePerChild: 649,
+    highlights: ["Burj Khalifa visit", "Desert safari", "Dhow cruise dinner", "City tour"],
+    rating: 4.8,
+    reviewCount: 312,
+    imageUrl: "/tour-dubai.jpg",
   },
   {
-    id: "umr-10-lhe",
-    slug: "10-day-umrah-lahore",
-    title: "10 Days Umrah Package from Lahore",
-    subtitle: "5 Nights Makkah · 4 Nights Madinah",
-    description:
-      "An affordable 10-day Umrah journey departing from Lahore. Our package covers return flights, comfortable 4-star accommodation steps from the holy mosques, visa processing, and guided ziyarah tours at no extra cost.",
-    makkahNights: 5,
-    madinahNights: 4,
-    departureCity: "Lahore",
-    airlineNotes: "PIA or Emirates (via Dubai)",
-    hotelSummary:
-      "4-star hotel within 500 m of Masjid al-Haram in Makkah; 4-star hotel within 400 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Lahore",
-      "Umrah visa",
-      "4-star hotel accommodation (9 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-    ],
-    exclusions: [
-      "Personal expenses and shopping",
-      "Meals (unless specified)",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 1800,
-    currency: "USD",
-    seatsAvailable: 30,
-    startDate: new Date("2026-06-01"),
-    endDate: new Date("2026-06-10"),
-    status: "PUBLISHED",
+    title: "Istanbul Heritage Tour",
+    destination: "Istanbul, Turkey",
+    tourType: "cultural",
+    duration: 10,
+    pricePerAdult: 980,
+    pricePerChild: 490,
+    highlights: ["Hagia Sophia", "Grand Bazaar", "Bosphorus cruise", "Cappadocia day trip"],
+    rating: 4.7,
+    reviewCount: 218,
+    imageUrl: "/tour-istanbul.jpg",
   },
   {
-    id: "umr-10-khi",
-    slug: "10-day-umrah-karachi",
-    title: "10 Days Umrah Package from Karachi",
-    subtitle: "5 Nights Makkah · 4 Nights Madinah",
-    description:
-      "A spiritually enriching 10-day Umrah package departing from Karachi. Experience the blessings of the two holy cities with convenient direct or one-stop flights, first-class guidance, and accommodation near the Haramain.",
-    makkahNights: 5,
-    madinahNights: 4,
-    departureCity: "Karachi",
-    airlineNotes: "PIA (direct) or Qatar Airways (via Doha)",
-    hotelSummary:
-      "4-star hotel within 600 m of Masjid al-Haram in Makkah; 4-star hotel within 400 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Karachi",
-      "Umrah visa",
-      "4-star hotel accommodation (9 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-    ],
-    exclusions: [
-      "Personal expenses and shopping",
-      "Meals (unless specified)",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 1750,
-    currency: "USD",
-    seatsAvailable: 30,
-    startDate: new Date("2026-06-01"),
-    endDate: new Date("2026-06-10"),
-    status: "PUBLISHED",
-  },
-
-  // ── 15-Day packages ──────────────────────────────────────────────
-  {
-    id: "umr-15-isl",
-    slug: "15-day-umrah-islamabad",
-    title: "15 Days Umrah Package from Islamabad",
-    subtitle: "8 Nights Makkah · 6 Nights Madinah",
-    description:
-      "A comprehensive 15-day Umrah journey for those who wish to spend more time in worship. The extended stay allows pilgrims to perform Umrah multiple times and engage deeply with the spiritual atmosphere of both holy cities.",
-    makkahNights: 8,
-    madinahNights: 6,
-    departureCity: "Islamabad",
-    airlineNotes: "PIA or Saudi Airlines (direct flight)",
-    hotelSummary:
-      "4-star hotel within 400 m of Masjid al-Haram in Makkah; 4-star hotel within 300 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Islamabad",
-      "Umrah visa",
-      "4-star hotel accommodation (14 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast",
-    ],
-    exclusions: [
-      "Lunch and dinner (unless specified)",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 2400,
-    currency: "USD",
-    seatsAvailable: 25,
-    startDate: new Date("2026-07-01"),
-    endDate: new Date("2026-07-15"),
-    status: "PUBLISHED",
+    title: "Bali Family Escape",
+    destination: "Bali, Indonesia",
+    tourType: "family",
+    duration: 7,
+    pricePerAdult: 850,
+    pricePerChild: 425,
+    highlights: ["Ubud rice terraces", "Tanah Lot temple", "Water park", "Cooking class"],
+    rating: 4.9,
+    reviewCount: 540,
+    imageUrl: "/tour-bali.jpg",
   },
   {
-    id: "umr-15-lhe",
-    slug: "15-day-umrah-lahore",
-    title: "15 Days Umrah Package from Lahore",
-    subtitle: "8 Nights Makkah · 6 Nights Madinah",
-    description:
-      "Embark on a 15-day spiritual odyssey from Lahore. Spend quality time worshipping at both the Masjid al-Haram and Masjid an-Nabawi with comfortable accommodation, all transfers, and guided ziyarah included.",
-    makkahNights: 8,
-    madinahNights: 6,
-    departureCity: "Lahore",
-    airlineNotes: "PIA or Emirates (via Dubai)",
-    hotelSummary:
-      "4-star hotel within 500 m of Masjid al-Haram in Makkah; 4-star hotel within 400 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Lahore",
-      "Umrah visa",
-      "4-star hotel accommodation (14 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast",
-    ],
-    exclusions: [
-      "Lunch and dinner (unless specified)",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 2350,
-    currency: "USD",
-    seatsAvailable: 25,
-    startDate: new Date("2026-07-01"),
-    endDate: new Date("2026-07-15"),
-    status: "PUBLISHED",
+    title: "Maldives Paradise Retreat",
+    destination: "Maldives",
+    tourType: "luxury",
+    duration: 5,
+    pricePerAdult: 2100,
+    pricePerChild: 1050,
+    highlights: ["Overwater bungalow", "Snorkelling", "Sunset cruise", "Spa package"],
+    rating: 5.0,
+    reviewCount: 187,
+    imageUrl: "/tour-maldives.jpg",
   },
   {
-    id: "umr-15-khi",
-    slug: "15-day-umrah-karachi",
-    title: "15 Days Umrah Package from Karachi",
-    subtitle: "8 Nights Makkah · 6 Nights Madinah",
-    description:
-      "A value-packed 15-day Umrah package departing from Karachi, ideal for families and groups. Includes return air tickets, hotel close to the Haramain, daily breakfast, guided ziyarah, and attentive on-ground support.",
-    makkahNights: 8,
-    madinahNights: 6,
-    departureCity: "Karachi",
-    airlineNotes: "PIA (direct) or Qatar Airways (via Doha)",
-    hotelSummary:
-      "4-star hotel within 600 m of Masjid al-Haram in Makkah; 4-star hotel within 500 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Karachi",
-      "Umrah visa",
-      "4-star hotel accommodation (14 nights)",
-      "Airport-to-hotel transfers",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast",
-    ],
-    exclusions: [
-      "Lunch and dinner (unless specified)",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Optional tours",
-    ],
-    basePrice: 2300,
-    currency: "USD",
-    seatsAvailable: 25,
-    startDate: new Date("2026-07-01"),
-    endDate: new Date("2026-07-15"),
-    status: "PUBLISHED",
-  },
-
-  // ── 21-Day packages ──────────────────────────────────────────────
-  {
-    id: "umr-21-isl",
-    slug: "21-day-umrah-islamabad",
-    title: "21 Days Umrah Package from Islamabad",
-    subtitle: "12 Nights Makkah · 8 Nights Madinah",
-    description:
-      "Our premium 21-day Umrah package from Islamabad offers the most immersive spiritual experience. Multiple Umrahs, extended Itikaf time, guided historical tours, and luxury 5-star accommodation make this the ultimate pilgrimage journey.",
-    makkahNights: 12,
-    madinahNights: 8,
-    departureCity: "Islamabad",
-    airlineNotes:
-      "Saudi Airlines (direct flight, business-class option available)",
-    hotelSummary:
-      "5-star hotel within 200 m of Masjid al-Haram in Makkah; 5-star hotel within 200 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Islamabad",
-      "Umrah visa",
-      "5-star hotel accommodation (20 nights)",
-      "Airport-to-hotel transfers (private)",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast and dinner",
-      "Zamzam water (5 litres per person)",
-    ],
-    exclusions: [
-      "Lunch",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Business-class upgrade (available at extra cost)",
-    ],
-    basePrice: 3500,
-    currency: "USD",
-    seatsAvailable: 20,
-    startDate: new Date("2026-08-01"),
-    endDate: new Date("2026-08-21"),
-    status: "PUBLISHED",
+    title: "Cairo & Nile Adventure",
+    destination: "Cairo, Egypt",
+    tourType: "adventure",
+    duration: 10,
+    pricePerAdult: 760,
+    pricePerChild: 380,
+    highlights: ["Pyramids of Giza", "Nile cruise", "Luxor temples", "Red Sea day trip"],
+    rating: 4.6,
+    reviewCount: 293,
+    imageUrl: "/tour-cairo.jpg",
   },
   {
-    id: "umr-21-lhe",
-    slug: "21-day-umrah-lahore",
-    title: "21 Days Umrah Package from Lahore",
-    subtitle: "12 Nights Makkah · 8 Nights Madinah",
-    description:
-      "Spend three fulfilling weeks in the blessed cities of Makkah and Madinah with our 21-day package from Lahore. A perfect choice for those seeking a deep spiritual retreat with premium comfort and comprehensive inclusions.",
-    makkahNights: 12,
-    madinahNights: 8,
-    departureCity: "Lahore",
-    airlineNotes: "Emirates (via Dubai) or Saudi Airlines",
-    hotelSummary:
-      "5-star hotel within 250 m of Masjid al-Haram in Makkah; 5-star hotel within 250 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Lahore",
-      "Umrah visa",
-      "5-star hotel accommodation (20 nights)",
-      "Airport-to-hotel transfers (private)",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast and dinner",
-      "Zamzam water (5 litres per person)",
-    ],
-    exclusions: [
-      "Lunch",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Business-class upgrade (available at extra cost)",
-    ],
-    basePrice: 3450,
-    currency: "USD",
-    seatsAvailable: 20,
-    startDate: new Date("2026-08-01"),
-    endDate: new Date("2026-08-21"),
-    status: "PUBLISHED",
-  },
-  {
-    id: "umr-21-khi",
-    slug: "21-day-umrah-karachi",
-    title: "21 Days Umrah Package from Karachi",
-    subtitle: "12 Nights Makkah · 8 Nights Madinah",
-    description:
-      "Our most popular long-stay package departing from Karachi. Three weeks of uninterrupted worship, guided ziyarah, premium 5-star hotels steps from the Haramain, and full-board meals ensure a worry-free and soul-nourishing pilgrimage.",
-    makkahNights: 12,
-    madinahNights: 8,
-    departureCity: "Karachi",
-    airlineNotes: "PIA (direct) or Qatar Airways (via Doha)",
-    hotelSummary:
-      "5-star hotel within 300 m of Masjid al-Haram in Makkah; 5-star hotel within 300 m of Masjid an-Nabawi in Madinah",
-    inclusions: [
-      "Return airfare from Karachi",
-      "Umrah visa",
-      "5-star hotel accommodation (20 nights)",
-      "Airport-to-hotel transfers (private)",
-      "Certified Umrah guide (Urdu-speaking)",
-      "Ziyarah tours in Makkah and Madinah",
-      "Daily breakfast and dinner",
-      "Zamzam water (5 litres per person)",
-    ],
-    exclusions: [
-      "Lunch",
-      "Personal expenses and shopping",
-      "Travel insurance",
-      "Business-class upgrade (available at extra cost)",
-    ],
-    basePrice: 3400,
-    currency: "USD",
-    seatsAvailable: 20,
-    startDate: new Date("2026-08-01"),
-    endDate: new Date("2026-08-21"),
-    status: "PUBLISHED",
+    title: "Tokyo Discovery",
+    destination: "Tokyo, Japan",
+    tourType: "cultural",
+    duration: 14,
+    pricePerAdult: 1850,
+    pricePerChild: 925,
+    highlights: ["Shibuya crossing", "Mt. Fuji day trip", "Kyoto temples", "Hiroshima memorial"],
+    rating: 4.9,
+    reviewCount: 411,
+    imageUrl: "/tour-tokyo.webp",
   },
 ];
 
-// Default admin login. Override with ADMIN_EMAIL / ADMIN_PASSWORD; change the password before go-live.
 const DEFAULT_ADMIN_EMAIL = "support@easytrip.com.pk";
 const DEFAULT_ADMIN_PASSWORD = "BOEING777100ER";
 
@@ -938,25 +688,18 @@ function activitySeo(a, city) {
   };
 }
 
-function umrahSeo(p) {
-  const nights = p.makkahNights + p.madinahNights;
-  const departs = p.startDate.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  const hotel = p.hotelSummary ? ` ${stripStop(p.hotelSummary)}.` : "";
-  const price = ` From ${p.currency} ${Math.round(p.basePrice).toLocaleString("en-GB")} per person.`;
+function tourPackageSeo(t) {
+  const city = t.destination.split(",")[0].trim();
+  const featuring = ` featuring ${t.highlights.slice(0, 2).join(" and ")}`;
   return {
     seoTitle: fitSeoTitle(
-      `${p.title} – ${nights} Nights from ${p.departureCity}`,
-      /umrah/i.test(p.title) ? `${p.title} – ${nights} Nights` : `${p.title} – ${nights}-Night Umrah`,
-      p.title,
+      `${t.title} – ${t.duration}-Day ${city} Package`,
+      `${t.title} – ${t.duration}-Day Package`,
+      t.title,
     ),
     seoDescription: fitSeoDescription(
-      `${nights}-night Umrah from ${p.departureCity}: ${p.makkahNights} nights Makkah, ` +
-        `${p.madinahNights} nights Madinah.${hotel}${price} Departs ${departs}.`,
+      `Explore ${t.destination} with our ${t.duration}-day ${t.title} itinerary${featuring}. ` +
+        `From USD ${Math.round(t.pricePerAdult).toLocaleString("en-GB")} per adult.`,
     ),
   };
 }
@@ -1050,34 +793,34 @@ async function main() {
       }
     }
 
-    // Umrah packages — upsert so re-running seed is safe
-    for (const pkg of UMRAH_PACKAGES_SEED) {
-      const seo = umrahSeo(pkg);
-      await prisma.umrahPackage.upsert({
-        where: { slug: pkg.slug },
-        update: {
-          title: pkg.title,
-          subtitle: pkg.subtitle,
-          description: pkg.description,
-          makkahNights: pkg.makkahNights,
-          madinahNights: pkg.madinahNights,
-          departureCity: pkg.departureCity,
-          airlineNotes: pkg.airlineNotes,
-          hotelSummary: pkg.hotelSummary,
-          inclusions: pkg.inclusions,
-          exclusions: pkg.exclusions,
-          basePrice: pkg.basePrice,
-          currency: pkg.currency,
-          seatsAvailable: pkg.seatsAvailable,
-          startDate: pkg.startDate,
-          endDate: pkg.endDate,
-          status: pkg.status,
-          ...seo,
-        },
-        create: { ...pkg, ...seo },
+    const tourPackageCount = await prisma.tourPackage.count();
+    if (tourPackageCount === 0) {
+      // Same slug rules as src/lib/tour-package-data.ts.
+      const tourSlug = (title) =>
+        title
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 80);
+
+      await prisma.tourPackage.createMany({
+        data: TOUR_PACKAGES_SEED.map((t, index) => ({
+          ...t,
+          slug: tourSlug(t.title),
+          currency: "USD",
+          description:
+            `Explore ${t.destination} with our ${t.duration}-day ${t.title} itinerary ` +
+            `featuring ${t.highlights.slice(0, 2).join(" and ")}.`,
+          sortOrder: index + 1,
+          isActive: true,
+          ...tourPackageSeo(t),
+        })),
       });
+      console.log("🧳 Seeded tour packages");
     }
-    console.log(`🕌 Seeded ${UMRAH_PACKAGES_SEED.length} umrah packages`);
 
     console.log("✅ Database seeded successfully!");
     console.log(`📝 Inserted ${DUMMY_BLOG_POSTS.length} blog posts`);

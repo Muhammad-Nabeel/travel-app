@@ -34,19 +34,21 @@ const products: Product[] = [
 
 type ProductTabsProps = {
   active: Product["key"];
+  /** Spacing that bleeds the bar to the card edges; override for cards without inner padding. */
+  className?: string;
 };
 
 /**
- * Expedia-style product switcher shown at the top of the home search card.
+ * Expedia-style product switcher shown at the top of every service's search card.
  * The active product is rendered in place; the others link to their pages.
  */
-export function ProductTabs({ active }: ProductTabsProps) {
+export function ProductTabs({ active, className = "-mx-[18px] -mt-4 mb-4" }: ProductTabsProps) {
   const { assets } = useBrand();
 
   return (
     <nav
       aria-label="Choose what to book"
-      className="-mx-[18px] -mt-4 mb-4 flex justify-start gap-1 overflow-x-auto border-b border-line px-3 [scrollbar-width:none] sm:justify-center sm:gap-4"
+      className={`${className} flex justify-start gap-1 overflow-x-auto border-b border-line px-3 [scrollbar-width:none] sm:justify-center sm:gap-4`}
     >
       {products.map(({ key, href, label, icon: Icon, tint }) => {
         const isActive = key === active;

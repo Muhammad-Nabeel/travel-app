@@ -119,6 +119,42 @@ export function suggestUmrahPackageSeo(
     };
 }
 
+export function suggestTourPackageSeo(
+    input: {
+        title: string;
+        destination: string;
+        duration: number;
+        highlights: string[];
+        pricePerAdult: number;
+        currency: string;
+    },
+    brand = SITE_NAME,
+): SeoCopy {
+    const title = input.title.trim();
+    const destination = input.destination.trim();
+    const city = destination.split(",")[0].trim();
+    const days = input.duration > 0 ? `${input.duration}-Day ` : "";
+    const highlights = input.highlights.map((h) => h.trim()).filter(Boolean).slice(0, 2);
+    const featuring = highlights.length ? ` featuring ${highlights.join(" and ")}` : "";
+    const price =
+        input.pricePerAdult > 0
+            ? ` From ${input.currency} ${Math.round(input.pricePerAdult).toLocaleString("en-GB")} per adult.`
+            : "";
+
+    return {
+        title: fitTitleFor(
+            brand,
+            ...(city ? [`${title} – ${days}${city} Package`] : []),
+            `${title} – ${days}Package`,
+            title,
+        ),
+        description: toMetaDescription(
+            `Explore ${destination || title} with our ${days.toLowerCase()}${title} itinerary${featuring}.${price}`,
+            MAX_DESCRIPTION_LENGTH,
+        ),
+    };
+}
+
 export function visaTypeLabel(type: string) {
     return type === "sticker-visa" ? "Sticker Visa" : "e-Visa";
 }

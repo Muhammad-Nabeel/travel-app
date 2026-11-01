@@ -74,7 +74,7 @@ function SignInForm() {
             {brand.assets.icon ? (
               <Image src={brand.assets.icon} alt="" width={44} height={44} className="size-11 object-contain" />
             ) : (
-              <span className="rounded-full bg-sky-400 p-2.5 text-white shadow-sm">
+              <span className="rounded-full bg-brand p-2.5 text-white shadow-sm">
                 <PlaneTakeoff className="size-5" />
               </span>
             )}
@@ -233,7 +233,7 @@ function SignInForm() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-400 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="size-4 animate-spin" />}
               Sign in
