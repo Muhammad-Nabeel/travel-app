@@ -96,3 +96,37 @@ export async function saveStoredGa4Settings(input: Ga4Settings): Promise<void> {
         create: { key: ADMIN_SETTINGS_KEY, value: encryptedValue },
     });
 }
+
+export type PublicAnalyticsConfig =
+    | { provider: "gtm"; id: string }
+    | { provider: "ga4"; id: string }
+    | null;
+
+// IDs are interpolated into inline scripts, so only accept the documented formats.
+const GTM_ID_PATTERN = /^GTM-[A-Z0-9]+$/;
+const GA4_ID_PATTERN = /^G-[A-Z0-9]+$/;
+
+/** Only the tag IDs the browser needs; never exposes reporting credentials. */
+export async function getPublicAnalyticsConfig(): Promise<PublicAnalyticsConfig> {
+    const envProvider = sanitize(process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER).toLowerCase();
+    const envGtmId = sanitize(process.env.NEXT_PUBLIC_GTM_CONTAINER_ID).toUpperCase();
+    const envMeasurementId = sanitize(process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID).toUpperCase();
+
+    if (envProvider === "gtm" && GTM_ID_PATTERN.test(envGtmId)) {
+        return { provider: "gtm", id: envGtmId };
+    }
+
+    if (GA4_ID_PATTERN.test(envMeasurementId)) {
+        return { provider: "ga4", id: envMeasurementId };
+    }
+
+    const stored = await getStoredGa4Settings();
+    const gtmId = stored.gtmContainerId.toUpperCase();
+    const measurementId = stored.measurementId.toUpperCase();
+
+    if (stored.provider === "gtm") {
+        return GTM_ID_PATTERN.test(gtmId) ? { provider: "gtm", id: gtmId } : null;
+    }
+
+    return GA4_ID_PATTERN.test(measurementId) ? { provider: "ga4", id: measurementId } : null;
+}

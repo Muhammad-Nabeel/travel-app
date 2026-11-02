@@ -258,14 +258,6 @@ export default function AdminSettingsPage() {
   }
 
   async function handleTestConnection() {
-    if (formData.provider === "gtm") {
-      setTestError("");
-      setTestMessage(
-        "Google Tag Manager selected. Event delivery depends on your GTM container tags.",
-      );
-      return;
-    }
-
     setTesting(true);
     setTestMessage("");
     setTestError("");
@@ -764,7 +756,6 @@ export default function AdminSettingsPage() {
                 </span>
                 <input
                   value={formData.propertyId}
-                  disabled={formData.provider !== "ga4"}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -782,7 +773,6 @@ export default function AdminSettingsPage() {
                 </span>
                 <input
                   value={formData.serviceAccountEmail}
-                  disabled={formData.provider !== "ga4"}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -800,7 +790,6 @@ export default function AdminSettingsPage() {
                 </span>
                 <textarea
                   value={formData.serviceAccountPrivateKey}
-                  disabled={formData.provider !== "ga4"}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -842,7 +831,7 @@ export default function AdminSettingsPage() {
                 <button
                   type="button"
                   onClick={() => void handleTestConnection()}
-                  disabled={testing || formData.provider !== "ga4"}
+                  disabled={testing}
                   className="rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand-soft disabled:opacity-70"
                 >
                   {testing ? "Testing..." : "Test Connection"}

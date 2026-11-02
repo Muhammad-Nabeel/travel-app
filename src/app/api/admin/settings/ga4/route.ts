@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -52,6 +53,8 @@ export async function PUT(request: NextRequest) {
             serviceAccountPrivateKey:
                 body.serviceAccountPrivateKey?.trim() || existing.serviceAccountPrivateKey,
         });
+        // The root layout embeds the tag IDs on every page.
+        revalidatePath("/", "layout");
 
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (err) {
@@ -78,16 +81,6 @@ export async function POST(request: NextRequest) {
             serviceAccountEmail?: string;
             serviceAccountPrivateKey?: string;
         };
-
-        if (body.provider === "gtm") {
-            return NextResponse.json(
-                {
-                    ok: true,
-                    message: "Google Tag Manager selected. No GA4 API credential test required.",
-                },
-                { status: 200 },
-            );
-        }
 
         const existing = await getStoredGa4Settings();
 

@@ -10,6 +10,7 @@ import { LiveFaresProvider } from "@/components/shared/live-fares-provider";
 import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
 import { Ga4Loader } from "@/components/analytics/ga4-loader";
+import { getPublicAnalyticsConfig } from "@/lib/admin-settings/ga4-settings";
 import { FloatingReviewWidget } from "@/components/shared/floating-review-widget";
 import { AuthSessionProvider } from "@/components/providers/auth-session-provider";
 import {
@@ -104,10 +105,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [brand, contact, sabreSettings] = await Promise.all([
+  const [brand, contact, sabreSettings, analytics] = await Promise.all([
     getPublicBrand(),
     getStoredSupportContactSettings(),
     getActiveSabreSettings(),
+    getPublicAnalyticsConfig(),
   ]);
 
   return (
@@ -120,7 +122,7 @@ export default async function RootLayout({
         <AuthSessionProvider>
           <BrandProvider brand={brand}>
           <LiveFaresProvider enabled={sabreSettings !== null}>
-          <Ga4Loader />
+          <Ga4Loader config={analytics} />
           <ConditionalNavbar />
           {/* No root Suspense/loading.tsx: a spinner fallback let the footer paint
               first and then jump down when the page streamed in (CLS ~0.8).
