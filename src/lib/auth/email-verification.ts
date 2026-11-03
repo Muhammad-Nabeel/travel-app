@@ -1,8 +1,8 @@
 import { randomBytes, createHash } from "node:crypto";
-import { Resend } from "resend";
 
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 import { prisma } from "@/lib/db";
+import { sendMail } from "@/lib/email/mailer";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -33,22 +33,15 @@ export async function createEmailVerificationToken(userId: string) {
 }
 
 export async function sendVerificationEmail(to: string, token: string) {
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) {
-        throw new Error("RESEND_API_KEY is not configured");
-    }
-
-    const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
     const verifyUrl = `${getBaseUrl()}/api/auth/verify-email?token=${token}`;
-    const resend = new Resend(resendKey);
     const { name: brandName } = await getStoredBrandSettings();
 
-    await resend.emails.send({
-        from,
+    await sendMail({
         to,
         subject: "Verify your email address",
         html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;max-width:560px;margin:0 auto;">
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+      <div style="font-family:Montserrat,Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;max-width:560px;margin:0 auto;">
         <h2 style="margin:0 0 12px;">Confirm your ${brandName} account</h2>
         <p style="margin:0 0 16px;">Thanks for signing up. Please verify your email to activate login with email and password.</p>
         <p style="margin:0 0 20px;">

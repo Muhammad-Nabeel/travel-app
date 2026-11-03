@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
     try {
         const verificationToken = await createEmailVerificationToken(user.id);
         await sendVerificationEmail(user.email, verificationToken);
-    } catch {
+    } catch (error) {
+        console.error("[register] Verification email failed:", error);
         return NextResponse.json(
             {
                 error:

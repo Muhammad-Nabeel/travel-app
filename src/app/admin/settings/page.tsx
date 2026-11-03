@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { BrandSettingsPanel } from "@/components/admin/brand-settings-panel";
 import { SabreSettingsPanel } from "@/components/admin/sabre-settings-panel";
+import { SmtpSettingsPanel } from "@/components/admin/smtp-settings-panel";
 
 const EMPTY_FORM = {
   provider: "ga4" as "ga4" | "gtm",
@@ -79,6 +80,7 @@ type SettingsPanel =
   | "support"
   | "currency"
   | "sabre"
+  | "smtp"
   | null;
 
 export default function AdminSettingsPage() {
@@ -617,6 +619,17 @@ export default function AdminSettingsPage() {
             >
               Flight Provider (Sabre)
             </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("smtp")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "smtp"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Email (SMTP)
+            </button>
           </div>
         </aside>
 
@@ -631,6 +644,8 @@ export default function AdminSettingsPage() {
             <BrandSettingsPanel />
           ) : activePanel === "sabre" ? (
             <SabreSettingsPanel />
+          ) : activePanel === "smtp" ? (
+            <SmtpSettingsPanel />
           ) : activePanel === "ga4" ? (
             <div className="grid gap-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">

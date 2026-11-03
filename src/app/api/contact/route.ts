@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { z } from "zod";
 
 import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
+import { sendMail } from "@/lib/email/mailer";
 
 const contactMessageSchema = z.object({
     name: z.string().trim().min(1).max(120),
@@ -28,26 +28,17 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) {
-        return NextResponse.json(
-            { ok: false, error: "The contact form is not available right now." },
-            { status: 503 },
-        );
-    }
-
     const { name, email, message } = parsed.data;
     const contact = await getStoredSupportContactSettings();
 
     try {
-        const resend = new Resend(resendKey);
-        const { error } = await resend.emails.send({
-            from: process.env.EMAIL_FROM ?? "onboarding@resend.dev",
+        await sendMail({
             to: contact.email,
             replyTo: email,
             subject: `Website enquiry from ${name}`,
             html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;">
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+      <div style="font-family:Montserrat,Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
         <p><strong>Name:</strong> ${escapeHtml(name)}</p>
         <p><strong>Email:</strong> ${escapeHtml(email)}</p>
         <p style="white-space:pre-wrap;">${escapeHtml(message)}</p>
@@ -55,13 +46,9 @@ export async function POST(request: NextRequest) {
     `,
         });
 
-        if (error) {
-            throw new Error(error.message);
-        }
-
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
-        console.error("[contact] Resend send failed:", error);
+        console.error("[contact] SMTP send failed:", error);
         return NextResponse.json(
             { ok: false, error: "Unable to send your message." },
             { status: 502 },

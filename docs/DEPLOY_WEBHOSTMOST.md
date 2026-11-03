@@ -74,7 +74,7 @@ on later deploys).
 - **Google OAuth**: add
   `https://easytrip.com.pk/api/auth/callback/google` as an authorized
   redirect URI in Google Cloud Console.
-- **Resend**: verify the domain used in `EMAIL_FROM`.
+- **SMTP**: enter the mail server in Admin → Settings → Email (SMTP) and use Test Connection.
 - **SSL**: cPanel → **SSL/TLS Status** → run AutoSSL for the domain.
 
 ## Updating the site
