@@ -37,7 +37,7 @@
   --noise: 0;
 }
 
-/* ── Design tokens (light only; see DESIGN_IMPROVEMENT_PLAN.md §3) ── */
+/* ── Design tokens (light only; see docs/DESIGN_IMPROVEMENT_PLAN.md §3) ── */
 :root {
   --app-header-height: 64px;
 
@@ -96,8 +96,8 @@
   --radius-card: var(--radius-lg);
   --shadow-card: var(--shadow-card);
   --shadow-raised: var(--shadow-raised);
-  --font-sans: var(--font-plus-jakarta-sans);
-  --font-display: var(--font-dm-serif-display);
+  --font-sans: var(--font-montserrat);
+  --font-display: var(--font-montserrat);
 }
 
 * {
@@ -112,7 +112,7 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-plus-jakarta-sans), sans-serif;
+  font-family: var(--font-montserrat), sans-serif;
 }
 
 /* In the base layer so utilities such as text-white on links still win. */
@@ -124,7 +124,7 @@ body {
 }
 
 .display-font {
-  font-family: var(--font-dm-serif-display), serif;
+  font-family: var(--font-montserrat), sans-serif;
   font-weight: 400;
 }
 

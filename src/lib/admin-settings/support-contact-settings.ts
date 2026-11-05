@@ -42,6 +42,23 @@ export function getPrimaryPhone(settings: SupportContactSettings): string {
     return settings.mobileNumber || settings.landlineNumber;
 }
 
+/**
+ * wa.me chat link for the admin-set WhatsApp number, or null when none is set.
+ * wa.me needs the full international number as digits only, so "+92 300 1234567",
+ * "0092 300…" and the local "0300 1234567" all become 923001234567.
+ */
+export function getWhatsappLink(settings: SupportContactSettings): string | null {
+    let digits = settings.whatsappNumber.replace(/\D/g, "");
+
+    if (digits.startsWith("00")) {
+        digits = digits.slice(2);
+    } else if (digits.startsWith("0")) {
+        digits = `92${digits.slice(1)}`;
+    }
+
+    return digits.length >= 10 ? `https://wa.me/${digits}` : null;
+}
+
 export async function getStoredSupportContactSettings(): Promise<SupportContactSettings> {
     if (shouldBypassDatabase()) {
         return defaultSupportContactSettings();

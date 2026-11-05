@@ -374,7 +374,7 @@ export function UmrahConfigurator({ packages, initial, heroImage }: Props) {
 
         <div className="section-shell pb-6 pt-12 sm:pt-16">
           <div className="mx-auto mb-8 max-w-3xl text-center text-white">
-            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] lg:text-5xl xl:text-6xl">
               Plan your Umrah
             </h1>
             <p className="mx-auto mt-3 max-w-xl text-base text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">

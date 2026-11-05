@@ -306,7 +306,18 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           </article>
 
           <aside className="lg:sticky lg:top-8 lg:h-min">
-            <BlogSearch currentSlug={post.slug} />
+            <BlogSearch
+              currentSlug={post.slug}
+              posts={posts.map((item) => ({
+                id: item.id,
+                slug: item.slug,
+                title: item.title,
+                excerpt: item.excerpt,
+                category: item.category,
+                tags: item.tags,
+                publishedAt: item.publishedAt,
+              }))}
+            />
           </aside>
         </div>
       </div>

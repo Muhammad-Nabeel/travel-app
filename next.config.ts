@@ -48,6 +48,11 @@ const nextConfig = {
   // Self-contained build in .next/standalone for cPanel/Passenger hosting
   // (see docs/DEPLOY_WEBHOSTMOST.md).
   output: "standalone",
+  // Brand fonts read from disk by the generated Open Graph image.
+  outputFileTracingIncludes: {
+    "/opengraph-image": ["./assets/fonts/**"],
+    "/twitter-image": ["./assets/fonts/**"],
+  },
   turbopack: {
     root: rootDirectory,
   },

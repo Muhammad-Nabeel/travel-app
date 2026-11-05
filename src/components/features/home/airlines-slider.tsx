@@ -1,9 +1,9 @@
 import Image from "next/image";
 
-import { getStoredAirlineLogos } from "@/lib/admin-settings/airline-logo-settings";
+import { getActiveAirlinePartners } from "@/lib/airline-partners";
 
 export async function AirlinesSlider() {
-  const airlines = (await getStoredAirlineLogos()).filter((item) => item.isActive);
+  const airlines = await getActiveAirlinePartners();
   if (airlines.length === 0) return null;
 
   // The list is rendered twice so the CSS marquee can loop seamlessly.
@@ -33,7 +33,7 @@ export async function AirlinesSlider() {
                 className="flex h-20 w-36 shrink-0 items-center justify-center rounded-xl border border-line bg-white px-4 py-3 transition hover:shadow-card"
               >
                 <Image
-                  src={airline.src}
+                  src={airline.logoUrl}
                   alt={airline.name}
                   width={128}
                   height={56}

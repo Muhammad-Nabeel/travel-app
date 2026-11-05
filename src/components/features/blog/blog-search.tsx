@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, Tag } from "lucide-react";
 import Link from "next/link";
 
-type BlogPost = {
+export type BlogSearchPost = {
   id: string;
   slug: string;
   title: string;
@@ -15,27 +15,14 @@ type BlogPost = {
 };
 
 interface BlogSearchProps {
+  // Published posts only, loaded on the server so the sidebar links are in the HTML.
+  posts: BlogSearchPost[];
   currentSlug?: string;
 }
 
-export function BlogSearch({ currentSlug }: BlogSearchProps) {
-  const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
+export function BlogSearch({ posts: allPosts, currentSlug }: BlogSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch all blog posts
-  useEffect(() => {
-    fetch("/api/blog?all=true")
-      .then((r) => r.json())
-      .then((data) => {
-        setAllPosts(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, []);
 
   const filteredPosts = useMemo(() => {
     let filtered = allPosts;
@@ -43,7 +30,7 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
     // Filter by tag
     if (selectedTag) {
       filtered = filtered.filter(
-        (post) => Array.isArray(post.tags) && post.tags.includes(selectedTag),
+        (post) => post.tags.includes(selectedTag),
       );
     }
 
@@ -54,8 +41,7 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
         (post) =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          (Array.isArray(post.tags) &&
-            post.tags.some((tag) => tag.toLowerCase().includes(query))),
+          post.tags.some((tag) => tag.toLowerCase().includes(query)),
       );
     }
 
@@ -71,18 +57,9 @@ export function BlogSearch({ currentSlug }: BlogSearchProps) {
   const allTags = Array.from(
     new Set(
       allPosts
-        .flatMap((post) => (Array.isArray(post.tags) ? post.tags : []))
-        .filter((tag): tag is string => typeof tag === "string"),
+        .flatMap((post) => post.tags),
     ),
   ).sort();
-
-  if (loading) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="h-10 w-full animate-pulse rounded bg-slate-200" />
-      </div>
-    );
-  }
 
   return (
     <aside className="space-y-6">

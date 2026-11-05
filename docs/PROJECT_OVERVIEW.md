@@ -16,7 +16,7 @@ This overview reflects the source code reviewed on October 26, 2026. Integration
 | Validation | Zod 4 |
 | Flight providers | Sabre integration; separate Amadeus adapter |
 | Media storage | Cloudflare R2 through the AWS S3 SDK |
-| Email | Resend for email verification |
+| Email | SMTP (nodemailer), configured in Admin → Settings → Email (SMTP) |
 | Analytics | Google Analytics 4 and Google Tag Manager support |
 | Tests | Jest 30 with Next.js integration |
 | Local containers | Docker and Docker Compose |
@@ -136,7 +136,7 @@ Configure integrations according to the features being used. This list contains 
 | Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX` |
 | Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | Public site URL | `NEXT_PUBLIC_SITE_URL`, `SITE_URL` |
-| Verification emails | `RESEND_API_KEY`, `EMAIL_FROM` |
+| Verification emails | None; SMTP is stored encrypted in the database (needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |
 | Sabre connection | `SABRE_BASE_URL`, `SABRE_CLIENT_ID`, `SABRE_CLIENT_SECRET`, `SABRE_PCC`, `SABRE_CPA_ID` |
 | Sabre options | `SABRE_REQUESTOR_COMPANY_CODE`, `SABRE_ISO_COUNTRY`, `SABRE_ISO_CURRENCY`, `SABRE_INCLUDE_VENDOR_CODES`, `SABRE_NDC_ENABLED`, `SABRE_FLIGHT_SEARCH_PATH`, `SABRE_FARE_CALENDAR_PATH` |
 | Amadeus adapter | `AMADEUS_BASE_URL`, `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`, `AMADEUS_CURRENCY`, `AMADEUS_MAX_OFFERS` |

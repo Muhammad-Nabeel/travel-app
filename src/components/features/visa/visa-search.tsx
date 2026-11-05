@@ -109,8 +109,8 @@ export function VisaSearchEngine({
         className={`section-shell relative z-10 ${isHero ? "pb-10 pt-14 md:pb-14 md:pt-20" : "py-4"}`}
       >
         {isHero ? (
-          <div className="mx-auto mb-8 max-w-4xl text-center text-white md:mb-10">
-            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-5xl md:text-6xl">
+          <div className="mx-auto mb-8 max-w-6xl text-center text-white md:mb-10">
+            <h1 className="display-font text-balance text-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] lg:text-5xl xl:text-6xl">
               Apply for your visa in minutes
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] sm:text-lg">

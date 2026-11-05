@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Plus_Jakarta_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { SiteFooter } from "@/components/shared/site-footer";
-import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
+import {
+  getStoredSupportContactSettings,
+  getWhatsappLink,
+} from "@/lib/admin-settings/support-contact-settings";
 import { getPublicBrand } from "@/lib/admin-settings/brand-settings";
 import { BrandProvider } from "@/components/shared/brand-provider";
 import { LiveFaresProvider } from "@/components/shared/live-fares-provider";
@@ -19,15 +22,10 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/seo";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
+// Brand typeface: the geometric sans used in the logo, for text and headings.
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-});
-
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-dm-serif-display",
-  subsets: ["latin"],
-  weight: "400",
 });
 
 // Public pages read packages, posts and SEO settings from the database. Without
@@ -116,7 +114,7 @@ export default async function RootLayout({
     <html
       lang="en"
       data-theme="corporate"
-      className={`${plusJakartaSans.variable} ${dmSerifDisplay.variable} h-full antialiased`}
+      className={`${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>
@@ -128,7 +126,7 @@ export default async function RootLayout({
               first and then jump down when the page streamed in (CLS ~0.8).
               Slow routes add their own page-shaped loading.tsx instead. */}
           <main className="w-full flex-1">{children}</main>
-          <FloatingReviewWidget />
+          <FloatingReviewWidget whatsappLink={getWhatsappLink(contact)} />
           <ConditionalFooter>
             <SiteFooter brand={brand} contact={contact} />
           </ConditionalFooter>

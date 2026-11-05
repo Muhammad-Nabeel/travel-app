@@ -77,7 +77,7 @@ export function getUmrahPackagePath(slug: string) {
 }
 
 /**
- * Photos for the package page gallery. Add the IMAGE_ASSETS_BRIEF.md §5.8
+ * Photos for the package page gallery. Add the docs/IMAGE_ASSETS_BRIEF.md §5.8
  * files here (e.g. /images/umrah/umrah-haram-exterior.jpg) once they exist.
  */
 export const UMRAH_GALLERY: { src: string; alt: string }[] = [

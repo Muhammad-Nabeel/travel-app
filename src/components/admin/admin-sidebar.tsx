@@ -18,6 +18,7 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Plane,
   Search,
   Settings,
   Sparkles,
@@ -50,6 +51,7 @@ export const adminNavGroups: { title: string; links: AdminLink[] }[] = [
     links: [
       { href: "/admin/blog", label: "Blog", icon: NotebookPen },
       { href: "/admin/reviews", label: "Reviews", icon: Star },
+      { href: "/admin/airline-partners", label: "Airline Partners", icon: Plane },
       { href: "/admin/site-pages", label: "Site Pages", icon: MessagesSquare },
       { href: "/admin/careers", label: "Careers", icon: BriefcaseBusiness },
       { href: "/admin/media", label: "Media", icon: Image },

@@ -318,9 +318,11 @@
 .daisyInput {
   width: 100%;
   max-width: none;
-  height: 2rem;
-  min-height: 2rem;
-  font-size: 0.9rem;
+  /* One text line, matching the other search cards' field height. */
+  height: 1.5rem;
+  min-height: 1.5rem;
+  line-height: 1.5rem;
+  font-size: 0.95rem;
   border: none;
   background: transparent;
   box-shadow: none;
@@ -351,6 +353,10 @@
   text-align: left;
   cursor: pointer;
   padding: 0;
+  /* One line, like the other fields, so the row keeps its compact height. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fareCalendarTriggerDisabled {

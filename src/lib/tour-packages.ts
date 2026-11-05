@@ -38,7 +38,7 @@ export function getTourPackagePath(slug: string) {
 
 /**
  * Gallery photos for a tour page: the card photo first, then any extra
- * IMAGE_ASSETS_BRIEF.md §5.9 photos (tour-<place>-2.jpg …) listed here.
+ * docs/IMAGE_ASSETS_BRIEF.md §5.9 photos (tour-<place>-2.jpg …) listed here.
  */
 const EXTRA_TOUR_PHOTOS: Record<string, { src: string; alt: string }[]> = {};
 
