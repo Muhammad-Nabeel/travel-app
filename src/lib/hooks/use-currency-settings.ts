@@ -16,7 +16,7 @@ type LoadResult = { settings: CurrencySettings; error: string | null };
 
 async function fetchSettings(): Promise<LoadResult> {
     try {
-        const res = await fetch("/api/admin/settings/currency");
+        const res = await fetch("/api/settings/currency");
         const json = await res.json();
 
         if (!res.ok) {

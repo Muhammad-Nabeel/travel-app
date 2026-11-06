@@ -103,13 +103,15 @@ export function SiteFooter({
             aria-label={`${brand.name} home`}
           >
             {brand.logoUrl ? (
-              <Image
-                src={brand.logoUrl}
-                alt={`${brand.name} logo`}
-                width={160}
-                height={36}
-                className="h-9 w-auto object-contain"
-              />
+              <span className="relative h-9 w-40 shrink-0">
+                <Image
+                  src={brand.logoUrl}
+                  alt={`${brand.name} logo`}
+                  fill
+                  sizes="160px"
+                  className="object-contain object-left"
+                />
+              </span>
             ) : (
               <>
                 <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">

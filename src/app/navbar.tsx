@@ -80,7 +80,11 @@ const NavBar = () => {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState("PKR");
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : (window.localStorage.getItem("selectedCurrency")?.toUpperCase() ?? null),
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
@@ -88,8 +92,7 @@ const NavBar = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const shopMenuRef = useRef<HTMLDivElement>(null);
 
-  const { settings: currencySettings, loading: currencyLoading } =
-    useCurrencySettings();
+  const { settings: currencySettings } = useCurrencySettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -98,27 +101,13 @@ const NavBar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // The selector renders nothing until settings load, so reading storage here can't cause a hydration mismatch.
+  const selectedCurrency = chosenCurrency ?? currencySettings.defaultCurrency;
 
-    const storedCurrency = window.localStorage
-      .getItem("selectedCurrency")
-      ?.toUpperCase();
-
-    if (storedCurrency) {
-      setSelectedCurrency(storedCurrency);
-      return;
-    }
-
-    if (!currencyLoading && currencySettings.defaultCurrency) {
-      setSelectedCurrency(currencySettings.defaultCurrency);
-    }
-  }, [currencySettings.defaultCurrency, currencyLoading]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("selectedCurrency", selectedCurrency);
-  }, [selectedCurrency]);
+  const handleCurrencyChange = (currency: string) => {
+    setChosenCurrency(currency);
+    window.localStorage.setItem("selectedCurrency", currency);
+  };
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -212,14 +201,16 @@ const NavBar = () => {
               className="flex items-center gap-2 transition hover:opacity-80"
             >
               {brand.logoUrl ? (
-                <Image
-                  src={brand.logoUrl}
-                  alt={`${brand.name} logo`}
-                  width={160}
-                  height={36}
-                  preload
-                  className="h-9 w-auto object-contain"
-                />
+                <span className="relative h-9 w-40 shrink-0">
+                  <Image
+                    src={brand.logoUrl}
+                    alt={`${brand.name} logo`}
+                    fill
+                    sizes="160px"
+                    preload
+                    className="object-contain object-left"
+                  />
+                </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">
@@ -288,7 +279,7 @@ const NavBar = () => {
           <div className="flex items-center gap-1">
             <CurrencySelector
               selectedCurrency={selectedCurrency}
-              onCurrencyChange={setSelectedCurrency}
+              onCurrencyChange={handleCurrencyChange}
             />
 
             <Link
