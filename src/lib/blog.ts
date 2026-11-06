@@ -81,3 +81,16 @@ export const getPublishedBlogPostBySlug = cache(async (slug: string) => {
     return null;
   }
 });
+
+/**
+ * Turns links to blog posts that are not published (drafts scheduled for a
+ * later day, archived or deleted posts) into plain text, so articles never
+ * send readers or crawlers to a 404. Links come back automatically once the
+ * target post is published, because publishing revalidates the site.
+ */
+export function unlinkUnpublishedPosts(html: string, publishedSlugs: Set<string>) {
+  return html.replace(
+    /<a\b[^>]*\bhref="\/blog\/([a-z0-9-]+)\/?"[^>]*>([\s\S]*?)<\/a>/gi,
+    (link, slug: string, text: string) => (publishedSlugs.has(slug) ? link : text),
+  );
+}

@@ -7,7 +7,11 @@ import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 
 import { BlogSearch } from "@/components/features/blog/blog-search";
 import { StructuredData } from "@/components/shared/structured-data";
-import { getPublishedBlogPostBySlug, getPublishedBlogPosts } from "@/lib/blog";
+import {
+  getPublishedBlogPostBySlug,
+  getPublishedBlogPosts,
+  unlinkUnpublishedPosts,
+} from "@/lib/blog";
 import { getBlogCategoryLabel, getBlogCategoryPath } from "@/lib/blog-categories";
 import {
   buildMetadata,
@@ -100,7 +104,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const categoryPath = getBlogCategoryPath(post.category);
 
   // The page title is the only H1; demote any H1 an editor typed into the body.
-  const content = post.content.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2");
+  const content = unlinkUnpublishedPosts(
+    post.content.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2"),
+    new Set(posts.map((item) => item.slug)),
+  );
 
   return (
     <div className="min-h-screen bg-linear-to-b from-slate-50 to-white py-12">
@@ -248,6 +255,26 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 }
                 .blog-content a:hover {
                   color: rgb(8, 145, 134);
+                }
+                .blog-content table {
+                  display: block;
+                  max-width: 100%;
+                  overflow-x: auto;
+                  border-collapse: collapse;
+                  margin: 1.25rem 0;
+                  font-size: 0.875rem;
+                }
+                .blog-content th,
+                .blog-content td {
+                  border: 1px solid rgb(226, 232, 240);
+                  padding: 0.5rem 0.75rem;
+                  text-align: left;
+                  vertical-align: top;
+                }
+                .blog-content th {
+                  background: rgb(248, 250, 252);
+                  font-weight: 600;
+                  color: rgb(15, 23, 42);
                 }
               `}</style>
               <div
