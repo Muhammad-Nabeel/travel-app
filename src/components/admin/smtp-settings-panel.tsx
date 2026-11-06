@@ -30,6 +30,10 @@ export function SmtpSettingsPanel() {
   const [form, setForm] = useState<SmtpSettings>(SUGGESTED_FORM);
   const [hasStoredPassword, setHasStoredPassword] = useState(false);
   const [testRecipient, setTestRecipient] = useState("");
+  const [testSubject, setTestSubject] = useState("SMTP test email");
+  const [testBody, setTestBody] = useState(
+    "Your SMTP settings work. Website emails will be sent from this address.",
+  );
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"save" | "test" | null>(null);
   const [message, setMessage] = useState("");
@@ -112,7 +116,7 @@ export function SmtpSettingsPanel() {
       const res = await fetch(`${ENDPOINT}?test=true`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, testRecipient }),
+        body: JSON.stringify({ ...form, testRecipient, testSubject, testBody }),
       });
       const json = (await res.json()) as { ok?: boolean; message?: string };
       if (!res.ok || !json.ok) throw new Error(json.message ?? "SMTP connection test failed.");
@@ -134,8 +138,8 @@ export function SmtpSettingsPanel() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Email</p>
         <h2 className="mt-2 text-xl font-semibold text-navy">SMTP Server</h2>
         <p className="mt-1 text-sm text-muted">
-          Verification emails for new accounts and Contact Us messages are sent through this server.
-          Until it is saved, sign-up cannot send verification emails.
+          Verification emails for new accounts, password reset emails and Contact Us messages are sent
+          through this server. Until it is saved, sign-up and password reset cannot send emails.
         </p>
       </div>
 
@@ -225,17 +229,41 @@ export function SmtpSettingsPanel() {
         </label>
       </div>
 
-      <label className="flex flex-col gap-1.5 rounded-xl border border-line bg-subtle px-4 py-3">
-        <span className="text-xs font-semibold text-muted">Send test email to (optional)</span>
-        <input
-          type="email"
-          value={testRecipient}
-          onChange={(e) => setTestRecipient(e.target.value)}
-          placeholder="you@example.com"
-          className={INPUT_CLASS}
-        />
-        <span className="text-xs text-muted">Leave blank to only check that the server accepts the login.</span>
-      </label>
+      <div className="grid gap-3 rounded-xl border border-line bg-subtle px-4 py-3">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold text-muted">Send test email to (optional)</span>
+          <input
+            type="email"
+            value={testRecipient}
+            onChange={(e) => setTestRecipient(e.target.value)}
+            placeholder="you@example.com"
+            className={INPUT_CLASS}
+          />
+          <span className="text-xs text-muted">Leave blank to only check that the server accepts the login.</span>
+        </label>
+
+        {testRecipient.trim() && (
+          <>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted">Subject</span>
+              <input
+                value={testSubject}
+                onChange={(e) => setTestSubject(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted">Message</span>
+              <textarea
+                rows={5}
+                value={testBody}
+                onChange={(e) => setTestBody(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </label>
+          </>
+        )}
+      </div>
 
       {message && <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">{message}</p>}
       {error && <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">{error}</p>}
@@ -247,7 +275,7 @@ export function SmtpSettingsPanel() {
           disabled={busy !== null}
           className="rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:bg-subtle disabled:opacity-70"
         >
-          {busy === "test" ? "Testing..." : "Test Connection"}
+          {busy === "test" ? "Testing..." : testRecipient.trim() ? "Send Test Email" : "Test Connection"}
         </button>
         <button
           type="button"

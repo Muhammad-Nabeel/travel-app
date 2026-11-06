@@ -9,7 +9,11 @@ import {
 } from "@/lib/admin-settings/smtp-settings";
 import { testSmtpSettings } from "@/lib/email/mailer";
 
-type SmtpSettingsBody = Partial<Record<keyof SmtpSettings, unknown>> & { testRecipient?: unknown };
+type SmtpSettingsBody = Partial<Record<keyof SmtpSettings, unknown>> & {
+    testRecipient?: unknown;
+    testSubject?: unknown;
+    testBody?: unknown;
+};
 
 /** Merges the submitted form with stored values; a blank password keeps the stored one. */
 async function resolveSubmittedSettings(body: SmtpSettingsBody): Promise<SmtpSettings> {
@@ -70,7 +74,20 @@ export async function POST(request: NextRequest) {
         }
 
         const testRecipient = typeof body.testRecipient === "string" ? body.testRecipient.trim() : "";
-        await testSmtpSettings(settings, testRecipient || undefined);
+        const testSubject = typeof body.testSubject === "string" ? body.testSubject.trim() : "";
+        const testBody = typeof body.testBody === "string" ? body.testBody.trim() : "";
+
+        if (testRecipient && (!testSubject || !testBody)) {
+            return NextResponse.json(
+                { ok: false, message: "Enter a subject and message for the test email." },
+                { status: 400 },
+            );
+        }
+
+        await testSmtpSettings(
+            settings,
+            testRecipient ? { to: testRecipient, subject: testSubject, body: testBody } : undefined,
+        );
 
         return NextResponse.json(
             {

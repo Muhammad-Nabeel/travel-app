@@ -61,7 +61,9 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
     return (
       pathname.startsWith("/admin") ||
       pathname.startsWith("/signin") ||
-      pathname.startsWith("/signup")
+      pathname.startsWith("/signup") ||
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/reset-password")
     );
   }, [pathname]);
 

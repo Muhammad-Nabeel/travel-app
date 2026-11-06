@@ -162,6 +162,12 @@ function SignInForm() {
             </div>
           )}
 
+          {searchParams.get("reset") === "success" && (
+            <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+              Your password has been updated. You can sign in now.
+            </div>
+          )}
+
           {verificationStatus === "invalid" && (
             <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               Verification link is invalid.

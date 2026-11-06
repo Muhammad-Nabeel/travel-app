@@ -42,17 +42,19 @@ export async function sendMail(message: MailMessage): Promise<void> {
     await createTransport(settings).sendMail({ from: fromAddress(settings), ...message });
 }
 
-/** Logs in to the SMTP server and, when `sendTo` is given, delivers a test message. */
-export async function testSmtpSettings(settings: SmtpSettings, sendTo?: string): Promise<void> {
+export type TestEmail = { to: string; subject: string; body: string };
+
+/** Logs in to the SMTP server and, when `testEmail` is given, delivers it as plain text. */
+export async function testSmtpSettings(settings: SmtpSettings, testEmail?: TestEmail): Promise<void> {
     const transport = createTransport(settings);
     await transport.verify();
 
-    if (sendTo) {
+    if (testEmail) {
         await transport.sendMail({
             from: fromAddress(settings),
-            to: sendTo,
-            subject: `SMTP test from ${settings.fromName}`,
-            text: "Your SMTP settings work. Website emails will be sent from this address.",
+            to: testEmail.to,
+            subject: testEmail.subject,
+            text: testEmail.body,
         });
     }
 }
