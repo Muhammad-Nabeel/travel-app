@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveBookingUserId } from "@/lib/bookings/link-user";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import {
     buildServiceRequestReference,
@@ -73,12 +74,14 @@ export async function POST(request: NextRequest) {
 
         const parsedAmount = toNumberOrNull(body.amount);
         const reference = buildServiceRequestReference(type);
+        const userId = await resolveBookingUserId(body.customerEmail);
         const created = await prisma.booking.create({
             data: {
                 reference,
                 type,
                 channel: "SERVICE_REQUEST",
-                status: "PENDING",
+                status: "OPEN",
+                userId,
                 customerName: body.customerName?.trim() || null,
                 customerEmail: body.customerEmail?.trim() || null,
                 customerPhone: body.customerPhone?.trim() || null,
@@ -103,14 +106,13 @@ export async function POST(request: NextRequest) {
         );
     } catch (error) {
         markDatabaseUnavailable(error);
+        // Internal errors (e.g. Prisma messages with file paths) stay in the server log.
+        console.error("[service-request] Failed to create booking:", error);
 
         return NextResponse.json(
             {
                 ok: false,
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to create service request.",
+                error: "We couldn't submit your request right now. Please try again or contact us.",
             },
             { status: 500 },
         );

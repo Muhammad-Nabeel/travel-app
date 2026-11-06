@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BookingStatusSelect } from "@/components/admin/booking-status-select";
+import { BookingRequestDetails } from "@/components/features/booking/booking-request-details";
+
 import {
   markDatabaseUnavailable,
   prisma,
@@ -168,7 +171,7 @@ export default async function AdminBookingDetailsPage({
     notFound();
   }
 
-  if (booking.channel === "SERVICE_REQUEST") {
+  if (booking.channel !== "CHECKOUT") {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-6">
         <section className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
@@ -187,10 +190,10 @@ export default async function AdminBookingDetailsPage({
           <h1 className="text-xl font-semibold text-navy">
             {booking.reference}
           </h1>
-          <p className="mt-2 text-sm text-muted">
-            Type: {formatStatus(booking.type)} · Status:{" "}
-            {formatStatus(booking.status)}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+            <span>Type: {formatStatus(booking.type)} · Status:</span>
+            <BookingStatusSelect bookingId={booking.id} status={booking.status} />
+          </div>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -239,14 +242,12 @@ export default async function AdminBookingDetailsPage({
           </article>
         </section>
 
-        <details className="rounded-2xl border border-line bg-subtle p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-navy">
-            Request Payload (JSON)
-          </summary>
-          <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-navy p-3 text-xs text-white/90">
-            {JSON.stringify(booking.payload, null, 2)}
-          </pre>
-        </details>
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-card">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+            Request Details
+          </p>
+          <BookingRequestDetails channel={booking.channel} payload={booking.payload} />
+        </section>
       </main>
     );
   }
@@ -273,9 +274,10 @@ export default async function AdminBookingDetailsPage({
         <h1 className="text-xl font-semibold text-navy">
           {booking.reference}
         </h1>
-        <p className="mt-2 text-sm text-muted">
-          Provider: {booking.provider ?? "-"} · Status: {formatStatus(booking.status)}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span>Provider: {booking.provider ?? "-"} · Status:</span>
+          <BookingStatusSelect bookingId={booking.id} status={booking.status} />
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
@@ -444,22 +446,6 @@ export default async function AdminBookingDetailsPage({
           </p>
         )}
       </section>
-
-      <details className="rounded-2xl border border-line bg-subtle p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-navy">
-          Raw Payload (JSON)
-        </summary>
-        <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-navy p-3 text-xs text-white/90">
-          {JSON.stringify(
-            {
-              payload: booking.payload,
-              paymentData: booking.paymentData,
-            },
-            null,
-            2,
-          )}
-        </pre>
-      </details>
     </main>
   );
 }

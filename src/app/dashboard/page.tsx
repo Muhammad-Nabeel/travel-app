@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 
+import { formatBookingAmount } from "@/lib/bookings/amount";
+import { BOOKING_STATUS_LABELS, BOOKING_STATUS_TONES } from "@/lib/bookings/status";
 import { authOptions } from "@/lib/providers/auth/auth-provider";
 import { prisma } from "@/lib/db";
 import { buildMetadata } from "@/lib/seo";
@@ -91,6 +93,7 @@ export default async function UserDashboardPage() {
                   <th className="px-2 py-3 font-medium">Type</th>
                   <th className="px-2 py-3 font-medium">Amount</th>
                   <th className="px-2 py-3 font-medium">Created</th>
+                  <th className="px-2 py-3 text-right font-medium">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,17 +102,29 @@ export default async function UserDashboardPage() {
                     <td className="px-2 py-3 font-medium text-slate-900">
                       {booking.reference}
                     </td>
-                    <td className="px-2 py-3 text-slate-700">
-                      {booking.status}
+                    <td className="px-2 py-3">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${BOOKING_STATUS_TONES[booking.status]}`}
+                      >
+                        {BOOKING_STATUS_LABELS[booking.status]}
+                      </span>
                     </td>
                     <td className="px-2 py-3 text-slate-700">
-                      {booking.type}
+                      {booking.type.charAt(0) + booking.type.slice(1).toLowerCase()}
                     </td>
                     <td className="px-2 py-3 text-slate-700">
-                      {booking.totalAmount?.toString() ?? "-"} {booking.currency}
+                      {formatBookingAmount(booking.totalAmount, booking.currency)}
                     </td>
                     <td className="px-2 py-3 text-slate-700">
                       {booking.createdAt.toLocaleString()}
+                    </td>
+                    <td className="px-2 py-3 text-right">
+                      <Link
+                        href={`/dashboard/bookings/${booking.id}`}
+                        className="rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                      >
+                        View
+                      </Link>
                     </td>
                   </tr>
                 ))}

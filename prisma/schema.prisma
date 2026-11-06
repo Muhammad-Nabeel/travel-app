@@ -19,10 +19,10 @@ enum PackageStatus {
 }
 
 enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  FAILED
+  OPEN
+  PROCESSING
+  SUCCESS
+  LOST
 }
 
 enum BookingType {
@@ -136,7 +136,7 @@ model Booking {
   reference      String          @unique
   type           BookingType
   channel        BookingChannel  @default(CHECKOUT)
-  status         BookingStatus   @default(PENDING)
+  status         BookingStatus   @default(OPEN)
   userId         String?
   user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   customerName   String?

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveBookingUserId } from "@/lib/bookings/link-user";
 import type { BookingPayload } from "@/lib/flights/booking-types";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
@@ -124,12 +125,7 @@ export async function POST(request: NextRequest) {
         const trimmedEmail = payload.contact.email?.trim();
         const contactEmail =
             trimmedEmail && trimmedEmail.includes("@") ? trimmedEmail : null;
-        const user = contactEmail
-            ? await prisma.user.findUnique({
-                where: { email: contactEmail },
-                select: { id: true },
-            })
-            : null;
+        const userId = await resolveBookingUserId(contactEmail);
 
         let selectedBranch:
             | {
@@ -191,8 +187,8 @@ export async function POST(request: NextRequest) {
                 reference,
                 type: "FLIGHT",
                 channel: "CHECKOUT",
-                status: "PENDING",
-                userId: user?.id ?? null,
+                status: "OPEN",
+                userId,
                 customerName: buildCustomerName(payload),
                 customerEmail: contactEmail,
                 customerPhone: payload.contact.phone?.trim() || null,
@@ -231,11 +227,13 @@ export async function POST(request: NextRequest) {
         );
     } catch (error) {
         markDatabaseUnavailable(error);
+        // Internal errors (e.g. Prisma messages with file paths) stay in the server log.
+        console.error("[flight-request] Failed to create booking:", error);
 
         return NextResponse.json(
             {
                 ok: false,
-                error: error instanceof Error ? error.message : "Failed to create booking request.",
+                error: "We couldn't create your booking right now. Please try again or contact us.",
             },
             { status: 500 },
         );

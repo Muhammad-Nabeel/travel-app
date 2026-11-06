@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { BookingStatus } from "@prisma/client";
 import {
   Activity,
   AlertTriangle,
@@ -15,6 +16,7 @@ import {
   unavailableAnalyticsData,
   type AdminAnalyticsData,
 } from "@/lib/analytics/ga4";
+import { BOOKING_STATUS_LABELS, BOOKING_STATUS_TONES } from "@/lib/bookings/status";
 import {
   markDatabaseUnavailable,
   prisma,
@@ -25,7 +27,7 @@ type RecentBooking = {
   id: string;
   type: string;
   reference: string;
-  status: string;
+  status: BookingStatus;
   amount: string;
   createdAt: string;
 };
@@ -181,9 +183,9 @@ export default async function AdminPage() {
                       </td>
                       <td className="px-6 py-3 text-right">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(row.status)}`}
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${BOOKING_STATUS_TONES[row.status]}`}
                         >
-                          {row.status}
+                          {BOOKING_STATUS_LABELS[row.status]}
                         </span>
                       </td>
                     </tr>
@@ -272,20 +274,6 @@ export default async function AdminPage() {
       </section>
     </main>
   );
-}
-
-function statusTone(status: string) {
-  switch (status.toUpperCase()) {
-    case "CONFIRMED":
-      return "bg-success/8 text-success";
-    case "PENDING":
-      return "bg-gold/10 text-gold-strong";
-    case "CANCELLED":
-    case "FAILED":
-      return "bg-deal/6 text-deal";
-    default:
-      return "bg-line/50 text-navy/80";
-  }
 }
 
 async function getRecentBookings(): Promise<RecentBooking[]> {

@@ -6,7 +6,7 @@ import {
   getPageCount,
 } from "@/components/admin/pagination";
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
+import type { BookingStatus, Prisma } from "@prisma/client";
 import {
   Building2,
   Landmark,
@@ -15,8 +15,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { BookingStatusSelect } from "@/components/admin/booking-status-select";
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 import type { BrandAssets, BrandAssetSlot } from "@/lib/brand-assets";
+import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, isBookingStatus } from "@/lib/bookings/status";
 import {
   markDatabaseUnavailable,
   prisma,
@@ -27,7 +29,7 @@ type BookingListItem = {
   id: string;
   reference: string;
   type: "Flight" | "Hotel" | "Umrah" | "Visa" | "Tour";
-  status: string;
+  status: BookingStatus;
   provider: string;
   totalAmount: string;
   currency: string;
@@ -69,7 +71,6 @@ function bookingsPageHref(
   return query ? `/admin/bookings?${query}` : "/admin/bookings";
 }
 
-const STATUS_OPTIONS = ["PENDING", "CONFIRMED", "CANCELLED", "FAILED"];
 const PROVIDER_OPTIONS = ["SABRE", "AMADEUS", "INTERNAL"];
 const PAYMENT_OPTIONS = [
   "cash_on_delivery",
@@ -248,9 +249,9 @@ export default async function AdminBookingsPage({
               className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
             >
               <option value="">All</option>
-              {STATUS_OPTIONS.map((option) => (
+              {BOOKING_STATUSES.map((option) => (
                 <option key={option} value={option}>
-                  {formatStatus(option)}
+                  {BOOKING_STATUS_LABELS[option]}
                 </option>
               ))}
             </select>
@@ -437,9 +438,11 @@ export default async function AdminBookingsPage({
                       {formatMoney(booking.currency, booking.totalAmount)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-line/50 px-2.5 py-1 text-xs font-semibold text-navy/80">
-                        {formatStatus(booking.status)}
-                      </span>
+                      <BookingStatusSelect
+                        key={booking.status}
+                        bookingId={booking.id}
+                        status={booking.status}
+                      />
                     </td>
                     <td className="px-4 py-3 text-navy/80">
                       <p className="font-medium text-navy">
@@ -513,8 +516,8 @@ async function getBookings(
       where.reference = { contains: filters.reference };
     }
 
-    if (filters.status && STATUS_OPTIONS.includes(filters.status)) {
-      where.status = filters.status as never;
+    if (isBookingStatus(filters.status)) {
+      where.status = filters.status;
     }
 
     if (filters.provider && PROVIDER_OPTIONS.includes(filters.provider)) {

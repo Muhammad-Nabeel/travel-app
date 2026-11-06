@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveBookingUserId } from "@/lib/bookings/link-user";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 type ChatbotBookingRequestBody = {
@@ -54,10 +55,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true },
-        });
+        const userId = await resolveBookingUserId(email);
 
         const reference = buildReference();
 
@@ -66,8 +64,8 @@ export async function POST(request: NextRequest) {
                 reference,
                 type: "FLIGHT",
                 channel: "CHATBOT",
-                status: "PENDING",
-                userId: user?.id ?? null,
+                status: "OPEN",
+                userId,
                 customerName: fullName,
                 customerEmail: email,
                 customerPhone: phone,
@@ -101,13 +99,12 @@ export async function POST(request: NextRequest) {
         );
     } catch (error) {
         markDatabaseUnavailable(error);
+        // Internal errors (e.g. Prisma messages with file paths) stay in the server log.
+        console.error("[chatbot-request] Failed to create booking:", error);
         return NextResponse.json(
             {
                 ok: false,
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to create booking request.",
+                error: "We couldn't submit your request right now. Please try again or contact us.",
             },
             { status: 500 },
         );
