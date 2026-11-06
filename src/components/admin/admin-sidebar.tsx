@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -19,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plane,
+  Route,
   Search,
   Settings,
   Sparkles,
@@ -51,7 +53,12 @@ export const adminNavGroups: { title: string; links: AdminLink[] }[] = [
     links: [
       { href: "/admin/blog", label: "Blog", icon: NotebookPen },
       { href: "/admin/reviews", label: "Reviews", icon: Star },
-      { href: "/admin/airline-partners", label: "Airline Partners", icon: Plane },
+      { href: "/admin/flight-routes", label: "Flight Routes", icon: Route },
+      {
+        href: "/admin/airline-partners",
+        label: "Airline Partners",
+        icon: Plane,
+      },
       { href: "/admin/site-pages", label: "Site Pages", icon: MessagesSquare },
       { href: "/admin/careers", label: "Careers", icon: BriefcaseBusiness },
       { href: "/admin/media", label: "Media", icon: Image },
@@ -85,32 +92,54 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const brand = useBrand();
+  // The logo is designed for light backgrounds, so its header row turns white.
+  const showLogo = !collapsed && Boolean(brand.logoUrl);
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-navy text-white">
       <div
-        className={`flex h-16 shrink-0 items-center border-b border-white/10 ${collapsed ? "justify-center px-2" : "justify-between px-5"}`}
+        className={`flex h-16 shrink-0 items-center border-b ${showLogo ? "border-line bg-white" : "border-white/10"} ${collapsed ? "justify-center px-2" : "justify-between px-5"}`}
       >
-        <Link href="/admin" className="flex min-w-0 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold">
-            {brand.name.charAt(0)}
-          </span>
-          {!collapsed && (
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">
-                {brand.name}
-              </span>
-              <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-white/50">
-                Admin
-              </span>
+        {showLogo && brand.logoUrl ? (
+          <Link
+            href="/admin"
+            aria-label={`${brand.name} admin`}
+            className="flex min-w-0 items-center"
+          >
+            <NextImage
+              src={brand.logoUrl}
+              alt={`${brand.name} logo`}
+              // Admins can upload a logo of any shape, so size it by height
+              // and let the width follow the file's own aspect ratio.
+              width={0}
+              height={0}
+              sizes="170px"
+              style={{ width: "auto", height: "2.25rem" }}
+              className="max-w-[170px] object-contain"
+            />
+          </Link>
+        ) : (
+          <Link href="/admin" className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold">
+              {brand.name.charAt(0)}
             </span>
-          )}
-        </Link>
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">
+                  {brand.name}
+                </span>
+                <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-white/50">
+                  Admin
+                </span>
+              </span>
+            )}
+          </Link>
+        )}
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white"
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${showLogo ? "text-muted hover:bg-slate-100 hover:text-foreground" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />

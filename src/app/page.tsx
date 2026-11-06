@@ -58,7 +58,7 @@ export default async function Home() {
         assets={brand.assets}
       />
 
-      <AirlinesSlider />
+      <CustomerReviewsSection />
 
       <DestinationsSlider />
 
@@ -66,7 +66,7 @@ export default async function Home() {
 
       <ActivitiesSlider />
 
-      <CustomerReviewsSection />
+      <AirlinesSlider />
 
       <BlogSlider />
     </div>

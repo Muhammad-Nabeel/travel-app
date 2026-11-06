@@ -54,6 +54,9 @@ type ArticleSchemaOptions = {
   authorUrl?: string;
   keywords?: string[];
   section?: string;
+  /** Live brand name and logo (Admin → Settings → Brand). */
+  publisherName: string;
+  publisherLogoUrl: string | null;
 };
 
 type OrganizationBranch = {
@@ -63,16 +66,72 @@ type OrganizationBranch = {
   phone?: string | null;
 };
 
+type OrganizationAddress = {
+  streetAddress?: string;
+  addressLocality?: string;
+  addressRegion?: string;
+  postalCode?: string;
+  addressCountry?: string;
+};
+
 type OrganizationSchemaOptions = {
   name?: string;
   legalName?: string;
   logoUrl?: string;
   telephone?: string;
   email?: string;
-  address?: string;
+  address?: OrganizationAddress;
+  latitude?: string;
+  longitude?: string;
+  /** schema.org shorthand rules, e.g. "Mo-Sa 10:00-19:00". */
+  openingHours?: string[];
+  priceRange?: string;
+  mapUrl?: string;
   sameAs?: string[];
   branches?: OrganizationBranch[];
 };
+
+/** Stable node ids so every page's JSON-LD links to the same business and site. */
+export const ORGANIZATION_ID_PATH = "/#organization";
+export const WEBSITE_ID_PATH = "/#website";
+
+const DAY_ORDER = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] as const;
+const DAY_NAMES: Record<(typeof DAY_ORDER)[number], string> = {
+  Mo: "Monday",
+  Tu: "Tuesday",
+  We: "Wednesday",
+  Th: "Thursday",
+  Fr: "Friday",
+  Sa: "Saturday",
+  Su: "Sunday",
+};
+
+/** "Mo-Sa 10:00-19:00" -> OpeningHoursSpecification. Rules are validated on save. */
+function toOpeningHoursSpecification(rule: string) {
+  const [days, hours] = rule.split(" ");
+  const [from, to = from] = days.split("-") as Array<(typeof DAY_ORDER)[number]>;
+  const [opens, closes] = hours.split("-");
+  const start = DAY_ORDER.indexOf(from);
+  const end = DAY_ORDER.indexOf(to);
+  const dayList =
+    start <= end
+      ? DAY_ORDER.slice(start, end + 1)
+      : [...DAY_ORDER.slice(start), ...DAY_ORDER.slice(0, end + 1)];
+
+  return {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: dayList.map((day) => `https://schema.org/${DAY_NAMES[day]}`),
+    opens,
+    closes,
+  };
+}
+
+function compactAddress(address: OrganizationAddress = {}) {
+  const entries = Object.entries(address).filter(([, value]) => Boolean(value));
+  return entries.length > 0
+    ? { "@type": "PostalAddress", ...Object.fromEntries(entries) }
+    : undefined;
+}
 
 type TouristTripSchemaOptions = {
   name: string;
@@ -205,10 +264,12 @@ export function createWebPageSchema({
   return {
     "@context": "https://schema.org",
     "@type": type,
+    "@id": absoluteUrl(path),
     name: title,
     description: toMetaDescription(description),
     url: absoluteUrl(path),
-    isPartOf: absoluteUrl("/"),
+    isPartOf: { "@id": absoluteUrl(WEBSITE_ID_PATH) },
+    inLanguage: "en",
   };
 }
 
@@ -236,6 +297,8 @@ export function createArticleSchema({
   authorUrl,
   keywords = [],
   section,
+  publisherName,
+  publisherLogoUrl,
 }: ArticleSchemaOptions) {
   // Only claim a Person author when there is a profile page to back it up.
   const isPerson = Boolean(authorUrl);
@@ -255,12 +318,12 @@ export function createArticleSchema({
     },
     publisher: {
       "@type": "Organization",
-      name: SITE_NAME,
+      "@id": absoluteUrl(ORGANIZATION_ID_PATH),
+      name: publisherName,
       url: absoluteUrl("/"),
-      logo: {
-        "@type": "ImageObject",
-        url: resolveImageUrl(),
-      },
+      logo: publisherLogoUrl
+        ? { "@type": "ImageObject", url: publisherLogoUrl }
+        : undefined,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -279,13 +342,18 @@ export function createOrganizationSchema({
   telephone,
   email,
   address,
+  latitude,
+  longitude,
+  openingHours = [],
+  priceRange,
+  mapUrl,
   sameAs = [],
   branches = [],
 }: OrganizationSchemaOptions = {}) {
   return {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
-    "@id": absoluteUrl("/#organization"),
+    "@id": absoluteUrl(ORGANIZATION_ID_PATH),
     name,
     legalName: legalName || undefined,
     url: absoluteUrl("/"),
@@ -294,12 +362,17 @@ export function createOrganizationSchema({
     description: SITE_DESCRIPTION,
     telephone: telephone || undefined,
     email: email || undefined,
-    address: address
-      ? {
-          "@type": "PostalAddress",
-          streetAddress: address,
-        }
-      : undefined,
+    address: compactAddress(address),
+    geo:
+      latitude && longitude
+        ? { "@type": "GeoCoordinates", latitude, longitude }
+        : undefined,
+    hasMap: mapUrl || undefined,
+    openingHoursSpecification:
+      openingHours.length > 0
+        ? openingHours.map(toOpeningHoursSpecification)
+        : undefined,
+    priceRange: priceRange || undefined,
     sameAs: sameAs.length > 0 ? sameAs : undefined,
     contactPoint: telephone
       ? {
@@ -346,7 +419,7 @@ export function createTouristTripSchema({
     url: absoluteUrl(path),
     image: image ? resolveImageUrl(image) : undefined,
     touristType: touristType || undefined,
-    provider: { "@id": absoluteUrl("/#organization") },
+    provider: { "@id": absoluteUrl(ORGANIZATION_ID_PATH) },
     itinerary:
       itinerary.length > 0
         ? {
@@ -377,9 +450,12 @@ export function createWebsiteSchema(name = SITE_NAME) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": absoluteUrl(WEBSITE_ID_PATH),
     name,
     url: absoluteUrl("/"),
     description: SITE_DESCRIPTION,
+    publisher: { "@id": absoluteUrl(ORGANIZATION_ID_PATH) },
+    inLanguage: "en",
   };
 }
 

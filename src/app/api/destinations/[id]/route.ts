@@ -84,6 +84,7 @@ export async function PUT(
                 overview: validatedData.overview,
                 highlights: validatedData.highlights,
                 travelTips: validatedData.travelTips,
+                faqs: validatedData.faqs,
                 bestTimeToVisit: validatedData.bestTimeToVisit,
                 idealStay: validatedData.idealStay,
                 currency: validatedData.currency,

@@ -13,6 +13,8 @@ import {
   seoDraftFrom,
   seoTitleBudgetIssue,
 } from "@/components/admin/seo-fields";
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useBrand } from "@/components/shared/brand-provider";
 import { suggestTourPackageSeo } from "@/lib/seo-suggestions";
 import {
@@ -32,7 +34,7 @@ const EMPTY_FORM = {
   pricePerAdult: "",
   pricePerChild: "",
   currency: "USD",
-  rating: "4.5",
+  rating: "0",
   reviewCount: "0",
   sortOrder: "0",
   isActive: true,
@@ -48,6 +50,7 @@ function toHighlights(value: string) {
 
 export default function AdminTourPackagesPage() {
   const [packages, setPackages] = useState<TourPackage[]>([]);
+  const pagination = usePagination(packages);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -516,7 +519,7 @@ export default function AdminTourPackagesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {packages.map((pkg) => (
+                {pagination.pageItems.map((pkg) => (
                   <tr key={pkg.id} className="bg-white transition hover:bg-subtle">
                     <td className="px-4 py-3 font-medium text-navy">
                       {pkg.title}
@@ -580,6 +583,13 @@ export default function AdminTourPackagesPage() {
             </table>
           )}
         </div>
+        <AdminPagination
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          total={pagination.total}
+          label="tour packages"
+          onPageChange={pagination.setPage}
+        />
 
         {!loading && isOffline && (
           <p className="mt-3 text-xs text-gold-strong">

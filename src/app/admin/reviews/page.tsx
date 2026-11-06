@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Star, X } from "lucide-react";
 import type { CustomerReviewRow } from "@/app/api/reviews/route";
@@ -78,6 +80,7 @@ function RatingBadge({ rating }: { rating: number }) {
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<CustomerReviewRow[]>([]);
+  const pagination = usePagination(reviews);
   const [loading, setLoading] = useState(true);
   const [isDummy, setIsDummy] = useState(false);
   const [error, setError] = useState("");
@@ -465,72 +468,81 @@ export default function AdminReviewsPage() {
             No reviews yet. Add your first one above.
           </p>
         ) : (
-          <div className="divide-y divide-line">
-            {reviews.map((review) => (
-              <div
-                key={review.id}
-                className="grid gap-3 px-6 py-4 sm:grid-cols-[1fr_auto]"
-              >
-                {/* Content */}
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <RatingBadge rating={review.rating} />
-                    {review.tripType && (
-                      <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
-                        {review.tripType}
+          <>
+            <div className="divide-y divide-line">
+              {pagination.pageItems.map((review) => (
+                <div
+                  key={review.id}
+                  className="grid gap-3 px-6 py-4 sm:grid-cols-[1fr_auto]"
+                >
+                  {/* Content */}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <RatingBadge rating={review.rating} />
+                      {review.tripType && (
+                        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
+                          {review.tripType}
+                        </span>
+                      )}
+                      {review.isVerified && (
+                        <span className="rounded-full bg-success/8 px-2 py-0.5 text-xs font-medium text-success">
+                          ✓ Verified
+                        </span>
+                      )}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          review.isPublished
+                            ? "bg-success/8 text-success"
+                            : "bg-line/50 text-muted"
+                        }`}
+                      >
+                        {review.isPublished ? "Published" : "Draft"}
                       </span>
-                    )}
-                    {review.isVerified && (
-                      <span className="rounded-full bg-success/8 px-2 py-0.5 text-xs font-medium text-success">
-                        ✓ Verified
-                      </span>
-                    )}
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        review.isPublished
-                          ? "bg-success/8 text-success"
-                          : "bg-line/50 text-muted"
-                      }`}
-                    >
-                      {review.isPublished ? "Published" : "Draft"}
-                    </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-semibold text-navy">
+                      {review.title}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-sm text-muted">
+                      {review.body}
+                    </p>
+                    <p className="mt-1.5 text-xs text-muted/70">
+                      {review.customerName}
+                      {review.location ? ` · ${review.location}` : ""}
+                    </p>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold text-navy">
-                    {review.title}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-sm text-muted">
-                    {review.body}
-                  </p>
-                  <p className="mt-1.5 text-xs text-muted/70">
-                    {review.customerName}
-                    {review.location ? ` · ${review.location}` : ""}
-                  </p>
-                </div>
 
-                {/* Actions */}
-                <div className="flex shrink-0 items-start gap-2">
-                  <button
-                    onClick={() => void togglePublished(review)}
-                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
-                  >
-                    {review.isPublished ? "Unpublish" : "Publish"}
-                  </button>
-                  <button
-                    onClick={() => openEdit(review)}
-                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(review.id)}
-                    className="rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
-                  >
-                    Delete
-                  </button>
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-start gap-2">
+                    <button
+                      onClick={() => void togglePublished(review)}
+                      className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
+                    >
+                      {review.isPublished ? "Unpublish" : "Publish"}
+                    </button>
+                    <button
+                      onClick={() => openEdit(review)}
+                      className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(review.id)}
+                      className="rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <AdminPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              label="reviews"
+              onPageChange={pagination.setPage}
+            />
+          </>
         )}
       </section>
     </main>

@@ -10,6 +10,7 @@ import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db"
 import { buildMetadata, createOrganizationSchema } from "@/lib/seo";
 import {
     applySeoTokens,
+    OPENING_HOURS_PATTERN,
     STATIC_PAGE_KEYS,
     STATIC_PAGE_SEO,
     type StaticPageKey,
@@ -26,6 +27,21 @@ export type OrganizationProfile = {
     telephone: string;
     email: string;
     sameAs: string[];
+    /** Head-office address, split the way Google's LocalBusiness data expects. */
+    streetAddress: string;
+    addressLocality: string;
+    addressRegion: string;
+    postalCode: string;
+    /** ISO 3166-1 alpha-2, e.g. "PK". */
+    addressCountry: string;
+    /** Decimal degrees as text, e.g. "31.4697". */
+    latitude: string;
+    longitude: string;
+    /** One rule per line, e.g. "Mo-Sa 10:00-19:00". */
+    openingHours: string[];
+    priceRange: string;
+    /** Google Maps link for the office. */
+    mapUrl: string;
 };
 
 export type SeoSettings = {
@@ -57,8 +73,24 @@ export function defaultSeoSettings(): SeoSettings {
             telephone: "",
             email: "",
             sameAs: [],
+            streetAddress: "",
+            addressLocality: "",
+            addressRegion: "",
+            postalCode: "",
+            addressCountry: "",
+            latitude: "",
+            longitude: "",
+            openingHours: [],
+            priceRange: "",
+            mapUrl: "",
         },
     };
+}
+
+function sanitizeCoordinate(value: unknown, limit: number): string {
+    const text = sanitizeText(value, 20);
+    const number = Number(text);
+    return text && Number.isFinite(number) && Math.abs(number) <= limit ? text : "";
 }
 
 function sanitizeSeoSettings(value: unknown): SeoSettings {
@@ -92,6 +124,23 @@ function sanitizeSeoSettings(value: unknown): SeoSettings {
             telephone: sanitizeText(org.telephone, 40),
             email: sanitizeText(org.email, 150),
             sameAs,
+            streetAddress: sanitizeText(org.streetAddress, 200),
+            addressLocality: sanitizeText(org.addressLocality, 80),
+            addressRegion: sanitizeText(org.addressRegion, 80),
+            postalCode: sanitizeText(org.postalCode, 20),
+            addressCountry: /^[A-Z]{2}$/.test(sanitizeText(org.addressCountry, 2).toUpperCase())
+                ? sanitizeText(org.addressCountry, 2).toUpperCase()
+                : "",
+            latitude: sanitizeCoordinate(org.latitude, 90),
+            longitude: sanitizeCoordinate(org.longitude, 180),
+            openingHours: Array.isArray(org.openingHours)
+                ? org.openingHours
+                      .map((rule) => sanitizeText(rule, 40))
+                      .filter((rule) => OPENING_HOURS_PATTERN.test(rule))
+                      .slice(0, 7)
+                : [],
+            priceRange: sanitizeText(org.priceRange, 40),
+            mapUrl: sanitizeUrl(org.mapUrl),
         },
     };
 }
@@ -211,6 +260,18 @@ export async function buildOrganizationJsonLd() {
         telephone: org.telephone || getPrimaryPhone(contact),
         email: org.email || contact.email,
         sameAs: org.sameAs,
+        address: {
+            streetAddress: org.streetAddress,
+            addressLocality: org.addressLocality,
+            addressRegion: org.addressRegion,
+            postalCode: org.postalCode,
+            addressCountry: org.addressCountry,
+        },
+        latitude: org.latitude,
+        longitude: org.longitude,
+        openingHours: org.openingHours,
+        priceRange: org.priceRange,
+        mapUrl: org.mapUrl,
         branches,
     });
 }

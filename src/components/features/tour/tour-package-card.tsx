@@ -51,13 +51,15 @@ export function TourPackageCard({
           {pkg.duration} {pkg.duration === 1 ? "day" : "days"}
         </p>
 
-        <div className="mt-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
-            {pkg.rating.toFixed(1)}
-            <Star className="size-3 fill-white" />
-          </span>
-          <span className="text-xs text-muted">{pkg.reviewCount} reviews</span>
-        </div>
+        {pkg.reviewCount > 0 ? (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+              {pkg.rating.toFixed(1)}
+              <Star className="size-3 fill-white" />
+            </span>
+            <span className="text-xs text-muted">{pkg.reviewCount} reviews</span>
+          </div>
+        ) : null}
 
         {!compact ? (
           <ul className="mt-4 space-y-1.5">

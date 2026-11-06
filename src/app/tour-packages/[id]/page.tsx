@@ -152,13 +152,15 @@ export default async function TourPackageDetailsPage({
           title={pkg.title}
           meta={
             <>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
-                  {pkg.rating.toFixed(1)}
-                  <Star className="size-3 fill-white" />
+              {pkg.reviewCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+                    {pkg.rating.toFixed(1)}
+                    <Star className="size-3 fill-white" />
+                  </span>
+                  <span className="text-muted">{pkg.reviewCount} reviews</span>
                 </span>
-                <span className="text-muted">{pkg.reviewCount} reviews</span>
-              </span>
+              ) : null}
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-4 text-muted" />
                 {pkg.destination}
@@ -209,11 +211,15 @@ export default async function TourPackageDetailsPage({
                     label: "Tour type",
                     value: formatTourTypeLabel(pkg.tourType),
                   },
-                  {
-                    icon: Star,
-                    label: "Guest rating",
-                    value: `${pkg.rating.toFixed(1)} / 5 · ${pkg.reviewCount} reviews`,
-                  },
+                  ...(pkg.reviewCount > 0
+                    ? [
+                        {
+                          icon: Star,
+                          label: "Guest rating",
+                          value: `${pkg.rating.toFixed(1)} / 5 · ${pkg.reviewCount} reviews`,
+                        },
+                      ]
+                    : []),
                 ]}
               />
             </div>

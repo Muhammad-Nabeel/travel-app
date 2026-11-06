@@ -154,6 +154,8 @@ model Destination {
   overview    String?  @db.Text
   highlights  Json?
   travelTips  Json?
+  /// [{ question, answer }] shown on the page and as FAQPage structured data.
+  faqs        Json     @default("[]")
   bestTimeToVisit String?
   idealStay   String?
   currency    String?
@@ -180,10 +182,27 @@ model Activity {
   destination    Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   title          String
   category       String   @default("tourist-attraction")
-  description    String?  @db.Text
+  description    String   @db.Text
   imageUrl       String
   cost           String
-  reviews        Float    @default(4.5)
+  /// Key facts shown at the top of the detail page (hidden when empty).
+  duration           String?
+  openingHours       String?
+  location           String?
+  bestTimeToVisit    String?
+  /// string[]: short selling points.
+  highlights         Json     @default("[]")
+  /// string[]: what the ticket/tour price covers and what it doesn't.
+  included           Json     @default("[]")
+  excluded           Json     @default("[]")
+  /// string[]: ordered "what to expect" steps.
+  itinerary          Json     @default("[]")
+  /// string[]: "know before you go" notes (dress code, closures, ID).
+  importantInfo      Json     @default("[]")
+  cancellationPolicy String?  @db.Text
+  /// [{ question, answer }] shown on the page and as FAQPage structured data.
+  faqs               Json     @default("[]")
+  reviews        Float    @default(0)
   reviewCount    Int      @default(0)
   sortOrder      Int      @default(0)
   isActive       Boolean  @default(true)
@@ -208,7 +227,7 @@ model TourPackage {
   pricePerAdult  Decimal  @db.Decimal(10, 2)
   pricePerChild  Decimal  @db.Decimal(10, 2)
   currency       String   @default("USD")
-  rating         Float    @default(4.5)
+  rating         Float    @default(0)
   reviewCount    Int      @default(0)
   sortOrder      Int      @default(0)
   isActive       Boolean  @default(true)
@@ -255,6 +274,44 @@ model JobOpening {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  @@index([isActive, sortOrder])
+}
+
+/// City-pair landing page, e.g. /flights/lahore-to-jeddah. Content is written
+/// and verified in /admin/flight-routes; schedules change, so routes start as
+/// drafts (isActive = false) until an admin has checked the airline list.
+model FlightRoute {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  originCity         String
+  originIata         String
+  originAirport      String
+  destinationCity    String
+  destinationCountry String
+  destinationIata    String
+  destinationAirport String
+  /// Paragraphs separated by a blank line.
+  intro              String   @db.Text
+  flightTime         String
+  distance           String
+  /// [{ name, code, service }] e.g. { "Saudia", "SV", "Non-stop" }
+  airlines           Json     @default("[]")
+  /// string[]
+  travelTips         Json     @default("[]")
+  /// string[]
+  documents          Json     @default("[]")
+  /// [{ question, answer }]
+  faqs               Json     @default("[]")
+  /// Admin-entered indicative fare, e.g. "PKR 95,000". Shown only when set.
+  fareFrom           String?
+  isActive           Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  seoTitle           String
+  seoDescription     String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([originIata, destinationIata])
   @@index([isActive, sortOrder])
 }
 

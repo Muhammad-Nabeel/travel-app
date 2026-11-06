@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import {
   buildOrganizationJsonLd,
+  getStaticPageSeo,
   buildStaticPageMetadata,
 } from "@/lib/admin-settings/seo-settings";
 import { StructuredData } from "@/components/shared/structured-data";
@@ -28,10 +29,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactUsPage() {
-  const [pages, contact, organizationJsonLd] = await Promise.all([
+  const [pages, contact, organizationJsonLd, seo] = await Promise.all([
     getStoredSitePagesSettings(),
     getStoredSupportContactSettings(),
     buildOrganizationJsonLd(),
+    getStaticPageSeo("contactUs"),
   ]);
 
   const page = pages.contactUs;
@@ -41,10 +43,11 @@ export default async function ContactUsPage() {
     <div className="section-shell py-12 sm:py-16">
       <StructuredData
         data={[
+          // Same admin-managed title/description as the page metadata.
           createWebPageSchema({
-            title: page.title,
-            description: page.intro,
-            path: "/contact-us",
+            title: seo.title,
+            description: seo.description,
+            path: seo.path,
             type: "ContactPage",
           }),
           organizationJsonLd,

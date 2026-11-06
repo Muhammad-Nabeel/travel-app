@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ZodError } from "zod";
-import { destinationSchema } from "@/lib/validations/destination";
+import {
+  destinationSchema,
+  type DestinationFaq,
+} from "@/lib/validations/destination";
 import { MediaUrlInput } from "@/components/admin/media-picker";
 import {
   EMPTY_SEO_DRAFT,
@@ -13,6 +16,8 @@ import {
   seoDraftFrom,
   seoTitleBudgetIssue,
 } from "@/components/admin/seo-fields";
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useBrand } from "@/components/shared/brand-provider";
 import { suggestDestinationSeo } from "@/lib/seo-suggestions";
 
@@ -25,6 +30,7 @@ type Destination = {
   overview: string | null;
   highlights: string[];
   travelTips: string[];
+  faqs: DestinationFaq[];
   bestTimeToVisit: string | null;
   idealStay: string | null;
   currency: string | null;
@@ -91,10 +97,12 @@ const EMPTY_FORM = {
 
 export default function AdminDestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const pagination = usePagination(destinations);
   const [isDummyMode, setIsDummyMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [seoDraft, setSeoDraft] = useState(EMPTY_SEO_DRAFT);
+  const [faqs, setFaqs] = useState<DestinationFaq[]>([]);
   const brand = useBrand();
   const seoSuggestion = suggestDestinationSeo(formData, brand.name);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -175,6 +183,7 @@ export default function AdminDestinationsPage() {
       isActive: d.isActive,
     });
     setSeoDraft(seoDraftFrom(d, suggestDestinationSeo(d, brand.name)));
+    setFaqs(d.faqs ?? []);
     setCitySuggestions([]);
     setShowCitySuggestions(false);
     setCityLookupLoading(false);
@@ -185,6 +194,7 @@ export default function AdminDestinationsPage() {
     setEditingId(null);
     setFormData(EMPTY_FORM);
     setSeoDraft(EMPTY_SEO_DRAFT);
+    setFaqs([]);
     setCitySuggestions([]);
     setShowCitySuggestions(false);
     setCityLookupLoading(false);
@@ -259,6 +269,7 @@ export default function AdminDestinationsPage() {
         overview: formData.overview,
         highlights: parseCsvList(formData.highlightsInput),
         travelTips: parseCsvList(formData.travelTipsInput),
+        faqs,
         bestTimeToVisit: formData.bestTimeToVisit,
         idealStay: formData.idealStay,
         currency: formData.currency,
@@ -371,6 +382,7 @@ export default function AdminDestinationsPage() {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
                 setSeoDraft(EMPTY_SEO_DRAFT);
+                setFaqs([]);
                 setCitySuggestions([]);
                 setShowCitySuggestions(false);
                 setCityLookupLoading(false);
@@ -548,6 +560,66 @@ export default function AdminDestinationsPage() {
                   className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
+              <div className="grid gap-3 sm:col-span-2 lg:col-span-3">
+                <span className="text-xs font-semibold text-muted">
+                  FAQs (answer what travellers search, e.g. &quot;Do Pakistanis
+                  need a visa for {formData.city || "Dubai"}?&quot;, &quot;Flight
+                  time from Lahore&quot;). Shown on the page and sent to Google.
+                </span>
+                {faqs.map((faq, faqIndex) => {
+                  const setFaq = (patch: Partial<DestinationFaq>) =>
+                    setFaqs((current) =>
+                      current.map((item, idx) =>
+                        idx === faqIndex ? { ...item, ...patch } : item,
+                      ),
+                    );
+                  return (
+                    <div
+                      key={faqIndex}
+                      className="grid gap-2 rounded-xl border border-line p-3"
+                    >
+                      <input
+                        value={faq.question}
+                        onChange={(event) => setFaq({ question: event.target.value })}
+                        placeholder="Question"
+                        maxLength={200}
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                      />
+                      <textarea
+                        rows={2}
+                        value={faq.answer}
+                        onChange={(event) => setFaq({ answer: event.target.value })}
+                        placeholder="Answer"
+                        maxLength={1000}
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFaqs((current) =>
+                            current.filter((_, idx) => idx !== faqIndex),
+                          )
+                        }
+                        className="justify-self-start text-xs font-semibold text-deal"
+                      >
+                        Remove FAQ
+                      </button>
+                    </div>
+                  );
+                })}
+                {faqs.length < 10 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFaqs((current) => [...current, { question: "", answer: "" }])
+                    }
+                    className="inline-flex items-center gap-2 justify-self-start rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-navy/80"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add FAQ
+                  </button>
+                ) : null}
+              </div>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-muted">
                   Best Time To Visit
@@ -727,7 +799,7 @@ export default function AdminDestinationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {destinations.map((d) => (
+                {pagination.pageItems.map((d) => (
                   <tr
                     key={d.id}
                     className="bg-white transition hover:bg-subtle"
@@ -806,6 +878,13 @@ export default function AdminDestinationsPage() {
             </table>
           )}
         </div>
+        <AdminPagination
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          total={pagination.total}
+          label="destinations"
+          onPageChange={pagination.setPage}
+        />
 
         {!loading && isDummyMode && (
           <p className="mt-3 text-xs text-gold-strong">

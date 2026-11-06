@@ -396,26 +396,28 @@ export default async function ActivitiesPage({
                       ) : null}
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                      <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < Math.round(activity.reviews)
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-slate-300"
-                            }`}
-                          />
-                        ))}
+                    {activity.reviewCount > 0 ? (
+                      <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < Math.round(activity.reviews)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-slate-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="font-semibold text-slate-800">
+                          {activity.reviews.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          ({activity.reviewCount.toLocaleString()})
+                        </span>
                       </div>
-                      <span className="font-semibold text-slate-800">
-                        {activity.reviews.toFixed(1)}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        ({activity.reviewCount.toLocaleString()})
-                      </span>
-                    </div>
+                    ) : null}
 
                     {destination ? (
                       <div className="flex items-center gap-1.5 text-sm text-slate-600">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   ArrowRightLeft,
   CalendarDays,
   ChevronDown,
@@ -1206,8 +1207,18 @@ export function FlightSearchEngine({
             )}
 
             <button type="submit" className={styles.searchBtn}>
-              <Search className="h-5 w-5" />
-              Search Flights
+              {/* Without live Sabre fares the form leads to an enquiry, not results. */}
+              {liveFaresEnabled ? (
+                <>
+                  <Search className="h-5 w-5" />
+                  Search Flights
+                </>
+              ) : (
+                <>
+                  Book Now
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
             </button>
           </div>
 

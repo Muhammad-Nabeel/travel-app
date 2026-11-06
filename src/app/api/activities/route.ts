@@ -12,9 +12,20 @@ export type ActivityRow = {
     destinationId: string;
     title: string;
     category: string;
-    description: string | null;
+    description: string;
     imageUrl: string;
     cost: string;
+    duration: string | null;
+    openingHours: string | null;
+    location: string | null;
+    bestTimeToVisit: string | null;
+    highlights: unknown;
+    included: unknown;
+    excluded: unknown;
+    itinerary: unknown;
+    importantInfo: unknown;
+    cancellationPolicy: string | null;
+    faqs: unknown;
     reviews: number;
     reviewCount: number;
     sortOrder: number;
@@ -78,6 +89,17 @@ export async function POST(request: NextRequest) {
                 description: validatedData.description,
                 imageUrl: validatedData.imageUrl,
                 cost: validatedData.cost,
+                duration: validatedData.duration ?? null,
+                openingHours: validatedData.openingHours ?? null,
+                location: validatedData.location ?? null,
+                bestTimeToVisit: validatedData.bestTimeToVisit ?? null,
+                highlights: validatedData.highlights,
+                included: validatedData.included,
+                excluded: validatedData.excluded,
+                itinerary: validatedData.itinerary,
+                importantInfo: validatedData.importantInfo,
+                cancellationPolicy: validatedData.cancellationPolicy ?? null,
+                faqs: validatedData.faqs,
                 reviews: validatedData.reviews,
                 reviewCount: validatedData.reviewCount,
                 sortOrder: validatedData.sortOrder,

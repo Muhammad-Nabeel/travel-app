@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
@@ -30,6 +32,7 @@ const INPUT_CLASS =
 
 export default function AdminCareersPage() {
   const [jobs, setJobs] = useState<JobOpeningRow[]>([]);
+  const pagination = usePagination(jobs);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -394,64 +397,73 @@ export default function AdminCareersPage() {
             careers page until you add one.
           </p>
         ) : (
-          <div className="divide-y divide-line">
-            {jobs.map((job) => (
-              <div
-                key={job.id}
-                className="grid gap-3 px-6 py-4 sm:grid-cols-[1fr_auto]"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
-                      {job.team}
-                    </span>
-                    <span className="rounded-full bg-line/50 px-2 py-0.5 text-xs font-medium text-muted">
-                      {job.location}
-                    </span>
-                    <span className="rounded-full bg-line/50 px-2 py-0.5 text-xs font-medium text-muted">
-                      {job.employmentType}
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        job.isActive
-                          ? "bg-success/8 text-success"
-                          : "bg-line/50 text-muted"
-                      }`}
-                    >
-                      {job.isActive ? "Live" : "Hidden"}
-                    </span>
+          <>
+            <div className="divide-y divide-line">
+              {pagination.pageItems.map((job) => (
+                <div
+                  key={job.id}
+                  className="grid gap-3 px-6 py-4 sm:grid-cols-[1fr_auto]"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
+                        {job.team}
+                      </span>
+                      <span className="rounded-full bg-line/50 px-2 py-0.5 text-xs font-medium text-muted">
+                        {job.location}
+                      </span>
+                      <span className="rounded-full bg-line/50 px-2 py-0.5 text-xs font-medium text-muted">
+                        {job.employmentType}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          job.isActive
+                            ? "bg-success/8 text-success"
+                            : "bg-line/50 text-muted"
+                        }`}
+                      >
+                        {job.isActive ? "Live" : "Hidden"}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-semibold text-navy">
+                      {job.title}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-sm text-muted">
+                      {job.summary}
+                    </p>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold text-navy">
-                    {job.title}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-sm text-muted">
-                    {job.summary}
-                  </p>
-                </div>
 
-                <div className="flex shrink-0 items-start gap-2">
-                  <button
-                    onClick={() => void toggleActive(job)}
-                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
-                  >
-                    {job.isActive ? "Hide" : "Show"}
-                  </button>
-                  <button
-                    onClick={() => openEdit(job)}
-                    className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(job.id)}
-                    className="rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex shrink-0 items-start gap-2">
+                    <button
+                      onClick={() => void toggleActive(job)}
+                      className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
+                    >
+                      {job.isActive ? "Hide" : "Show"}
+                    </button>
+                    <button
+                      onClick={() => openEdit(job)}
+                      className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-subtle"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(job.id)}
+                      className="rounded-lg border border-deal/20 px-2.5 py-1.5 text-xs font-medium text-deal transition hover:bg-deal/6"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <AdminPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              label="job openings"
+              onPageChange={pagination.setPage}
+            />
+          </>
         )}
       </section>
     </main>

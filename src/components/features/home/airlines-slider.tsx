@@ -1,13 +1,11 @@
 import Image from "next/image";
 
+import { AutoStepCarousel } from "@/components/shared/auto-step-carousel";
 import { getActiveAirlinePartners } from "@/lib/airline-partners";
 
 export async function AirlinesSlider() {
   const airlines = await getActiveAirlinePartners();
   if (airlines.length === 0) return null;
-
-  // The list is rendered twice so the CSS marquee can loop seamlessly.
-  const loopedAirlines = [...airlines, ...airlines];
 
   return (
     <section className="section-shell py-6 md:py-8" aria-label="Leading airlines">
@@ -25,23 +23,28 @@ export async function AirlinesSlider() {
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-linear-to-r from-white to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l from-white to-transparent" />
 
-          <div className="airline-marquee flex w-max items-center gap-4">
-            {loopedAirlines.map((airline, index) => (
+          <AutoStepCarousel
+            trackClassName="items-center gap-4"
+            itemClassName="shrink-0"
+          >
+            {airlines.map((airline) => (
               <div
-                key={`${airline.id}-${index}`}
-                aria-hidden={index >= airlines.length || undefined}
-                className="flex h-20 w-36 shrink-0 items-center justify-center rounded-xl border border-line bg-white px-4 py-3 transition hover:shadow-card"
+                key={airline.id}
+                className="flex h-28 w-36 flex-col items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 py-3 transition hover:shadow-card"
               >
                 <Image
                   src={airline.logoUrl}
-                  alt={airline.name}
+                  alt=""
                   width={128}
                   height={56}
-                  className="max-h-12 w-auto object-contain"
+                  className="max-h-10 w-auto object-contain"
                 />
+                <span className="line-clamp-2 text-center text-xs font-medium leading-4 text-foreground">
+                  {airline.name}
+                </span>
               </div>
             ))}
-          </div>
+          </AutoStepCarousel>
         </div>
       </div>
     </section>

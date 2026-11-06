@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 import { getPageBanner } from "@/lib/admin-settings/page-banner-settings";
-import { buildStaticPageMetadata } from "@/lib/admin-settings/seo-settings";
+import {
+  buildStaticPageMetadata,
+  getStaticPageSeo,
+} from "@/lib/admin-settings/seo-settings";
 import { FareCalendarStrip } from "@/components/features/flights/fare-calendar-strip";
 import {
   FlightEnquiryForm,
@@ -9,6 +12,8 @@ import {
 } from "@/components/features/flights/flight-enquiry-form";
 import { FlightsResultsPanel } from "@/components/features/flights/flights-results-panel";
 import { MobileSearchToggle } from "@/components/features/flights/mobile-search-toggle";
+import { PopularFlightRoutes } from "@/components/features/flights/popular-flight-routes";
+import { StructuredData } from "@/components/shared/structured-data";
 import { ActivitiesSlider } from "@/components/features/home/activities-slider";
 import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
@@ -16,13 +21,35 @@ import { FlightSearchEngine } from "@/components/features/home/flight-search/fli
 import { getAirportDisplay } from "@/lib/aviation-reference";
 import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { searchFlights } from "@/lib/flights/search-service";
-import { buildMetadata } from "@/lib/seo";
+import {
+  buildMetadata,
+  createBreadcrumbSchema,
+  createWebPageSchema,
+} from "@/lib/seo";
 
 async function HomeLayout() {
-  const heroImage = await getPageBanner("flights");
+  const [heroImage, seo] = await Promise.all([
+    getPageBanner("flights"),
+    getStaticPageSeo("flights"),
+  ]);
   return (
     <div className="flex-1">
+      {/* Same admin-managed title/description as the page metadata. */}
+      <StructuredData
+        data={[
+          createWebPageSchema({
+            title: seo.title,
+            description: seo.description,
+            path: seo.path,
+          }),
+          createBreadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Flights", path: seo.path },
+          ]),
+        ]}
+      />
       <FlightSearchEngine heroImage={heroImage} />
+      <PopularFlightRoutes />
       <DestinationsSlider />
       <ActivitiesSlider />
       <BlogSlider />

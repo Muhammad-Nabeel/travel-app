@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { MapPin, Star } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Star, Timer } from "lucide-react";
 import { cache } from "react";
 
 import { Breadcrumbs } from "@/components/features/detail/breadcrumbs";
 import {
   BookingCard,
+  CheckList,
   DetailLayout,
   DetailPage,
   DetailSection,
   DetailTitle,
+  FactGrid,
+  InclusionLists,
   MobileBookingBar,
   TrustNotes,
 } from "@/components/features/detail/detail-kit";
@@ -25,8 +28,9 @@ import {
   absoluteUrl,
   buildMetadata,
   createBreadcrumbSchema,
+  createFAQSchema,
 } from "@/lib/seo";
-import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
+import { toActivityFaqs, toStringList } from "@/lib/validations/activity";
 import { getActivityHref } from "@/lib/activity-href";
 
 type ActivityPageProps = {
@@ -53,12 +57,24 @@ const getActivityDetails = cache(async (slugOrId: string) => {
 
     if (!activity) return null;
 
-    const destination = await prisma.destination.findFirst({
-      where: { id: activity.destinationId, isActive: true },
-      select: { id: true, slug: true, city: true, country: true },
-    });
+    const [destination, related] = await Promise.all([
+      prisma.destination.findFirst({
+        where: { id: activity.destinationId, isActive: true },
+        select: { id: true, slug: true, city: true, country: true },
+      }),
+      prisma.activity.findMany({
+        where: {
+          destinationId: activity.destinationId,
+          isActive: true,
+          id: { not: activity.id },
+        },
+        orderBy: { sortOrder: "asc" },
+        take: 4,
+        select: { id: true, slug: true, title: true, cost: true, duration: true },
+      }),
+    ]);
 
-    return { activity, destination };
+    return { activity, destination, related };
   } catch (error) {
     markDatabaseUnavailable(error);
     return null;
@@ -121,14 +137,25 @@ export default async function ActivityDetailsPage({
     notFound();
   }
 
-  const { activity, destination } = data;
+  const { activity, destination, related } = data;
   const activityHref = getActivityHref(activity);
+  const highlights = toStringList(activity.highlights);
+  const included = toStringList(activity.included);
+  const excluded = toStringList(activity.excluded);
+  const itinerary = toStringList(activity.itinerary);
+  const importantInfo = toStringList(activity.importantInfo);
+  const faqs = toActivityFaqs(activity.faqs);
+  const facts = [
+    { icon: Timer, label: "Duration", value: activity.duration },
+    { icon: Clock, label: "Opening hours", value: activity.openingHours },
+    { icon: MapPin, label: "Location", value: activity.location },
+    { icon: CalendarDays, label: "Best time to visit", value: activity.bestTimeToVisit },
+  ].filter((fact): fact is typeof fact & { value: string } => Boolean(fact.value));
 
   // Old /activities/<id> links move permanently to the slug URL.
   if (activityHref !== `/activities/${slug}`) {
     permanentRedirect(activityHref);
   }
-  const brand = await getStoredBrandSettings();
 
   return (
     <DetailPage>
@@ -138,27 +165,28 @@ export default async function ActivityDetailsPage({
             "@context": "https://schema.org",
             "@type": "TouristAttraction",
             name: activity.title,
-            description:
-              activity.description ??
-              `Discover ${activity.title} and book it through ${brand.name}.`,
+            description: activity.description,
             url: absoluteUrl(activityHref),
             image: activity.imageUrl,
             touristType: formatCategory(activity.category),
             containedInPlace: destination
               ? {
-                  "@type": "Place",
+                  "@type": "TouristDestination",
                   name: `${destination.city}, ${destination.country}`,
+                  url: absoluteUrl(getDestinationHref(destination)),
                 }
               : undefined,
-            aggregateRating:
-              activity.reviewCount > 0
-                ? {
-                    "@type": "AggregateRating",
-                    ratingValue: activity.reviews.toFixed(1),
-                    reviewCount: activity.reviewCount,
-                  }
-                : undefined,
+            ...(activity.location
+              ? { address: activity.location }
+              : {}),
+            ...(activity.cost.trim().toLowerCase() === "free"
+              ? { isAccessibleForFree: true }
+              : {}),
+            // No aggregateRating: the rating/review counts are not backed by
+            // reviews collected on this site, and marking up unverified
+            // ratings violates Google's review-snippet policy.
           },
+          ...(faqs.length > 0 ? [createFAQSchema(faqs)] : []),
           createBreadcrumbSchema([
             { name: "Home", path: "/" },
             { name: "Activities", path: "/activities" },
@@ -228,21 +256,113 @@ export default async function ActivityDetailsPage({
             />
           }
         >
+          {facts.length > 0 ? (
+            <DetailSection title="Key details">
+              <FactGrid facts={facts} />
+            </DetailSection>
+          ) : null}
+
           <DetailSection title="About this activity">
-            <p className="text-base leading-7 text-foreground">
-              {activity.description ??
-                `Discover ${activity.title} and book it with a ${brand.name} travel adviser.`}
+            <p className="whitespace-pre-line text-base leading-7 text-foreground">
+              {activity.description}
             </p>
           </DetailSection>
 
+          {highlights.length > 0 ? (
+            <DetailSection title="Highlights">
+              <CheckList items={highlights} />
+            </DetailSection>
+          ) : null}
+
+          {included.length > 0 || excluded.length > 0 ? (
+            <DetailSection title="What's included">
+              <InclusionLists included={included} excluded={excluded} />
+            </DetailSection>
+          ) : null}
+
+          {itinerary.length > 0 ? (
+            <DetailSection title="What to expect">
+              <ol className="space-y-4">
+                {itinerary.map((step, index) => (
+                  <li key={step} className="flex gap-3">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-subtle text-xs font-bold text-foreground">
+                      {index + 1}
+                    </span>
+                    <p className="pt-0.5 text-sm leading-6 text-foreground">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </DetailSection>
+          ) : null}
+
+          {importantInfo.length > 0 ? (
+            <DetailSection title="Know before you go">
+              <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-foreground marker:text-muted">
+                {importantInfo.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </DetailSection>
+          ) : null}
+
+          {activity.cancellationPolicy ? (
+            <DetailSection title="Cancellation policy">
+              <p className="whitespace-pre-line text-sm leading-6 text-foreground">
+                {activity.cancellationPolicy}
+              </p>
+            </DetailSection>
+          ) : null}
+
+          {faqs.length > 0 ? (
+            <DetailSection title="Frequently asked questions">
+              <div className="space-y-2">
+                {faqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    className="group rounded-xl border border-line bg-subtle px-4 py-3"
+                  >
+                    <summary className="cursor-pointer list-none font-medium text-foreground marker:hidden">
+                      <h3 className="inline text-base">{faq.question}</h3>
+                    </summary>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </DetailSection>
+          ) : null}
+
           {destination ? (
-            <DetailSection title="Where it is">
+            <DetailSection
+              title={`More things to do in ${destination.city}`}
+            >
+              {related.length > 0 ? (
+                <ul className="mb-4 grid gap-3 sm:grid-cols-2">
+                  {related.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        href={getActivityHref(item)}
+                        className="flex h-full flex-col rounded-xl border border-line px-4 py-3 transition hover:border-brand"
+                      >
+                        <span className="text-sm font-semibold text-foreground">
+                          {item.title}
+                        </span>
+                        <span className="mt-1 text-xs text-muted">
+                          {item.cost}
+                          {item.duration ? ` · ${item.duration}` : ""}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <Link
                 href={getDestinationHref(destination)}
                 className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-strong"
               >
                 <MapPin className="size-4" />
-                More things to do in {destination.city}, {destination.country}
+                {destination.city}, {destination.country} travel guide
               </Link>
             </DetailSection>
           ) : null}

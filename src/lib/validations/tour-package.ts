@@ -53,6 +53,11 @@ export const tourPackageSchema = z.object({
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
     ...seoFields,
-});
+}).refine(
+    // A review count without a real rating would show the placeholder 0 (or
+    // whatever was left in the field) next to genuine review numbers.
+    (data) => data.reviewCount === 0 || data.rating >= 1,
+    { path: ["rating"], message: "Enter the real rating (1–5) when there are reviews" },
+);
 
 export type TourPackageInput = z.infer<typeof tourPackageSchema>;

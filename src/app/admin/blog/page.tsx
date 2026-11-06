@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { blogPostSchema } from "@/lib/validations/blog";
@@ -69,6 +71,7 @@ export default function AdminBlogPage() {
   const brand = useBrand();
   const emptyForm = { ...EMPTY_FORM, author: `${brand.name} Travel Team` };
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const pagination = usePagination(posts);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -467,79 +470,88 @@ export default function AdminBlogPage() {
             </button>
           </p>
         ) : (
-          <div className="flex flex-col gap-3">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="flex items-start gap-4 rounded-2xl border border-line bg-white p-4"
-              >
-                {/* Thumbnail */}
-                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-line bg-subtle">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={post.coverImageUrl}
-                    alt={post.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-
-                {/* Info */}
-                <div className="flex flex-1 flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[post.status] ?? STATUS_COLORS.DRAFT}`}
-                    >
-                      {post.status}
-                    </span>
-                    <span className="text-xs text-muted/70">
-                      {post.category}
-                    </span>
-                    <span className="text-xs text-muted/70">
-                      Sort: {post.sortOrder}
-                    </span>
+          <>
+            <div className="flex flex-col gap-3">
+              {pagination.pageItems.map((post) => (
+                <div
+                  key={post.id}
+                  className="flex items-start gap-4 rounded-2xl border border-line bg-white p-4"
+                >
+                  {/* Thumbnail */}
+                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-line bg-subtle">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={post.coverImageUrl}
+                      alt={post.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
-                  <p className="font-semibold text-navy">{post.title}</p>
-                  <p className="line-clamp-1 text-xs text-muted">
-                    /{post.slug}
-                  </p>
-                </div>
 
-                {/* Actions */}
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() => toggleStatus(post)}
-                    title={
-                      post.status === "PUBLISHED" ? "Unpublish" : "Publish"
-                    }
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
-                    disabled={post.status === "ARCHIVED"}
-                  >
-                    {post.status === "PUBLISHED" ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openEdit(post)}
-                    title="Edit"
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    title="Delete"
-                    disabled={deletingId === post.id}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-deal/6 hover:text-deal"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {/* Info */}
+                  <div className="flex flex-1 flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[post.status] ?? STATUS_COLORS.DRAFT}`}
+                      >
+                        {post.status}
+                      </span>
+                      <span className="text-xs text-muted/70">
+                        {post.category}
+                      </span>
+                      <span className="text-xs text-muted/70">
+                        Sort: {post.sortOrder}
+                      </span>
+                    </div>
+                    <p className="font-semibold text-navy">{post.title}</p>
+                    <p className="line-clamp-1 text-xs text-muted">
+                      /{post.slug}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => toggleStatus(post)}
+                      title={
+                        post.status === "PUBLISHED" ? "Unpublish" : "Publish"
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
+                      disabled={post.status === "ARCHIVED"}
+                    >
+                      {post.status === "PUBLISHED" ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => openEdit(post)}
+                      title="Edit"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-line/50 hover:text-navy/80"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(post.id)}
+                      title="Delete"
+                      disabled={deletingId === post.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-muted/70 hover:bg-deal/6 hover:text-deal"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <AdminPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              label="blog posts"
+              onPageChange={pagination.setPage}
+            />
+          </>
         )}
       </div>
     </main>

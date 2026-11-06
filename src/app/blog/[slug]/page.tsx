@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 
 import { BlogSearch } from "@/components/features/blog/blog-search";
 import { StructuredData } from "@/components/shared/structured-data";
+import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 import {
   getPublishedBlogPostBySlug,
   getPublishedBlogPosts,
@@ -69,9 +70,10 @@ export async function generateMetadata({
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { slug } = await params;
-  const [post, posts] = await Promise.all([
+  const [post, posts, brand] = await Promise.all([
     getPublishedBlogPostBySlug(slug),
     getPublishedBlogPosts(),
+    getStoredBrandSettings(),
   ]);
 
   if (!post) {
@@ -124,6 +126,8 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               authorName: post.author,
               keywords: post.tags,
               section: categoryLabel,
+              publisherName: brand.name,
+              publisherLogoUrl: brand.logoUrl,
             }),
             createBreadcrumbSchema([
               { name: "Home", path: "/" },

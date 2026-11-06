@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck,
@@ -206,6 +208,10 @@ export default function AdminMediaPage() {
     }
     return grouped;
   }, [files]);
+  // Only one section is open at a time, so one pager serves the open gallery.
+  const pagination = usePagination(
+    openSection ? filesBySection[openSection] : [],
+  );
 
   function flash(text: string) {
     setError("");
@@ -451,114 +457,123 @@ export default function AdminMediaPage() {
             Nothing here yet. Uploaded images will appear in this gallery.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {sectionFiles.map((file) => {
-              const isCurrentLogo = isLogo && websiteLogo === file.url;
-              const name = getFileNameFromKey(file.key);
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {pagination.pageItems.map((file) => {
+                const isCurrentLogo = isLogo && websiteLogo === file.url;
+                const name = getFileNameFromKey(file.key);
 
-              return (
-                <div
-                  key={file.key}
-                  className={`group overflow-hidden rounded-2xl border bg-white transition hover:shadow-md ${
-                    isCurrentLogo
-                      ? "border-brand ring-2 ring-brand/15"
-                      : "border-line"
-                  }`}
-                >
-                  <div className="relative flex aspect-[4/3] items-center justify-center bg-subtle">
-                    {IMAGE_EXTENSION.test(file.key) ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- image is hosted on R2
-                      <img
-                        src={file.url}
-                        alt={name}
-                        loading="lazy"
-                        className={`max-h-full max-w-full ${isLogo ? "object-contain p-3" : "h-full w-full object-cover"}`}
-                      />
-                    ) : (
-                      <span className="text-xs font-medium uppercase text-muted/70">
-                        {name.split(".").pop()}
-                      </span>
-                    )}
+                return (
+                  <div
+                    key={file.key}
+                    className={`group overflow-hidden rounded-2xl border bg-white transition hover:shadow-md ${
+                      isCurrentLogo
+                        ? "border-brand ring-2 ring-brand/15"
+                        : "border-line"
+                    }`}
+                  >
+                    <div className="relative flex aspect-[4/3] items-center justify-center bg-subtle">
+                      {IMAGE_EXTENSION.test(file.key) ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- image is hosted on R2
+                        <img
+                          src={file.url}
+                          alt={name}
+                          loading="lazy"
+                          className={`max-h-full max-w-full ${isLogo ? "object-contain p-3" : "h-full w-full object-cover"}`}
+                        />
+                      ) : (
+                        <span className="text-xs font-medium uppercase text-muted/70">
+                          {name.split(".").pop()}
+                        </span>
+                      )}
 
-                    {isCurrentLogo ? (
-                      <span className="absolute left-2 top-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
-                        In use
-                      </span>
-                    ) : null}
+                      {isCurrentLogo ? (
+                        <span className="absolute left-2 top-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
+                          In use
+                        </span>
+                      ) : null}
 
-                    <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-navy/60 to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                      {[
-                        {
-                          label: "Copy URL",
-                          icon: Copy,
-                          onClick: () => copyToClipboard(file.url),
-                        },
-                        {
-                          label: "Open",
-                          icon: ExternalLink,
-                          onClick: () => window.open(file.url, "_blank"),
-                        },
-                        {
-                          label: "Download",
-                          icon: Download,
-                          onClick: () => downloadFile(file),
-                        },
-                      ].map((action) => (
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-navy/60 to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                        {[
+                          {
+                            label: "Copy URL",
+                            icon: Copy,
+                            onClick: () => copyToClipboard(file.url),
+                          },
+                          {
+                            label: "Open",
+                            icon: ExternalLink,
+                            onClick: () => window.open(file.url, "_blank"),
+                          },
+                          {
+                            label: "Download",
+                            icon: Download,
+                            onClick: () => downloadFile(file),
+                          },
+                        ].map((action) => (
+                          <button
+                            key={action.label}
+                            type="button"
+                            onClick={action.onClick}
+                            title={action.label}
+                            aria-label={`${action.label}: ${name}`}
+                            className="rounded-lg bg-white/90 p-1.5 text-navy/80 hover:bg-white"
+                          >
+                            <action.icon className="h-3.5 w-3.5" />
+                          </button>
+                        ))}
                         <button
-                          key={action.label}
                           type="button"
-                          onClick={action.onClick}
-                          title={action.label}
-                          aria-label={`${action.label}: ${name}`}
-                          className="rounded-lg bg-white/90 p-1.5 text-navy/80 hover:bg-white"
+                          onClick={() => handleDelete(file)}
+                          disabled={deletingKey === file.key}
+                          title="Delete"
+                          aria-label={`Delete ${name}`}
+                          className="rounded-lg bg-white/90 p-1.5 text-deal hover:bg-white disabled:opacity-60"
                         >
-                          <action.icon className="h-3.5 w-3.5" />
+                          {deletingKey === file.key ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(file)}
-                        disabled={deletingKey === file.key}
-                        title="Delete"
-                        aria-label={`Delete ${name}`}
-                        className="rounded-lg bg-white/90 p-1.5 text-deal hover:bg-white disabled:opacity-60"
-                      >
-                        {deletingKey === file.key ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-2 px-3 py-2">
-                    <div className="min-w-0">
-                      <p
-                        className="truncate text-xs font-medium text-navy/80"
-                        title={name}
-                      >
-                        {name}
-                      </p>
-                      <p className="text-[11px] text-muted/70">
-                        {formatFileSize(file.size)}
-                      </p>
+                    <div className="flex items-center justify-between gap-2 px-3 py-2">
+                      <div className="min-w-0">
+                        <p
+                          className="truncate text-xs font-medium text-navy/80"
+                          title={name}
+                        >
+                          {name}
+                        </p>
+                        <p className="text-[11px] text-muted/70">
+                          {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                      {isLogo && !isCurrentLogo ? (
+                        <button
+                          type="button"
+                          onClick={() => updateLogo(file.url)}
+                          disabled={savingLogo}
+                          className="shrink-0 rounded-lg bg-brand-soft px-2 py-1 text-[11px] font-semibold text-brand-strong hover:bg-brand-soft disabled:opacity-60"
+                        >
+                          Use
+                        </button>
+                      ) : null}
                     </div>
-                    {isLogo && !isCurrentLogo ? (
-                      <button
-                        type="button"
-                        onClick={() => updateLogo(file.url)}
-                        disabled={savingLogo}
-                        className="shrink-0 rounded-lg bg-brand-soft px-2 py-1 text-[11px] font-semibold text-brand-strong hover:bg-brand-soft disabled:opacity-60"
-                      >
-                        Use
-                      </button>
-                    ) : null}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+            <AdminPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              label="files"
+              onPageChange={pagination.setPage}
+            />
+          </>
         )}
       </div>
     );
@@ -600,7 +615,10 @@ export default function AdminMediaPage() {
             >
               <button
                 type="button"
-                onClick={() => setOpenSection(isOpen ? null : section)}
+                onClick={() => {
+                  setOpenSection(isOpen ? null : section);
+                  pagination.setPage(1);
+                }}
                 aria-expanded={isOpen}
                 className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-subtle"
               >

@@ -28,6 +28,7 @@ import {
   createBreadcrumbSchema,
   createFAQSchema,
   createWebPageSchema,
+  ORGANIZATION_ID_PATH,
 } from "@/lib/seo";
 import { findVisaBySlug, getVisaPath } from "@/lib/visa";
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
@@ -128,8 +129,10 @@ export default async function VisaDetailsPage({
             "@type": "Service",
             name: detailsTitle(visa),
             description: detailsDescription(visa),
+            serviceType: "Visa application assistance",
             provider: {
               "@type": "TravelAgency",
+              "@id": absoluteUrl(ORGANIZATION_ID_PATH),
               name: brand.name,
             },
             areaServed: visa.country,

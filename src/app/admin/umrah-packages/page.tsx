@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -42,6 +44,7 @@ const EMPTY_FORM = {
 
 export default function AdminPackagesPage() {
   const [packages, setPackages] = useState<PackageRow[]>([]);
+  const pagination = usePagination(packages);
   const [isDbOffline, setIsDbOffline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -269,7 +272,7 @@ export default function AdminPackagesPage() {
         )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {packages.map((item) => {
+          {pagination.pageItems.map((item) => {
             const nights = item.makkahNights + item.madinahNights;
             const cpn = nights > 0 ? Math.round(item.basePrice / nights) : null;
             return (
@@ -365,6 +368,13 @@ export default function AdminPackagesPage() {
             </div>
           )}
         </div>
+        <AdminPagination
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          total={pagination.total}
+          label="Umrah packages"
+          onPageChange={pagination.setPage}
+        />
       </section>
 
       {drawerOpen &&

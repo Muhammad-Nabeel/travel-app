@@ -11,6 +11,7 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_TITLE_LENGTH,
   MIN_DESCRIPTION_LENGTH,
+  OPENING_HOURS_PATTERN,
   STATIC_PAGE_KEYS,
   STATIC_PAGE_SEO,
   type StaticPageKey,
@@ -26,8 +27,38 @@ const EMPTY_FORM: SeoSettings = {
     telephone: "",
     email: "",
     sameAs: [],
+    streetAddress: "",
+    addressLocality: "",
+    addressRegion: "",
+    postalCode: "",
+    addressCountry: "",
+    latitude: "",
+    longitude: "",
+    openingHours: [],
+    priceRange: "",
+    mapUrl: "",
   },
 };
+
+type OrganizationTextField = Exclude<
+  keyof SeoSettings["organization"],
+  "sameAs" | "openingHours"
+>;
+
+const ADDRESS_FIELDS: Array<{
+  field: OrganizationTextField;
+  label: string;
+  placeholder: string;
+}> = [
+  { field: "streetAddress", label: "Street address", placeholder: "151-G, DHA Phase 1 Commercial" },
+  { field: "addressLocality", label: "City", placeholder: "Lahore" },
+  { field: "addressRegion", label: "Province / region", placeholder: "Punjab" },
+  { field: "postalCode", label: "Postal code", placeholder: "54792" },
+  { field: "addressCountry", label: "Country code (2 letters)", placeholder: "PK" },
+  { field: "priceRange", label: "Price range", placeholder: "PKR 49,000 – 600,000" },
+  { field: "latitude", label: "Latitude", placeholder: "31.4700" },
+  { field: "longitude", label: "Longitude", placeholder: "74.3800" },
+];
 
 const inputClass =
   "rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand";
@@ -129,6 +160,7 @@ function SeoPageCard({
 export default function AdminSeoPage() {
   const [form, setForm] = useState<SeoSettings>(EMPTY_FORM);
   const [sameAsText, setSameAsText] = useState("");
+  const [hoursText, setHoursText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -143,6 +175,7 @@ export default function AdminSeoPage() {
         if (cancelled) return;
         setForm(json);
         setSameAsText(json.organization.sameAs.join("\n"));
+        setHoursText(json.organization.openingHours.join("\n"));
       })
       .catch(() => {
         if (!cancelled) setError("Unable to load SEO settings.");
@@ -170,10 +203,7 @@ export default function AdminSeoPage() {
     }));
   }
 
-  function updateOrganization(
-    field: "legalName" | "logoUrl" | "telephone" | "email",
-    nextValue: string,
-  ) {
+  function updateOrganization(field: OrganizationTextField, nextValue: string) {
     setForm((current) => ({
       ...current,
       organization: { ...current.organization, [field]: nextValue },
@@ -186,6 +216,19 @@ export default function AdminSeoPage() {
     setError("");
 
     try {
+      const openingHours = hoursText
+        .split("\n")
+        .map((item) => item.trim().replace(/\s+/g, " "))
+        .filter(Boolean);
+      const invalidRule = openingHours.find(
+        (rule) => !OPENING_HOURS_PATTERN.test(rule),
+      );
+      if (invalidRule) {
+        throw new Error(
+          `Opening hours "${invalidRule}" is not valid. Use the format Mo-Sa 10:00-19:00.`,
+        );
+      }
+
       const payload: SeoSettings = {
         ...form,
         organization: {
@@ -194,6 +237,7 @@ export default function AdminSeoPage() {
             .split(/\s+/)
             .map((item) => item.trim())
             .filter(Boolean),
+          openingHours,
         },
       };
 
@@ -211,6 +255,7 @@ export default function AdminSeoPage() {
       const saved = (await response.json()) as SeoSettings;
       setForm(saved);
       setSameAsText(saved.organization.sameAs.join("\n"));
+      setHoursText(saved.organization.openingHours.join("\n"));
       setMessage("SEO settings saved. Changes appear on the live site immediately.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save SEO settings.");
@@ -293,6 +338,46 @@ export default function AdminSeoPage() {
                     updateOrganization("email", event.target.value)
                   }
                   className={inputClass}
+                />
+              </label>
+              <p className="pt-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand sm:col-span-2">
+                Head office (must match your Google Business Profile exactly)
+              </p>
+              {ADDRESS_FIELDS.map(({ field, label, placeholder }) => (
+                <label key={field} className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted">{label}</span>
+                  <input
+                    value={form.organization[field]}
+                    onChange={(event) =>
+                      updateOrganization(field, event.target.value)
+                    }
+                    placeholder={placeholder}
+                    className={inputClass}
+                  />
+                </label>
+              ))}
+              <label className="flex flex-col gap-1.5 sm:col-span-2">
+                <span className="text-xs font-semibold text-muted">
+                  Google Maps link for the office (https)
+                </span>
+                <input
+                  value={form.organization.mapUrl}
+                  onChange={(event) =>
+                    updateOrganization("mapUrl", event.target.value)
+                  }
+                  placeholder="https://maps.app.goo.gl/…"
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 sm:col-span-2">
+                <span className="text-xs font-semibold text-muted">
+                  Opening hours (one rule per line, e.g. Mo-Sa 10:00-19:00)
+                </span>
+                <textarea
+                  value={hoursText}
+                  onChange={(event) => setHoursText(event.target.value)}
+                  placeholder={"Mo-Sa 10:00-19:00"}
+                  className={`min-h-20 ${inputClass}`}
                 />
               </label>
               <label className="flex flex-col gap-1.5 sm:col-span-2">

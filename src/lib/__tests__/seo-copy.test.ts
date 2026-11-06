@@ -108,7 +108,13 @@ describe("createTouristTripSchema", () => {
 
 describe("createArticleSchema", () => {
     it("uses an Organization author unless a profile URL is given", () => {
-        const base = { title: "T", description: "D", path: "/blog/t" };
+        const base = {
+            title: "T",
+            description: "D",
+            path: "/blog/t",
+            publisherName: "EasyTrip",
+            publisherLogoUrl: "https://example.com/logo.webp",
+        };
         expect(createArticleSchema({ ...base, authorName: "Team" }).author["@type"]).toBe(
             "Organization",
         );

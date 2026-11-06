@@ -5,6 +5,8 @@ import { getPublishedBlogPosts } from "@/lib/blog";
 import { BLOG_CATEGORIES, getBlogCategoryPath } from "@/lib/blog-categories";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { getActivityHref } from "@/lib/activity-href";
+import { getActiveFlightRoutes } from "@/lib/flight-routes";
+import { getFlightRoutePath } from "@/lib/validations/flight-route";
 import { absoluteUrl, resolveImageUrl } from "@/lib/seo";
 import {
     CATALOG_INDEXING,
@@ -85,12 +87,13 @@ async function getDatabaseEntries(): Promise<SitemapEntry[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [posts, umrah, tours, visas, databaseEntries] = await Promise.all([
+    const [posts, umrah, tours, visas, databaseEntries, flightRoutes] = await Promise.all([
         getPublishedBlogPosts(),
         getPublishedUmrahPackages(),
         getActiveTourPackages(),
         getStoredVisaCountries(),
         getDatabaseEntries(),
+        getActiveFlightRoutes(),
     ]);
 
     const excluded = new Set<StaticPageKey>();
@@ -156,8 +159,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         images: [resolveImageUrl(pkg.imageUrl)],
     }));
 
+    const flightRouteEntries: SitemapEntry[] = flightRoutes.map((route) => ({
+        url: absoluteUrl(getFlightRoutePath(route.slug)),
+        lastModified: route.updatedAt,
+        changeFrequency: "weekly",
+        priority: 0.8,
+    }));
+
     return [
         ...staticEntries,
+        ...flightRouteEntries,
         ...umrahEntries,
         ...visaEntries,
         ...tourEntries,

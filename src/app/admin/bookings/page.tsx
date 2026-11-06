@@ -1,4 +1,10 @@
 import Image from "next/image";
+import {
+  ADMIN_PAGE_SIZE,
+  AdminPagination,
+  clampPage,
+  getPageCount,
+} from "@/components/admin/pagination";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import {
@@ -45,6 +51,23 @@ type BookingFilters = {
   createdFrom: string;
   createdTo: string;
 };
+
+/** Same filters, different page (page 1 drops the param). */
+function bookingsPageHref(
+  searchParams: Record<string, string | string[] | undefined>,
+  page: number,
+) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "page") continue;
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (item) params.append(key, item);
+    }
+  }
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return query ? `/admin/bookings?${query}` : "/admin/bookings";
+}
 
 const STATUS_OPTIONS = ["PENDING", "CONFIRMED", "CANCELLED", "FAILED"];
 const PROVIDER_OPTIONS = ["SABRE", "AMADEUS", "INTERNAL"];
@@ -175,8 +198,8 @@ export default async function AdminBookingsPage({
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const filters = parseBookingFilters(resolvedSearchParams);
-  const [bookings, brand] = await Promise.all([
-    getBookings(filters),
+  const [{ bookings, total, page }, brand] = await Promise.all([
+    getBookings(filters, Number(parseFilterValue(resolvedSearchParams.page) || 1)),
     getStoredBrandSettings(),
   ]);
 
@@ -440,6 +463,13 @@ export default async function AdminBookingsPage({
             </table>
           </div>
         )}
+        <AdminPagination
+          page={page}
+          pageCount={getPageCount(total)}
+          total={total}
+          label="bookings"
+          hrefFor={(target) => bookingsPageHref(resolvedSearchParams, target)}
+        />
       </section>
     </main>
   );
@@ -470,9 +500,10 @@ function parseBookingFilters(
 
 async function getBookings(
   filters: BookingFilters,
-): Promise<BookingListItem[]> {
+  requestedPage: number,
+): Promise<{ bookings: BookingListItem[]; total: number; page: number }> {
   if (shouldBypassDatabase()) {
-    return [];
+    return { bookings: [], total: 0, page: 1 };
   }
 
   try {
@@ -528,13 +559,16 @@ async function getBookings(
       where.type = bookingType as never;
     }
 
+    const total = await prisma.booking.count({ where });
+    const page = clampPage(requestedPage, getPageCount(total));
     const bookings = await prisma.booking.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 200,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
     });
 
-    return bookings.map((booking) => {
+    const items = bookings.map((booking) => {
       const paymentMethod =
         booking.paymentData && typeof booking.paymentData === "object"
           ? String((booking.paymentData as { method?: string }).method ?? "N/A")
@@ -560,8 +594,9 @@ async function getBookings(
         createdTime: createdAtParts.time,
       };
     });
+    return { bookings: items, total, page };
   } catch (err) {
     markDatabaseUnavailable(err);
-    return [];
+    return { bookings: [], total: 0, page: 1 };
   }
 }

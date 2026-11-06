@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
-import { destinationSchema } from "@/lib/validations/destination";
+import {
+    destinationSchema,
+    toDestinationFaqs,
+    type DestinationFaq,
+} from "@/lib/validations/destination";
 import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export type DestinationRow = {
@@ -15,6 +19,7 @@ export type DestinationRow = {
     overview: string | null;
     highlights: string[];
     travelTips: string[];
+    faqs: DestinationFaq[];
     bestTimeToVisit: string | null;
     idealStay: string | null;
     currency: string | null;
@@ -84,6 +89,7 @@ export async function GET(request: NextRequest) {
                 ...r,
                 highlights: (r.highlights as string[] | null) ?? [],
                 travelTips: (r.travelTips as string[] | null) ?? [],
+                faqs: toDestinationFaqs(r.faqs),
             })) as DestinationRow[], "db");
         }
 
@@ -109,6 +115,7 @@ export async function POST(request: NextRequest) {
                 overview: validatedData.overview,
                 highlights: validatedData.highlights,
                 travelTips: validatedData.travelTips,
+                faqs: validatedData.faqs,
                 bestTimeToVisit: validatedData.bestTimeToVisit,
                 idealStay: validatedData.idealStay,
                 currency: validatedData.currency,

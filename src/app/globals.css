@@ -205,30 +205,6 @@ textarea:focus {
   outline-offset: 2px;
 }
 
-@keyframes airline-marquee {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.airline-marquee {
-  animation: airline-marquee 28s linear infinite;
-}
-
-.airline-marquee:hover {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .airline-marquee {
-    animation: none;
-  }
-}
-
 /* Keep the footer and floating widgets clear of a detail page's mobile booking bar. */
 @media (max-width: 1023px) {
   body:has([data-booking-bar]) {

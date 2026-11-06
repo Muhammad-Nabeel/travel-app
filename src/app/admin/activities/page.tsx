@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ZodError } from "zod";
-import { activitySchema } from "@/lib/validations/activity";
+import {
+  activitySchema,
+  toActivityFaqs,
+  toStringList,
+  type ActivityFaq,
+} from "@/lib/validations/activity";
 import { MediaUrlInput } from "@/components/admin/media-picker";
 import {
   EMPTY_SEO_DRAFT,
@@ -13,6 +18,8 @@ import {
   seoDraftFrom,
   seoTitleBudgetIssue,
 } from "@/components/admin/seo-fields";
+import { AdminPagination } from "@/components/admin/pagination";
+import { usePagination } from "@/components/admin/use-pagination";
 import { useBrand } from "@/components/shared/brand-provider";
 import { suggestActivitySeo } from "@/lib/seo-suggestions";
 
@@ -21,9 +28,20 @@ type Activity = {
   destinationId: string;
   title: string;
   category: string;
-  description: string | null;
+  description: string;
   imageUrl: string;
   cost: string;
+  duration: string | null;
+  openingHours: string | null;
+  location: string | null;
+  bestTimeToVisit: string | null;
+  highlights: unknown;
+  included: unknown;
+  excluded: unknown;
+  itinerary: unknown;
+  importantInfo: unknown;
+  cancellationPolicy: string | null;
+  faqs: unknown;
   reviews: number;
   reviewCount: number;
   sortOrder: number;
@@ -47,6 +65,42 @@ const CATEGORY_OPTIONS = [
   { value: "shopping", label: "Shopping" },
 ];
 
+/** One item per line; blank lines are dropped. */
+function parseLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+const LIST_FIELDS = [
+  {
+    key: "highlightsInput",
+    label: "Highlights",
+    hint: "Short selling points, one per line (max 10).",
+  },
+  {
+    key: "includedInput",
+    label: "Included",
+    hint: "What the price covers, one per line.",
+  },
+  {
+    key: "excludedInput",
+    label: "Not included",
+    hint: "What travellers pay for separately, one per line.",
+  },
+  {
+    key: "itineraryInput",
+    label: "What to expect",
+    hint: "The experience step by step, one step per line.",
+  },
+  {
+    key: "importantInfoInput",
+    label: "Know before you go",
+    hint: "Dress code, closing days, ID, age or health limits, one per line.",
+  },
+] as const;
+
 const EMPTY_FORM = {
   destinationId: "",
   title: "",
@@ -54,7 +108,17 @@ const EMPTY_FORM = {
   description: "",
   imageUrl: "",
   cost: "",
-  reviews: "4.5",
+  duration: "",
+  openingHours: "",
+  location: "",
+  bestTimeToVisit: "",
+  highlightsInput: "",
+  includedInput: "",
+  excludedInput: "",
+  itineraryInput: "",
+  importantInfoInput: "",
+  cancellationPolicy: "",
+  reviews: "0",
   reviewCount: "0",
   sortOrder: "0",
   isActive: true,
@@ -62,11 +126,13 @@ const EMPTY_FORM = {
 
 export default function AdminActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const pagination = usePagination(activities);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [isActivitySourceDummy, setIsActivitySourceDummy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [seoDraft, setSeoDraft] = useState(EMPTY_SEO_DRAFT);
+  const [faqs, setFaqs] = useState<ActivityFaq[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -115,14 +181,25 @@ export default function AdminActivitiesPage() {
       destinationId: activity.destinationId,
       title: activity.title,
       category: activity.category,
-      description: activity.description ?? "",
+      description: activity.description,
       imageUrl: activity.imageUrl,
       cost: activity.cost,
+      duration: activity.duration ?? "",
+      openingHours: activity.openingHours ?? "",
+      location: activity.location ?? "",
+      bestTimeToVisit: activity.bestTimeToVisit ?? "",
+      highlightsInput: toStringList(activity.highlights).join("\n"),
+      includedInput: toStringList(activity.included).join("\n"),
+      excludedInput: toStringList(activity.excluded).join("\n"),
+      itineraryInput: toStringList(activity.itinerary).join("\n"),
+      importantInfoInput: toStringList(activity.importantInfo).join("\n"),
+      cancellationPolicy: activity.cancellationPolicy ?? "",
       reviews: String(activity.reviews),
       reviewCount: String(activity.reviewCount),
       sortOrder: String(activity.sortOrder),
       isActive: activity.isActive,
     });
+    setFaqs(toActivityFaqs(activity.faqs));
     setSeoDraft(
       seoDraftFrom(
         activity,
@@ -139,6 +216,7 @@ export default function AdminActivitiesPage() {
     setEditingId(null);
     setFormData(EMPTY_FORM);
     setSeoDraft(EMPTY_SEO_DRAFT);
+    setFaqs([]);
     setError("");
   };
 
@@ -161,6 +239,17 @@ export default function AdminActivitiesPage() {
         description: formData.description,
         imageUrl: formData.imageUrl,
         cost: formData.cost,
+        duration: formData.duration,
+        openingHours: formData.openingHours,
+        location: formData.location,
+        bestTimeToVisit: formData.bestTimeToVisit,
+        highlights: parseLines(formData.highlightsInput),
+        included: parseLines(formData.includedInput),
+        excluded: parseLines(formData.excludedInput),
+        itinerary: parseLines(formData.itineraryInput),
+        importantInfo: parseLines(formData.importantInfoInput),
+        cancellationPolicy: formData.cancellationPolicy,
+        faqs,
         reviews: Number(formData.reviews),
         reviewCount: Number(formData.reviewCount),
         sortOrder: Number(formData.sortOrder),
@@ -267,6 +356,7 @@ export default function AdminActivitiesPage() {
                 setEditingId("new");
                 setFormData(EMPTY_FORM);
                 setSeoDraft(EMPTY_SEO_DRAFT);
+                setFaqs([]);
               }}
               className="flex shrink-0 items-center gap-2 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy/85"
             >
@@ -374,11 +464,152 @@ export default function AdminActivitiesPage() {
                 <textarea
                   {...field("description")}
                   placeholder="Describe this activity..."
+                  required
+                  minLength={20}
                   maxLength={500}
                   rows={3}
                   className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
                 />
               </label>
+
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted">
+                  Duration
+                </span>
+                <input
+                  {...field("duration")}
+                  placeholder="e.g. 2–3 hours"
+                  maxLength={60}
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted">
+                  Opening hours
+                </span>
+                <input
+                  {...field("openingHours")}
+                  placeholder="e.g. Daily 10am–10pm (Fri from 2pm)"
+                  maxLength={120}
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted">
+                  Location
+                </span>
+                <input
+                  {...field("location")}
+                  placeholder="e.g. Sheikh Zayed Road, Downtown Dubai"
+                  maxLength={160}
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted">
+                  Best time to visit
+                </span>
+                <input
+                  {...field("bestTimeToVisit")}
+                  placeholder="e.g. Weekday mornings, Nov–Mar"
+                  maxLength={120}
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </label>
+
+              {LIST_FIELDS.map(({ key, label, hint }) => (
+                <label
+                  key={key}
+                  className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3"
+                >
+                  <span className="text-xs font-semibold text-muted">
+                    {label} <span className="font-normal">({hint})</span>
+                  </span>
+                  <textarea
+                    {...field(key)}
+                    rows={4}
+                    className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  />
+                </label>
+              ))}
+
+              <label className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
+                <span className="text-xs font-semibold text-muted">
+                  Cancellation policy
+                </span>
+                <textarea
+                  {...field("cancellationPolicy")}
+                  rows={2}
+                  maxLength={600}
+                  placeholder="e.g. Free cancellation up to 24 hours before the start time."
+                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </label>
+
+              <div className="grid gap-3 sm:col-span-2 lg:col-span-3">
+                <span className="text-xs font-semibold text-muted">
+                  FAQs (answer what travellers search, e.g. &quot;How long
+                  does it take?&quot;, &quot;Is it suitable for kids?&quot;).
+                  Shown on the page and sent to Google.
+                </span>
+                {faqs.map((faq, faqIndex) => {
+                  const setFaq = (patch: Partial<ActivityFaq>) =>
+                    setFaqs((current) =>
+                      current.map((item, idx) =>
+                        idx === faqIndex ? { ...item, ...patch } : item,
+                      ),
+                    );
+                  return (
+                    <div
+                      key={faqIndex}
+                      className="grid gap-2 rounded-xl border border-line p-3"
+                    >
+                      <input
+                        value={faq.question}
+                        onChange={(event) => setFaq({ question: event.target.value })}
+                        placeholder="Question"
+                        maxLength={200}
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                      />
+                      <textarea
+                        rows={2}
+                        value={faq.answer}
+                        onChange={(event) => setFaq({ answer: event.target.value })}
+                        placeholder="Answer"
+                        maxLength={1000}
+                        className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFaqs((current) =>
+                            current.filter((_, idx) => idx !== faqIndex),
+                          )
+                        }
+                        className="justify-self-start text-xs font-semibold text-deal"
+                      >
+                        Remove FAQ
+                      </button>
+                    </div>
+                  );
+                })}
+                {faqs.length < 10 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFaqs((current) => [...current, { question: "", answer: "" }])
+                    }
+                    className="inline-flex items-center gap-2 justify-self-start rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-navy/80"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add FAQ
+                  </button>
+                ) : null}
+              </div>
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-muted">
@@ -489,7 +720,7 @@ export default function AdminActivitiesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {activities.map((activity) => (
+                {pagination.pageItems.map((activity) => (
                   <tr
                     key={activity.id}
                     className="bg-white transition hover:bg-subtle"
@@ -546,6 +777,13 @@ export default function AdminActivitiesPage() {
             </table>
           )}
         </div>
+        <AdminPagination
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          total={pagination.total}
+          label="activities"
+          onPageChange={pagination.setPage}
+        />
 
         {!loading && isActivitySourceDummy && (
           <p className="mt-3 text-xs text-gold-strong">

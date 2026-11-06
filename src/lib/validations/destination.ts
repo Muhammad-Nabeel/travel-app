@@ -34,6 +34,23 @@ export const destinationSchema = z.object({
         .array(z.string().min(1).max(120))
         .max(12, "Travel tips can include up to 12 items")
         .default([]),
+    faqs: z
+        .array(
+            z.object({
+                question: z
+                    .string()
+                    .trim()
+                    .min(5, "Each FAQ question needs at least 5 characters")
+                    .max(200, "FAQ questions must be under 200 characters"),
+                answer: z
+                    .string()
+                    .trim()
+                    .min(10, "Each FAQ answer needs at least 10 characters")
+                    .max(1000, "FAQ answers must be under 1000 characters"),
+            }),
+        )
+        .max(10, "Up to 10 FAQs per destination")
+        .default([]),
     bestTimeToVisit: z
         .string()
         .max(80, "Best time to visit must be under 80 characters")
@@ -94,5 +111,20 @@ export const destinationSchema = z.object({
     isActive: z.boolean().default(true),
     ...seoFields,
 });
+
+export type DestinationFaq = { question: string; answer: string };
+
+/** Reads the stored JSON column into FAQ items, skipping malformed entries. */
+export function toDestinationFaqs(value: unknown): DestinationFaq[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter(
+        (item): item is DestinationFaq =>
+            Boolean(item) &&
+            typeof item.question === "string" &&
+            typeof item.answer === "string" &&
+            item.question.trim() !== "" &&
+            item.answer.trim() !== "",
+    );
+}
 
 export type DestinationInput = z.infer<typeof destinationSchema>;

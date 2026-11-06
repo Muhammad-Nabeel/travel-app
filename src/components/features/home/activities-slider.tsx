@@ -49,15 +49,17 @@ export async function ActivitiesSlider() {
                 </p>
               )}
 
-              <div className="mt-3 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
-                  {activity.reviews.toFixed(1)}
-                  <Star className="size-3 fill-white" />
-                </span>
-                <span className="text-xs text-muted">
-                  {activity.reviewCount.toLocaleString()} reviews
-                </span>
-              </div>
+              {activity.reviewCount > 0 ? (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-success px-1.5 py-0.5 text-xs font-bold text-white">
+                    {activity.reviews.toFixed(1)}
+                    <Star className="size-3 fill-white" />
+                  </span>
+                  <span className="text-xs text-muted">
+                    {activity.reviewCount.toLocaleString()} reviews
+                  </span>
+                </div>
+              ) : null}
 
               <div className="mt-auto pt-4 text-right">
                 <p className="text-lg font-bold text-foreground">{activity.cost}</p>

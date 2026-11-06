@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 
+import { AutoStepCarousel } from "@/components/shared/auto-step-carousel";
 import { getPublishedReviews } from "@/lib/home-sections";
 
 function RatingStars({ rating }: { rating: number }) {
@@ -45,14 +46,17 @@ export async function CustomerReviewsSection() {
             </h2>
           </div>
         </div>
-        <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-3">
+        <AutoStepCarousel
+          trackClassName="items-stretch gap-4 pb-3"
+          itemClassName="w-[85%] shrink-0 sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]"
+        >
           {reviews.map((review) => (
             <article
               key={review.id}
-              className="w-[17.5rem] shrink-0 snap-start rounded-2xl border border-line bg-white p-4 shadow-card sm:w-[18.5rem]"
+              className="h-full rounded-2xl border border-line bg-white p-4 shadow-card"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-col gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">
                     {initialsFromName(review.customerName)}
                   </span>
@@ -86,7 +90,7 @@ export async function CustomerReviewsSection() {
               </div>
             </article>
           ))}
-        </div>
+        </AutoStepCarousel>
       </div>
     </section>
   );

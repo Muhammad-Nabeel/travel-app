@@ -18,7 +18,13 @@ import { getActivityHref } from "@/lib/activity-href";
 import { prisma } from "@/lib/db";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { StructuredData } from "@/components/shared/structured-data";
-import { absoluteUrl, buildMetadata, createBreadcrumbSchema } from "@/lib/seo";
+import {
+  absoluteUrl,
+  buildMetadata,
+  createBreadcrumbSchema,
+  createFAQSchema,
+} from "@/lib/seo";
+import { toDestinationFaqs } from "@/lib/validations/destination";
 
 type DestinationPageProps = {
   params: Promise<{ slug: string }>;
@@ -136,6 +142,7 @@ export default async function DestinationDetailsPage({
 
   const highlights = toStringArray(destination.highlights);
   const travelTips = toStringArray(destination.travelTips);
+  const faqs = toDestinationFaqs(destination.faqs);
 
   const facts = [
     {
@@ -186,7 +193,13 @@ export default async function DestinationDetailsPage({
               addressLocality: destination.city,
               addressCountry: destination.country,
             },
-            touristType: highlights,
+            includesAttraction:
+              highlights.length > 0
+                ? highlights.map((name) => ({
+                    "@type": "TouristAttraction",
+                    name,
+                  }))
+                : undefined,
           },
           createBreadcrumbSchema([
             { name: "Home", path: "/" },
@@ -197,6 +210,7 @@ export default async function DestinationDetailsPage({
               }`,
             },
           ]),
+          ...(faqs.length > 0 ? [createFAQSchema(faqs)] : []),
         ]}
       />
 
@@ -251,7 +265,7 @@ export default async function DestinationDetailsPage({
         </div>
       </section>
 
-      <div className="section-shell -mt-7 relative z-20 md:-mt-10">
+      <div className="-mt-7 relative z-20 md:sticky md:top-[calc(var(--app-header-height)-0.5rem)] md:z-40 md:-mt-10">
         <FlightSearchEngine
           variant="embedded"
           initialValues={{
@@ -270,6 +284,29 @@ export default async function DestinationDetailsPage({
             {destination.overview ??
               "Destination details will appear here once your admin team adds the overview content."}
           </p>
+
+          {faqs.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold text-slate-900">
+                {destination.city} travel FAQs
+              </h2>
+              <div className="mt-3 space-y-2">
+                {faqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    className="group rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                  >
+                    <summary className="cursor-pointer list-none font-medium text-slate-900 marker:hidden">
+                      {faq.question}
+                    </summary>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
 
           {travelTips.length > 0 && (
             <div className="mt-8">
@@ -396,9 +433,11 @@ export default async function DestinationDetailsPage({
                     <span className="text-sm font-semibold text-slate-700">
                       {activity.cost}
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {activity.reviews.toFixed(1)} ({activity.reviewCount})
-                    </span>
+                    {activity.reviewCount > 0 ? (
+                      <span className="text-xs text-slate-500">
+                        {activity.reviews.toFixed(1)} ({activity.reviewCount})
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </Link>

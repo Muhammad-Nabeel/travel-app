@@ -185,3 +185,35 @@ export function suggestVisaSeo(
         ),
     };
 }
+
+export function suggestFlightRouteSeo(
+    input: {
+        originCity: string;
+        destinationCity: string;
+        flightTime: string;
+        airlines: Array<{ name: string }>;
+        fareFrom?: string | null;
+    },
+    brand = SITE_NAME,
+): SeoCopy {
+    const from = input.originCity.trim();
+    const to = input.destinationCity.trim();
+    const names = input.airlines.map((airline) => airline.name.trim()).filter(Boolean);
+    const airlines =
+        names.length > 0 ? ` Compare ${names.slice(0, 3).join(", ")}${names.length > 3 ? " and more" : ""}.` : "";
+    const time = input.flightTime.trim() ? ` Flight time: ${input.flightTime.trim()}.` : "";
+    const fare = input.fareFrom?.trim() ? ` Fares from ${input.fareFrom.trim()}.` : "";
+
+    return {
+        title: fitTitleFor(
+            brand,
+            `${from} to ${to} Flights – Cheap Air Tickets & Airlines`,
+            `${from} to ${to} Flights – Cheap Air Tickets`,
+            `${from} to ${to} Flights`,
+        ),
+        description: toMetaDescription(
+            `Book cheap ${from} to ${to} air tickets.${airlines}${time}${fare} Call or WhatsApp our Lahore team.`,
+            MAX_DESCRIPTION_LENGTH,
+        ),
+    };
+}

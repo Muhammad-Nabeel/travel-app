@@ -202,3 +202,7 @@ export function fitTitle(...candidates: string[]) {
         candidates[candidates.length - 1]
     );
 }
+
+/** Opening-hours rule in schema.org shorthand, e.g. "Mo-Sa 10:00-19:00". */
+export const OPENING_HOURS_PATTERN =
+  /^(Mo|Tu|We|Th|Fr|Sa|Su)(-(Mo|Tu|We|Th|Fr|Sa|Su))? ([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-4]):[0-5]\d$/;
