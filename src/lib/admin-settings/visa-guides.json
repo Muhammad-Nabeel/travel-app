@@ -1,0 +1,75 @@
+{
+  "AE": {
+    "overview": "The UAE 30-day visit visa lets Pakistani passport holders visit Dubai, Abu Dhabi and the rest of the Emirates for a holiday or to see family. EasyTrip handles the application for you: we check your documents, submit them and share the visa with you as soon as it is issued. The total of PKR 49,000 per person includes the visa fee and our service fee, with no hidden charges.",
+    "processingTime": "Usually 3–7 working days after we receive complete documents",
+    "documents": [
+      "Passport scan, valid for at least 6 months from your travel date",
+      "Recent passport-size photo with a white background",
+      "Copy of your CNIC",
+      "Confirmed return air ticket",
+      "Hotel booking for your stay, or your host's address if staying with family",
+      "Bank statement for the last 6 months, if requested"
+    ],
+    "steps": [
+      "Send your passport, photo and CNIC to our visa team on WhatsApp or by email",
+      "We review your documents and confirm the exact checklist for your trip",
+      "Pay the visa fee at our Lahore office or by the payment method we confirm",
+      "We submit your application and track it until a decision is made",
+      "Receive your visa and keep a printed copy for check-in and arrival"
+    ],
+    "faqs": [
+      {
+        "question": "What is the Dubai visa price in Pakistan?",
+        "answer": "Our 30-day single-entry UAE visit visa costs PKR 49,000 per person in total, including our service fee."
+      },
+      {
+        "question": "How long can I stay on a UAE visit visa?",
+        "answer": "Up to 30 days from the date you enter the UAE, on a single entry."
+      },
+      {
+        "question": "Do I need a return ticket for a Dubai visa?",
+        "answer": "Yes. A confirmed return ticket is normally part of the application, and airlines may ask to see it at check-in."
+      },
+      {
+        "question": "Can EasyTrip book my flights and hotel as well?",
+        "answer": "Yes. We can book your air tickets and hotel together with the visa, which also gives you the documents the application needs."
+      }
+    ]
+  },
+  "MY": {
+    "overview": "Pakistani passport holders can apply for Malaysia's eVISA online instead of visiting the embassy. The single-entry eVISA allows a stay of up to 30 days for tourism in Kuala Lumpur, Penang, Langkawi and the rest of Malaysia. EasyTrip prepares and submits your application, and the total of PKR 40,000 per person covers the visa fee and our service fee.",
+    "processingTime": "Usually 3–5 working days after we receive complete documents",
+    "documents": [
+      "Passport scan, valid for at least 6 months with two blank pages",
+      "Recent passport-size photo with a white background",
+      "Confirmed return air ticket",
+      "Hotel booking for your full stay",
+      "Bank statement for the last 3 months, if requested"
+    ],
+    "steps": [
+      "Send your passport and photo to our visa team on WhatsApp or by email",
+      "We review your documents and confirm the exact checklist for your trip",
+      "Pay the visa fee at our Lahore office or by the payment method we confirm",
+      "We submit your eVISA application and share the approved visa with you",
+      "Complete the Malaysia Digital Arrival Card (MDAC) within 3 days before you fly"
+    ],
+    "faqs": [
+      {
+        "question": "How much does a Malaysia visa cost from Pakistan?",
+        "answer": "Our Malaysia eVISA costs PKR 40,000 per person in total: PKR 30,000 visa fee plus a PKR 10,000 service fee."
+      },
+      {
+        "question": "Do Pakistanis need a visa for Malaysia?",
+        "answer": "Yes. Pakistani passport holders need a visa for Malaysia, and the eVISA is the quickest option for a tourist trip."
+      },
+      {
+        "question": "What is the Malaysia Digital Arrival Card (MDAC)?",
+        "answer": "The MDAC is a free online arrival form that most visitors must complete within 3 days before arriving in Malaysia. Keep the confirmation on your phone."
+      },
+      {
+        "question": "How long can I stay on a Malaysia eVISA?",
+        "answer": "Up to 30 days on a single entry."
+      }
+    ]
+  }
+}

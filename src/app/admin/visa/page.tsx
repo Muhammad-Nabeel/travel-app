@@ -14,6 +14,7 @@ import {
 import { useBrand } from "@/components/shared/brand-provider";
 import type {
   VisaCountryEntry,
+  VisaFaq,
   VisaType,
 } from "@/lib/admin-settings/visa-settings";
 import { suggestVisaSeo } from "@/lib/seo-suggestions";
@@ -32,7 +33,31 @@ const EMPTY_ENTRY: VisaCountryEntry = {
   sortOrder: 0,
   seoTitle: "",
   seoDescription: "",
+  overview: "",
+  processingTime: "",
+  // Starting checklist for a new country; admins edit it per visa.
+  documents: [
+    "Passport scan, valid for at least 6 months from your travel date",
+    "Recent passport-size photo with a white background",
+    "Confirmed return air ticket",
+    "Hotel booking for your stay",
+  ],
+  steps: [
+    "Send your passport and photo to our visa team on WhatsApp or by email",
+    "We review your documents and confirm the exact checklist for your trip",
+    "Pay the visa fee at our office or by the payment method we confirm",
+    "We submit your application and share the visa with you once issued",
+  ],
+  faqs: [],
 };
+
+const INPUT_CLASS =
+  "rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand";
+
+/** One list item per line; blank lines are dropped when the server saves. */
+function linesToList(value: string) {
+  return value.split("\n");
+}
 
 const VISA_TYPES: { value: VisaType; label: string }[] = [
   { value: "e-visa", label: "e-Visa" },
@@ -392,6 +417,128 @@ export default function AdminVisaPage() {
                   />
                   Active
                 </label>
+              </div>
+
+              <div className="mt-6 grid gap-4 border-t border-line pt-5">
+                <p className="text-sm font-semibold text-navy">
+                  Visa guide (shown on the public visa page)
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted">
+                    Overview
+                  </span>
+                  <textarea
+                    rows={4}
+                    value={entry.overview}
+                    onChange={(event) =>
+                      updateEntry(index, "overview", event.target.value)
+                    }
+                    placeholder="Who this visa is for, what it allows and what the total price includes."
+                    className={INPUT_CLASS}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted">
+                    Processing time
+                  </span>
+                  <input
+                    value={entry.processingTime}
+                    onChange={(event) =>
+                      updateEntry(index, "processingTime", event.target.value)
+                    }
+                    placeholder="Usually 3–5 working days after complete documents"
+                    className={INPUT_CLASS}
+                  />
+                </label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold text-muted">
+                      Required documents (one per line)
+                    </span>
+                    <textarea
+                      rows={6}
+                      value={entry.documents.join("\n")}
+                      onChange={(event) =>
+                        updateEntry(index, "documents", linesToList(event.target.value))
+                      }
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold text-muted">
+                      Steps to apply (one per line)
+                    </span>
+                    <textarea
+                      rows={6}
+                      value={entry.steps.join("\n")}
+                      onChange={(event) =>
+                        updateEntry(index, "steps", linesToList(event.target.value))
+                      }
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3">
+                  <span className="text-xs font-semibold text-muted">
+                    FAQs (answer what applicants search, e.g. &quot;{entry.country || "Dubai"} visa price in Pakistan&quot;)
+                  </span>
+                  {entry.faqs.map((faq, faqIndex) => {
+                    const setFaq = (patch: Partial<VisaFaq>) =>
+                      updateEntry(
+                        index,
+                        "faqs",
+                        entry.faqs.map((item, idx) =>
+                          idx === faqIndex ? { ...item, ...patch } : item,
+                        ),
+                      );
+                    return (
+                      <div
+                        key={faqIndex}
+                        className="grid gap-2 rounded-xl border border-line p-3"
+                      >
+                        <input
+                          value={faq.question}
+                          onChange={(event) => setFaq({ question: event.target.value })}
+                          placeholder="Question"
+                          className={INPUT_CLASS}
+                        />
+                        <textarea
+                          rows={2}
+                          value={faq.answer}
+                          onChange={(event) => setFaq({ answer: event.target.value })}
+                          placeholder="Answer"
+                          className={INPUT_CLASS}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateEntry(
+                              index,
+                              "faqs",
+                              entry.faqs.filter((_, idx) => idx !== faqIndex),
+                            )
+                          }
+                          className="justify-self-start text-xs font-semibold text-deal"
+                        >
+                          Remove FAQ
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateEntry(index, "faqs", [
+                        ...entry.faqs,
+                        { question: "", answer: "" },
+                      ])
+                    }
+                    className="inline-flex items-center gap-2 justify-self-start rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-navy/80"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add FAQ
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4">

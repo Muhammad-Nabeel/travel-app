@@ -1,0 +1,122 @@
+{
+ "adminSetting": [
+  {
+   "key": "visa_countries",
+   "value": "[{\"country\":\"Malaysia\",\"visaType\":\"e-visa\",\"duration\":\"30 days\",\"entry\":\"Single Entry\",\"perPersonCost\":\"PKR 30,000 / Traveler\",\"serviceFee\":\"PKR 10,000\",\"netCost\":\"PKR 40,000\",\"code\":\"MY\",\"isActive\":true,\"sortOrder\":1,\"seoTitle\":\"Malaysia Visa from Pakistan – Requirements & Fees\",\"seoDescription\":\"Apply for a Malaysia e-Visa from Pakistan: 30 days stay, single entry. Fees from PKR 40,000. Document checklist and expert help with your application.\"},{\"country\":\"UAE\",\"visaType\":\"sticker-visa\",\"duration\":\"30 days\",\"entry\":\"Single Entry\",\"perPersonCost\":\"PKR 39,000 / Traveler\",\"serviceFee\":\"PKR 8,000\",\"netCost\":\"PKR 49,000\",\"code\":\"AE\",\"isActive\":true,\"sortOrder\":2,\"seoTitle\":\"UAE Visa from Pakistan – Requirements & Fees\",\"seoDescription\":\"Apply for a UAE Sticker Visa from Pakistan: 30 days stay, single entry. Fees from PKR 49,000. Document checklist and expert help with your application.\"}]"
+  }
+ ],
+ "destinations": [
+  {
+   "id": "cmvqxee8x00026m6p6txkernl",
+   "slug": "islamabad",
+   "seoTitle": "Islamabad Travel Guide & Flights | EasyTrip",
+   "seoDescription": "Plan an Islamabad getaway with Faisal Mosque, the Margalla Hills and cultural landmarks. Explore travel tips and enquire about flights with EasyTrip."
+  },
+  {
+   "id": "cmvqxee8x00046m6pp8pwnv9y",
+   "slug": "jeddah",
+   "seoTitle": "Jeddah Travel Guide & Flights from Pakistan",
+   "seoDescription": "Discover Al-Balad, Jeddah Corniche and the Red Sea waterfront. Plan your stay and enquire about flights from Pakistan to Jeddah with EasyTrip"
+  },
+  {
+   "id": "cmvqxee8x00056m6pja0w38gi",
+   "slug": "istanbul",
+   "seoTitle": "Istanbul Travel Guide & Flights from Pakistan",
+   "seoDescription": "Explore Istanbul’s historic mosques, Grand Bazaar and Bosphorus views. Plan your itinerary and enquire about flights from Pakistan with EasyTrip."
+  },
+  {
+   "id": "cmvqxee8x00066m6p60cjyvlj",
+   "slug": "london",
+   "seoTitle": "London Travel Guide & Flights from Pakistan",
+   "seoDescription": "Discover London’s royal landmarks, museums and Thames walks. Plan your stay and enquire about flights from Pakistan to London with EasyTrip."
+  },
+  {
+   "id": "cmvqxee8x00076m6p7zuewjlp",
+   "slug": "kuala-lumpur",
+   "seoTitle": "Kuala Lumpur Guide & Flights from Pakistan",
+   "seoDescription": "Explore Kuala Lumpur’s Petronas Towers, markets and Malaysian food. Plan your city stay and enquire about flights from Pakistan with EasyTrip."
+  },
+  {
+   "id": "cmvqxee8x00016m6p517srjub",
+   "slug": "karachi",
+   "seoTitle": "Karachi Travel Guide – Best Time, Tips & Flights",
+   "seoDescription": "Discover Karachi’s coastal views, heritage landmarks and food scene. Find practical trip tips and enquire about flights to Karachi with EasyTrip."
+  },
+  {
+   "id": "cmvqxee8x00036m6pivxnnujw",
+   "slug": "dubai",
+   "seoTitle": "Dubai Travel Guide & Flights from Pakistan",
+   "seoDescription": "Explore Dubai’s skyline, historic souks and desert experiences. Plan your city break and enquire about flights from Pakistan to Dubai with EasyTrip."
+  }
+ ],
+ "activities": [
+  {
+   "id": "cmvqxeeph00086m6pzqt2i2fj",
+   "slug": "desert-safari-adventure-dubai",
+   "seoTitle": "Desert Safari Adventure – Tickets & Prices",
+   "seoDescription": "Dune bashing, sunset views, and a traditional camp dinner. From PKR 8,500. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeeph00096m6pepzj8slp",
+   "slug": "burj-khalifa-observation-deck-dubai",
+   "seoTitle": "Burj Khalifa Observation Deck – Tickets & Prices",
+   "seoDescription": "Skip-the-line access to the world's tallest tower. From PKR 4,200. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeeph000a6m6pxaqndgha",
+   "slug": "corniche-sunset-walk-jeddah",
+   "seoTitle": "Corniche Sunset Walk in Jeddah – Tickets & Prices",
+   "seoDescription": "A relaxed coastal promenade with dining and sea views. From Free. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeeph000c6m6pr3s6ka9l",
+   "slug": "london-eye-experience-london",
+   "seoTitle": "London Eye Experience – Tickets & Prices",
+   "seoDescription": "Panoramic skyline views from the Thames. From PKR 6,500. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeepi000d6m6pj17h2qmi",
+   "slug": "petronas-towers-skybridge-kuala-lumpur",
+   "seoTitle": "Petronas Towers Skybridge – Tickets & Prices",
+   "seoDescription": "Iconic skyline views and tower exhibits. From PKR 3,900. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeeph000b6m6psbdtosey",
+   "slug": "historic-old-city-tour-istanbul",
+   "seoTitle": "Historic Old City Tour – Tickets & Prices",
+   "seoDescription": "Hagia Sophia, Blue Mosque, and Grand Bazaar highlights. From PKR 5,800. Check what's included and book with a EasyTrip travel adviser."
+  },
+  {
+   "id": "cmvqxeepi000f6m6pz94fhema",
+   "slug": "clifton-beach-evening-karachi",
+   "seoTitle": "Clifton Beach Evening – Tickets & Prices",
+   "seoDescription": "Sunset, camel rides, and coastal snacks. From Free. Check what's included and book with a EasyTrip travel adviser."
+  }
+ ],
+ "umrah": [
+  {
+   "id": "cmvxrt9xn000i8e6pc1qqxg96",
+   "title": "15-Day Group Umrah from Lahore – Voco Makkah & Gulnar Taiba (23 Dec)",
+   "seoTitle": "15-Day Group Umrah from Lahore – Voco Makkah",
+   "seoDescription": "Group Umrah from Lahore, 23 Dec on Saudia. 8 nights Voco Makkah, 6 nights Gulnar Taiba Madinah. Visa, flights & transport included. From PKR 385,000."
+  },
+  {
+   "id": "cmvxsbw8q000j8e6pbcpe1of0",
+   "title": "15-Day Group Umrah from Lahore – Voco Makkah & Gulnar Taiba (29 Dec)\"",
+   "seoTitle": "5-Day Group Umrah from Lahore – 29 Dec",
+   "seoDescription": "Group Umrah from Lahore, 29 Dec on Saudia. 8 nights Voco Makkah, 6 nights Gulnar Taiba Madinah. Visa, flights & transport included. From PKR 385,000"
+  },
+  {
+   "id": "cmvxsiprj000l8e6pnu1d2i29",
+   "title": "15-Day Group Umrah from Lahore – Badar Al-Masa & Gulnar Taiba (23 Dec)",
+   "seoTitle": "Group Umrah from Lahore – Badar Al-Masa",
+   "seoDescription": "15-day group Umrah from Lahore, 23 Dec on Saudia. Badar Al-Masa Makkah (600 m) & Gulnar Taiba Madinah (200 m). From PKR 390,000 per person."
+  },
+  {
+   "id": "cmvxtviia000o8e6po538mukx",
+   "title": "15-Day Group Umrah from Lahore – Badar Al-Masa & Gulnar Taiba (29 Dec)",
+   "seoTitle": "Group Umrah from Lahore – Badar Al-Masa 29 De",
+   "seoDescription": "15-day group Umrah from Lahore, 29 Dec on Saudia. Badar Al-Masa Makkah (600 m) & Gulnar Taiba Madinah (200 m). From PKR 390,000 per person."
+  }
+ ]
+}

@@ -1,5 +1,17 @@
 import { toVisaSlug, getVisaPath, findVisaBySlug } from "@/lib/visa";
-import type { VisaCountryEntry } from "@/lib/admin-settings/visa-settings";
+import {
+    findVisaGuideIssue,
+    type VisaCountryEntry,
+    type VisaGuide,
+} from "@/lib/admin-settings/visa-settings";
+
+const guide: VisaGuide = {
+    overview: "What this visa allows.",
+    processingTime: "3–5 working days",
+    documents: ["Passport"],
+    steps: ["Send documents"],
+    faqs: [],
+};
 
 // Minimal stub entries — no DB access needed
 const mockVisas: VisaCountryEntry[] = [
@@ -16,6 +28,7 @@ const mockVisas: VisaCountryEntry[] = [
         sortOrder: 1,
         seoTitle: "Visa from Pakistan – Requirements & Fees",
         seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
+        ...guide,
     },
     {
         country: "United Arab Emirates",
@@ -30,6 +43,7 @@ const mockVisas: VisaCountryEntry[] = [
         sortOrder: 2,
         seoTitle: "Visa from Pakistan – Requirements & Fees",
         seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
+        ...guide,
     },
     {
         country: "Turkey",
@@ -44,6 +58,7 @@ const mockVisas: VisaCountryEntry[] = [
         sortOrder: 3,
         seoTitle: "Visa from Pakistan – Requirements & Fees",
         seoDescription: "Apply from Pakistan with a document checklist and expert help with your application.",
+        ...guide,
     },
 ];
 
@@ -120,5 +135,24 @@ describe("findVisaBySlug", () => {
         const result = findVisaBySlug(mockVisas, "turkey-e-visa");
         expect(result?.country).toBe("Turkey");
         expect(result?.isActive).toBe(false);
+    });
+});
+
+// ─── findVisaGuideIssue ─────────────────────────────────────────────────────────
+
+describe("findVisaGuideIssue", () => {
+    it("accepts complete guide content", () => {
+        expect(findVisaGuideIssue(mockVisas)).toBeNull();
+    });
+
+    it("flags a missing overview, documents or steps", () => {
+        expect(findVisaGuideIssue([{ ...mockVisas[0], overview: " " }])).toMatch(/overview/);
+        expect(findVisaGuideIssue([{ ...mockVisas[0], documents: ["", " "] }])).toMatch(/document/);
+        expect(findVisaGuideIssue([{ ...mockVisas[0], steps: [] }])).toMatch(/step/);
+    });
+
+    it("flags an FAQ with a question but no answer", () => {
+        const faqs = [{ question: "How much?", answer: "" }];
+        expect(findVisaGuideIssue([{ ...mockVisas[0], faqs }])).toMatch(/FAQ/);
     });
 });

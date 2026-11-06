@@ -3,9 +3,26 @@ import { z } from "zod";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { seoFields } from "@/lib/validations/seo";
 
+import visaGuides from "./visa-guides.json";
+
 export type VisaType = "e-visa" | "sticker-visa";
 
-export type VisaCountryEntry = {
+export type VisaFaq = { question: string; answer: string };
+
+/**
+ * Guide content shown on the visa detail page. Required for every country so
+ * each page answers what applicants search for (documents, fee, processing
+ * time, steps) instead of rendering a thin price card.
+ */
+export type VisaGuide = {
+    overview: string;
+    processingTime: string;
+    documents: string[];
+    steps: string[];
+    faqs: VisaFaq[];
+};
+
+export type VisaCountryEntry = VisaGuide & {
     country: string;
     visaType: VisaType;
     duration: string;
@@ -24,6 +41,22 @@ const VISA_COUNTRIES_KEY = "visa_countries";
 
 function sanitizeText(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
+}
+
+function sanitizeList(value: unknown): string[] {
+    return Array.isArray(value) ? value.map(sanitizeText).filter(Boolean) : [];
+}
+
+function sanitizeFaqs(value: unknown): VisaFaq[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .map((item) => {
+            const faq = (item ?? {}) as Partial<VisaFaq>;
+            return { question: sanitizeText(faq.question), answer: sanitizeText(faq.answer) };
+        })
+        .filter((faq) => faq.question && faq.answer);
 }
 
 function normalizeVisaType(value: unknown): VisaType {
@@ -64,24 +97,26 @@ export function defaultVisaCountries(): VisaCountryEntry[] {
             code: "MY",
             isActive: true,
             sortOrder: 1,
-            seoTitle: "Malaysia e-Visa from Pakistan – Fees & Documents",
+            seoTitle: "Malaysia Visa for Pakistani – e-Visa Fees",
             seoDescription:
-                "Apply for a Malaysia e-Visa from Pakistan: 30-day stay, single entry. Fees from PKR 40,000. Document checklist and expert help with your application.",
+                "Malaysia e-visa from Pakistan: 30 days, single entry, PKR 40,000 all-in with service fee. Document checklist and help applying from our Lahore visa team.",
+            ...visaGuides.MY,
         },
         {
             country: "UAE",
             visaType: "sticker-visa",
             duration: "30 days",
             entry: "Single Entry",
-            perPersonCost: "PKR 25,000 / Traveler",
+            perPersonCost: "PKR 39,000 / Traveler",
             serviceFee: "PKR 8,000",
-            netCost: "PKR 33,000",
+            netCost: "PKR 49,000",
             code: "AE",
             isActive: true,
             sortOrder: 2,
-            seoTitle: "UAE Visa from Pakistan – Requirements & Fees",
+            seoTitle: "Dubai Visa Price in Pakistan – UAE Visit Visa",
             seoDescription:
-                "Apply for a UAE sticker visa from Pakistan: 30-day stay, single entry. Fees from PKR 33,000. Document checklist and expert help with your application.",
+                "UAE (Dubai) 30-day visit visa from Pakistan for PKR 49,000 all-in with service fee. Document checklist, processing time and help from our Lahore visa team.",
+            ...visaGuides.AE,
         },
     ];
 }
@@ -110,6 +145,11 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
             const sortOrder = normalizeNumber(entry.sortOrder, 0);
             const seoTitle = sanitizeText(entry.seoTitle);
             const seoDescription = sanitizeText(entry.seoDescription);
+            const overview = sanitizeText(entry.overview);
+            const processingTime = sanitizeText(entry.processingTime);
+            const documents = sanitizeList(entry.documents);
+            const steps = sanitizeList(entry.steps);
+            const faqs = sanitizeFaqs(entry.faqs);
 
             if (
                 !country ||
@@ -119,7 +159,11 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
                 !serviceFee ||
                 !netCost ||
                 !seoTitle ||
-                !seoDescription
+                !seoDescription ||
+                !overview ||
+                !processingTime ||
+                documents.length === 0 ||
+                steps.length === 0
             ) {
                 return null;
             }
@@ -137,6 +181,11 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
                 sortOrder,
                 seoTitle,
                 seoDescription,
+                overview,
+                processingTime,
+                documents,
+                steps,
+                faqs,
             } satisfies VisaCountryEntry;
         })
         .filter((item): item is VisaCountryEntry => item !== null);
@@ -145,6 +194,22 @@ function sanitizeVisaCountries(value: unknown): VisaCountryEntry[] {
 }
 
 const visaSeoSchema = z.object(seoFields);
+
+/** First entry missing required guide content, as a message for the admin. */
+export function findVisaGuideIssue(entries: Partial<VisaCountryEntry>[]): string | null {
+    for (const entry of entries) {
+        const name = sanitizeText(entry.country) || "a visa country";
+        if (!sanitizeText(entry.overview)) return `${name}: add an overview.`;
+        if (!sanitizeText(entry.processingTime)) return `${name}: add the processing time.`;
+        if (sanitizeList(entry.documents).length === 0) return `${name}: list at least one required document.`;
+        if (sanitizeList(entry.steps).length === 0) return `${name}: list at least one application step.`;
+        const faqs = Array.isArray(entry.faqs) ? (entry.faqs as Partial<VisaFaq>[]) : [];
+        if (faqs.some((faq) => Boolean(sanitizeText(faq?.question)) !== Boolean(sanitizeText(faq?.answer)))) {
+            return `${name}: every FAQ needs both a question and an answer.`;
+        }
+    }
+    return null;
+}
 
 /** First entry whose SEO title or description is missing or out of range, as a message for the admin. */
 export function findVisaSeoIssue(entries: Partial<VisaCountryEntry>[]): string | null {

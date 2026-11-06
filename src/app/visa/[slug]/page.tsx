@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BadgeCheck, CalendarDays, FileCheck2, Globe2 } from "lucide-react";
+import { BadgeCheck, CalendarDays, Clock, FileCheck2, Globe2 } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/features/detail/breadcrumbs";
 import {
   BookingCard,
+  CheckList,
   DetailLayout,
   DetailPage,
   DetailSection,
@@ -25,6 +26,7 @@ import {
   absoluteUrl,
   buildMetadata,
   createBreadcrumbSchema,
+  createFAQSchema,
   createWebPageSchema,
 } from "@/lib/seo";
 import { findVisaBySlug, getVisaPath } from "@/lib/visa";
@@ -50,6 +52,12 @@ function detailsTitle(visa: VisaCountryEntry) {
 
 function detailsDescription(visa: VisaCountryEntry) {
   return `Apply for a ${visa.duration} ${visaLabel(visa.visaType)} to ${visa.country} with guided support and transparent pricing.`;
+}
+
+/** Numeric amount for schema.org Offer.price, e.g. "PKR 49,000" -> "49000". */
+function offerPrice(value: string) {
+  const match = value.replace(/,/g, "").match(/\d+(?:\.\d+)?/);
+  return match ? match[0] : undefined;
 }
 
 async function getVisaBySlug(slug: string) {
@@ -128,10 +136,11 @@ export default async function VisaDetailsPage({
             offers: {
               "@type": "Offer",
               priceCurrency: "PKR",
-              price: visa.netCost,
+              price: offerPrice(visa.netCost),
               url: absoluteUrl(pagePath),
             },
           },
+          ...(visa.faqs.length > 0 ? [createFAQSchema(visa.faqs)] : []),
         ]}
       />
 
@@ -171,6 +180,14 @@ export default async function VisaDetailsPage({
             </BookingCard>
           }
         >
+          <DetailSection title={`${visa.country} visa from Pakistan`}>
+            <div className="space-y-3 text-sm leading-relaxed text-foreground">
+              {visa.overview.split(/\n\s*\n/).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          </DetailSection>
+
           <DetailSection title="Visa details">
             <FactGrid
               facts={[
@@ -178,9 +195,42 @@ export default async function VisaDetailsPage({
                 { icon: FileCheck2, label: "Visa type", value: visaLabel(visa.visaType) },
                 { icon: CalendarDays, label: "Length of stay", value: visa.duration },
                 { icon: BadgeCheck, label: "Entry", value: visa.entry },
+                { icon: Clock, label: "Processing time", value: visa.processingTime },
               ]}
             />
           </DetailSection>
+
+          <DetailSection title={`Documents required for ${visa.country} visa`}>
+            <CheckList items={visa.documents} />
+          </DetailSection>
+
+          <DetailSection title={`How to apply for a ${visa.country} visa`}>
+            <ol className="space-y-3">
+              {visa.steps.map((step, index) => (
+                <li key={step} className="flex items-start gap-3 text-sm text-foreground">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand">
+                    {index + 1}
+                  </span>
+                  <span className="pt-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </DetailSection>
+
+          {visa.faqs.length > 0 ? (
+            <DetailSection title={`${visa.country} visa FAQs`}>
+              <div className="divide-y divide-line rounded-card border border-line">
+                {visa.faqs.map((faq) => (
+                  <details key={faq.question} className="group px-5 py-4">
+                    <summary className="cursor-pointer list-none text-sm font-semibold text-foreground">
+                      <h3 className="inline">{faq.question}</h3>
+                    </summary>
+                    <p className="mt-2 text-sm leading-relaxed text-muted">{faq.answer}</p>
+                  </details>
+                ))}
+              </div>
+            </DetailSection>
+          ) : null}
 
           <DetailSection title="Apply with an adviser" id={ENQUIRE_ID}>
             <p className="mb-5 text-sm text-muted">
