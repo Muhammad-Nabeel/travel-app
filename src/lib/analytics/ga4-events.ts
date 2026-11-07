@@ -72,11 +72,23 @@ function pushToDataLayer(entry: EventParams) {
     window.dataLayer.push(entry);
 }
 
+// GTM keeps every pushed key in its data model until overwritten, so an
+// event's params would leak into later events (a lead's item_name on a
+// contact_click). Reset them right after the event has been processed.
+function pushGtmEvent(eventName: string, params: EventParams) {
+    pushToDataLayer({ event: eventName, ...params });
+
+    const keys = Object.keys(params);
+    if (keys.length > 0) {
+        pushToDataLayer(Object.fromEntries(keys.map((key) => [key, undefined])));
+    }
+}
+
 export function trackEvent(eventName: string, params: EventParams = {}) {
     const provider = getProvider();
 
     if (provider === "gtm") {
-        pushToDataLayer({ event: eventName, ...params });
+        pushGtmEvent(eventName, params);
     } else if (provider === "ga4") {
         sendToGa4(eventName, params);
     }
@@ -96,7 +108,7 @@ export function trackEcommerceEvent(
     if (provider === "gtm") {
         // Clear the previous ecommerce object so values never merge across events.
         pushToDataLayer({ ecommerce: null });
-        pushToDataLayer({ event: eventName, ...params, ecommerce });
+        pushGtmEvent(eventName, { ...params, ecommerce });
     } else if (provider === "ga4") {
         sendToGa4(eventName, { ...params, ...ecommerce });
     }

@@ -35,7 +35,10 @@ describe("GTM provider", () => {
 
     it("pushes events to dataLayer even before GTM has loaded", () => {
         trackEvent("contact_click", { method: "whatsapp" });
-        expect(window.dataLayer).toEqual([{ event: "contact_click", method: "whatsapp" }]);
+        expect(window.dataLayer).toEqual([
+            { event: "contact_click", method: "whatsapp" },
+            { method: undefined },
+        ]);
     });
 
     it("clears the previous ecommerce object before an ecommerce event", () => {
@@ -43,6 +46,7 @@ describe("GTM provider", () => {
         expect(window.dataLayer).toEqual([
             { ecommerce: null },
             { event: "purchase", trip_type: "one-way", ecommerce },
+            { trip_type: undefined, ecommerce: undefined },
         ]);
     });
 });
@@ -85,7 +89,15 @@ describe("trackLead", () => {
                 value: 450000,
                 currency: "PKR",
             },
+            {
+                lead_type: undefined,
+                lead_source: undefined,
+                item_name: undefined,
+                value: undefined,
+                currency: undefined,
+            },
             { event: "generate_lead", lead_type: "contact", lead_source: "contact_form" },
+            { lead_type: undefined, lead_source: undefined },
         ]);
     });
 });
