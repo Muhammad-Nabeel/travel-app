@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+import { trackLead } from "@/lib/analytics/ga4-events";
+
 type ContactFormProps = {
   labels: {
     fullNameLabel: string;
@@ -54,6 +56,7 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
         throw new Error(json.error ?? "Unable to send your message.");
       }
 
+      trackLead("contact", { leadSource: "contact_form" });
       setStatus("success");
       setForm({ name: "", email: "", message: "" });
     } catch (err) {

@@ -11,7 +11,11 @@ import {
   PaymentGatewayCard,
   type Gateway,
 } from "@/components/features/booking/payment-gateway-card";
-import { trackGa4Event } from "@/lib/analytics/ga4-events";
+import {
+  buildFlightItem,
+  trackEcommerceEvent,
+  trackEvent,
+} from "@/lib/analytics/ga4-events";
 import type { BookingPayload } from "@/lib/flights/booking-types";
 import { calculateBookingPricing } from "@/lib/pricing/booking-pricing";
 
@@ -184,14 +188,14 @@ export function PaymentPageClient() {
   useEffect(() => {
     if (!payload) return;
 
-    trackGa4Event("payment_page_viewed", {
+    trackEvent("payment_page_viewed", {
       trip_type: payload.query.tripType,
       origin: payload.query.origin,
       destination: payload.query.destination,
       departure_date: payload.query.departureDate,
       return_date: payload.query.returnDate ?? "",
       passenger_count: payload.passengers.length,
-      amount: payload.offer.price,
+      value: payload.offer.price,
       currency: payload.offer.currency,
     });
   }, [payload]);
@@ -283,13 +287,19 @@ export function PaymentPageClient() {
     setPaymentError("");
     setNotice("");
 
-    trackGa4Event("payment_submitted", {
-      payment_method: selectedGateway,
+    const ecommerce = {
+      currency: payload.offer.currency,
+      value: pricing.grandTotal,
+      payment_type: selectedGateway,
+      items: [buildFlightItem(payload.offer, payload.query, pricing.grandTotal)],
+    };
+    const eventParams = {
       trip_type: payload.query.tripType,
       passenger_count: payload.passengers.length,
-      amount: pricing.grandTotal,
-      currency: payload.offer.currency,
-    });
+    };
+
+    // A click, not a conversion: the booking can still fail below.
+    trackEcommerceEvent("add_payment_info", ecommerce, eventParams);
 
     if (
       selectedGateway === "cash_on_delivery" ||
@@ -329,6 +339,15 @@ export function PaymentPageClient() {
         }
 
         sessionStorage.removeItem("booking_payload");
+        // The conversion: fires once, only after the booking request is saved.
+        trackEcommerceEvent(
+          "purchase",
+          {
+            ...ecommerce,
+            ...(json.reference ? { transaction_id: json.reference } : {}),
+          },
+          eventParams,
+        );
         setConfirmed({
           reference: json.reference ?? null,
           method: selected?.name ?? selectedGateway,

@@ -52,11 +52,17 @@ const EMPTY_CURRENCY_FORM = {
   availableCurrencies: ["PKR", "USD", "EUR", "GBP", "SAR", "AED", "JPY"],
 };
 
+// Every event the site pushes to dataLayer (src/lib/analytics/ga4-events.ts).
 const GTM_EVENT_NAMES = [
-  "flight_search_submitted",
-  "proceed_to_payment",
+  "search",
+  "select_item",
+  "begin_checkout",
   "payment_page_viewed",
-  "payment_submitted",
+  "add_payment_info",
+  "purchase",
+  "generate_lead",
+  "contact_click",
+  "sign_up",
 ] as const;
 
 type PaymentSwitchKey = keyof typeof EMPTY_PAYMENT_FORM;

@@ -1,3 +1,5 @@
+import { trackLead, type LeadType } from "@/lib/analytics/ga4-events";
+
 export const SERVICE_REQUEST_TYPES = [
     "FLIGHT",
     "HOTEL",
@@ -62,6 +64,14 @@ export async function submitServiceRequest(input: ServiceRequestInput) {
     if (!response.ok || !json.ok) {
         throw new Error(json.error ?? "Unable to submit service request.");
     }
+
+    // One place covers every enquiry form (flight, hotel, Umrah, visa, tour).
+    trackLead(input.type.toLowerCase() as LeadType, {
+        leadSource: "enquiry_form",
+        itemName: input.title,
+        value: input.amount,
+        currency: input.currency,
+    });
 
     return json;
 }

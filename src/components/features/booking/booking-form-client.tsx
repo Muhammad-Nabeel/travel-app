@@ -16,7 +16,7 @@ import {
   PassengerForm,
   validatePassenger,
 } from "@/components/features/booking/passenger-form";
-import { trackGa4Event } from "@/lib/analytics/ga4-events";
+import { buildFlightItem, trackEcommerceEvent } from "@/lib/analytics/ga4-events";
 import type {
   BookingFormState,
   BookingPayload,
@@ -111,16 +111,20 @@ export function BookingFormClient({ offer, query }: BookingFormClientProps) {
       createdAt: new Date().toISOString(),
     };
 
-    trackGa4Event("proceed_to_payment", {
-      trip_type: query.tripType,
-      origin: query.origin,
-      destination: query.destination,
-      departure_date: query.departureDate,
-      return_date: query.returnDate ?? "",
-      passenger_count: form.passengers.length,
-      amount: offer.price,
-      currency: offer.currency,
-    });
+    trackEcommerceEvent(
+      "begin_checkout",
+      {
+        currency: offer.currency,
+        value: offer.price,
+        items: [buildFlightItem(offer, query, offer.price)],
+      },
+      {
+        trip_type: query.tripType,
+        departure_date: query.departureDate,
+        return_date: query.returnDate ?? "",
+        passenger_count: form.passengers.length,
+      },
+    );
 
     sessionStorage.setItem("booking_payload", JSON.stringify(payload));
     router.push("/flights/payment");

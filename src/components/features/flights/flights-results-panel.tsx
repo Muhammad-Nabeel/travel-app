@@ -25,6 +25,7 @@ import {
   getAirlineLogoSrc,
 } from "@/lib/flights/airline-branding";
 import { EmptyStateImage } from "@/components/shared/empty-state-image";
+import { buildFlightItem, trackEcommerceEvent } from "@/lib/analytics/ga4-events";
 
 type FlightsResultsPanelProps = {
   offers: FlightOffer[];
@@ -204,6 +205,21 @@ export function FlightsResultsPanel({
       p.set("legs", JSON.stringify(query.legs));
     }
     return `/flights/booking?${p.toString()}`;
+  }
+
+  function handleBookOffer(offer: FlightOffer) {
+    trackEcommerceEvent(
+      "select_item",
+      {
+        currency: offer.currency,
+        value: offer.price,
+        item_list_id: "flight_results",
+        item_list_name: "Flight search results",
+        items: [buildFlightItem(offer, query, offer.price)],
+      },
+      { stops: offer.stops },
+    );
+    router.push(buildBookingUrl(offer.id));
   }
 
   const [sortBy, setSortBy] = useState<SortBy>("lowest-price");
@@ -721,7 +737,7 @@ export function FlightsResultsPanel({
                 <button
                   type="button"
                   className="min-w-28 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
-                  onClick={() => router.push(buildBookingUrl(selectedOffer.id))}
+                  onClick={() => handleBookOffer(selectedOffer)}
                 >
                   Book now
                 </button>

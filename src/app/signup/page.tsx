@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
 import { useBrand } from "@/components/shared/brand-provider";
+import { trackEvent } from "@/lib/analytics/ga4-events";
 
 function SignUpForm() {
   const brand = useBrand();
@@ -57,6 +58,7 @@ function SignUpForm() {
         return;
       }
 
+      trackEvent("sign_up", { method: "email" });
       setLoading(false);
 
       router.push(

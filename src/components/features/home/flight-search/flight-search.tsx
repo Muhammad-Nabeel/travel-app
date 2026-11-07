@@ -22,7 +22,7 @@ import type { CabinClass, TripType } from "@/lib/flights/types";
 import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
 import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import { flightSearchSchema } from "@/lib/validations/search";
-import { trackGa4Event } from "@/lib/analytics/ga4-events";
+import { trackEvent } from "@/lib/analytics/ga4-events";
 const CABIN_CLASSES = [
   "Economy",
   "Premium Economy",
@@ -792,7 +792,9 @@ export function FlightSearchEngine({
       params.set("legs", JSON.stringify(parsed.legs));
     }
 
-    trackGa4Event("flight_search_submitted", {
+    trackEvent("search", {
+      search_term: `${parsed.origin}-${parsed.destination}`,
+      search_type: "flight",
       trip_type: parsed.tripType,
       origin: parsed.origin,
       destination: parsed.destination,

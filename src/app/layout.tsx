@@ -114,6 +114,8 @@ export default async function RootLayout({
     <html
       lang="en"
       data-theme="corporate"
+      // Read by trackEvent() to route events to GTM or gtag.js.
+      data-analytics={analytics?.provider}
       className={`${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

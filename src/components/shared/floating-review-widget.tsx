@@ -5,6 +5,7 @@ import { MessageCircle, Star, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useBrand } from "@/components/shared/brand-provider";
+import { trackLead } from "@/lib/analytics/ga4-events";
 
 const TRIP_TYPES = [
   "Umrah",
@@ -189,6 +190,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
         throw new Error(data.error ?? "Unable to submit request.");
       }
 
+      trackLead("chat", { leadSource: "chat_widget" });
       setChatReference(data.reference ?? "");
       setChatStep("done");
     } catch (err) {
