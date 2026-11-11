@@ -3,17 +3,12 @@
 import { useEffect, useState } from "react";
 
 import { BrandSettingsPanel } from "@/components/admin/brand-settings-panel";
+import { DashboardAnalyticsPanel } from "@/components/admin/dashboard-analytics-panel";
+import { GoogleAuthSettingsPanel } from "@/components/admin/google-auth-settings-panel";
 import { SabreSettingsPanel } from "@/components/admin/sabre-settings-panel";
+import { SiteAnalyticsPanel } from "@/components/admin/site-analytics-panel";
 import { SmtpSettingsPanel } from "@/components/admin/smtp-settings-panel";
-
-const EMPTY_FORM = {
-  provider: "ga4" as "ga4" | "gtm",
-  gtmContainerId: "",
-  measurementId: "",
-  propertyId: "",
-  serviceAccountEmail: "",
-  serviceAccountPrivateKey: "",
-};
+import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
 
 const EMPTY_PRICING_FORM = {
   serviceChargePercent: "0",
@@ -46,24 +41,17 @@ const EMPTY_BRANCH_FORM = {
   isActive: true,
 };
 
-const EMPTY_CURRENCY_FORM = {
-  currencySelectorEnabled: true,
-  defaultCurrency: "PKR",
-  availableCurrencies: ["PKR", "USD", "EUR", "GBP", "SAR", "AED", "JPY"],
+type CurrencyForm = {
+  currencySelectorEnabled: boolean;
+  defaultCurrency: string;
+  availableCurrencies: string[];
 };
 
-// Every event the site pushes to dataLayer (src/lib/analytics/ga4-events.ts).
-const GTM_EVENT_NAMES = [
-  "search",
-  "select_item",
-  "begin_checkout",
-  "payment_page_viewed",
-  "add_payment_info",
-  "purchase",
-  "generate_lead",
-  "contact_click",
-  "sign_up",
-] as const;
+const EMPTY_CURRENCY_FORM: CurrencyForm = {
+  currencySelectorEnabled: true,
+  defaultCurrency: "PKR",
+  availableCurrencies: [...SUPPORTED_CURRENCIES],
+};
 
 type PaymentSwitchKey = keyof typeof EMPTY_PAYMENT_FORM;
 
@@ -79,7 +67,9 @@ type BranchRow = {
 
 type SettingsPanel =
   | "brand"
-  | "ga4"
+  | "site-analytics"
+  | "dashboard-analytics"
+  | "google-auth"
   | "pricing"
   | "payments"
   | "branches"
@@ -90,15 +80,8 @@ type SettingsPanel =
   | null;
 
 export default function AdminSettingsPage() {
-  const [formData, setFormData] = useState(EMPTY_FORM);
-  const [hasStoredPrivateKey, setHasStoredPrivateKey] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [testMessage, setTestMessage] = useState("");
-  const [testError, setTestError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [pricingForm, setPricingForm] = useState(EMPTY_PRICING_FORM);
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingMessage, setPricingMessage] = useState("");
@@ -117,32 +100,16 @@ export default function AdminSettingsPage() {
   const [branchSaving, setBranchSaving] = useState(false);
   const [branchMessage, setBranchMessage] = useState("");
   const [branchError, setBranchError] = useState("");
-  const [copiedEventName, setCopiedEventName] = useState("");
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [currencyForm, setCurrencyForm] = useState(EMPTY_CURRENCY_FORM);
   const [currencySaving, setCurrencySaving] = useState(false);
   const [currencyMessage, setCurrencyMessage] = useState("");
   const [currencyError, setCurrencyError] = useState("");
 
-  async function handleCopyEventName(eventName: string) {
-    try {
-      await navigator.clipboard.writeText(eventName);
-      setCopiedEventName(eventName);
-      window.setTimeout(() => {
-        setCopiedEventName("");
-      }, 1200);
-    } catch {
-      setCopiedEventName("");
-    }
-  }
-
   useEffect(() => {
     async function loadSettings() {
       try {
-        const [res, pricingRes, supportRes, branchRes, currencyRes] = await Promise.all([
-          fetch("/api/admin/settings/ga4", {
-            cache: "no-store",
-          }),
+        const [pricingRes, supportRes, branchRes, currencyRes] = await Promise.all([
           fetch("/api/admin/settings/site-pricing", {
             cache: "no-store",
           }),
@@ -156,25 +123,6 @@ export default function AdminSettingsPage() {
             cache: "no-store",
           }),
         ]);
-
-        const json = (await res.json()) as {
-          provider?: "ga4" | "gtm";
-          gtmContainerId?: string;
-          measurementId?: string;
-          propertyId?: string;
-          serviceAccountEmail?: string;
-          hasPrivateKey?: boolean;
-        };
-
-        setFormData({
-          provider: json.provider === "gtm" ? "gtm" : "ga4",
-          gtmContainerId: json.gtmContainerId ?? "",
-          measurementId: json.measurementId ?? "",
-          propertyId: json.propertyId ?? "",
-          serviceAccountEmail: json.serviceAccountEmail ?? "",
-          serviceAccountPrivateKey: "",
-        });
-        setHasStoredPrivateKey(Boolean(json.hasPrivateKey));
 
         const pricingJson = (await pricingRes.json()) as {
           serviceChargePercent?: number;
@@ -195,10 +143,9 @@ export default function AdminSettingsPage() {
           branches?: BranchRow[];
         };
 
+        // The API wraps the saved values in `settings`.
         const currencyJson = (await currencyRes.json()) as {
-          currencySelectorEnabled?: boolean;
-          defaultCurrency?: string;
-          availableCurrencies?: string[];
+          settings?: CurrencyForm;
         };
 
         setPricingForm({
@@ -217,13 +164,11 @@ export default function AdminSettingsPage() {
         setBranches(
           Array.isArray(branchJson.branches) ? branchJson.branches : [],
         );
-        setCurrencyForm({
-          currencySelectorEnabled: currencyJson.currencySelectorEnabled ?? true,
-          defaultCurrency: currencyJson.defaultCurrency ?? "PKR",
-          availableCurrencies: currencyJson.availableCurrencies ?? ["PKR", "USD", "EUR", "GBP", "SAR", "AED"],
-        });
+        if (currencyRes.ok && currencyJson.settings) {
+          setCurrencyForm(currencyJson.settings);
+        }
       } catch {
-        setError("Unable to load settings.");
+        setLoadError("Unable to load settings.");
       } finally {
         setLoading(false);
       }
@@ -231,66 +176,6 @@ export default function AdminSettingsPage() {
 
     void loadSettings();
   }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    setMessage("");
-    setError("");
-
-    try {
-      const res = await fetch("/api/admin/settings/ga4", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!res.ok) {
-        const json = (await res.json()) as { error?: string };
-        throw new Error(json.error ?? "Failed to save settings");
-      }
-
-      setMessage(
-        formData.provider === "gtm"
-          ? "Google Tag Manager settings saved successfully."
-          : "GA4 settings saved successfully.",
-      );
-      if (formData.serviceAccountPrivateKey.trim()) {
-        setHasStoredPrivateKey(true);
-      }
-      setFormData((prev) => ({ ...prev, serviceAccountPrivateKey: "" }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleTestConnection() {
-    setTesting(true);
-    setTestMessage("");
-    setTestError("");
-
-    try {
-      const res = await fetch("/api/admin/settings/ga4?test=true", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const json = (await res.json()) as { ok?: boolean; message?: string };
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json.message ?? "GA4 connection test failed.");
-      }
-
-      setTestMessage(json.message ?? "GA4 connection is successful.");
-    } catch (err) {
-      setTestError(
-        err instanceof Error ? err.message : "GA4 connection test failed.",
-      );
-    } finally {
-      setTesting(false);
-    }
-  }
 
   async function handlePricingSave() {
     setPricingSaving(true);
@@ -506,11 +391,13 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(currencyForm),
       });
 
+      const json = (await res.json()) as { error?: string; settings?: CurrencyForm };
       if (!res.ok) {
-        const json = (await res.json()) as { error?: string };
         throw new Error(json.error ?? "Failed to save currency settings");
       }
 
+      // Show exactly what the server stored.
+      if (json.settings) setCurrencyForm(json.settings);
       setCurrencyMessage("Currency settings saved successfully.");
     } catch (err) {
       setCurrencyError(err instanceof Error ? err.message : "Failed to save currency settings");
@@ -526,8 +413,8 @@ export default function AdminSettingsPage() {
           Platform Settings
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-muted">
-          Manage analytics credentials and pricing controls from a single
-          administrative workspace.
+          Manage analytics, sign-in, pricing and other platform controls from a
+          single administrative workspace.
         </p>
       </header>
 
@@ -550,14 +437,36 @@ export default function AdminSettingsPage() {
             </button>
             <button
               type="button"
-              onClick={() => setActivePanel("ga4")}
+              onClick={() => setActivePanel("site-analytics")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
-                activePanel === "ga4"
+                activePanel === "site-analytics"
                   ? "border-line bg-brand-soft text-brand-strong"
                   : "border-line bg-white text-navy/80 hover:bg-subtle"
               }`}
             >
-              Analytics
+              Site Analytics
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("dashboard-analytics")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "dashboard-analytics"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Dashboard Analytics
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("google-auth")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "google-auth"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Google Sign-In
             </button>
             <button
               type="button"
@@ -640,6 +549,11 @@ export default function AdminSettingsPage() {
         </aside>
 
         <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
+          {loadError && (
+            <p className="mb-4 rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
+              {loadError}
+            </p>
+          )}
           {loading ? (
             <p className="text-sm text-muted">Loading settings...</p>
           ) : activePanel === null ? (
@@ -652,221 +566,12 @@ export default function AdminSettingsPage() {
             <SabreSettingsPanel />
           ) : activePanel === "smtp" ? (
             <SmtpSettingsPanel />
-          ) : activePanel === "ga4" ? (
-            <div className="grid gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
-                Analytics
-              </p>
-              <h2 className="text-xl font-semibold text-navy">
-                Tracking Provider
-              </h2>
-              <p className="text-sm text-muted">
-                Choose GA4 or Google Tag Manager. The selected provider is used
-                across public pages including flights, hotels, and payment.
-              </p>
-
-              <div className="grid gap-2 rounded-xl border border-line bg-subtle p-3 sm:grid-cols-2">
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-navy/80">
-                  <input
-                    type="radio"
-                    name="provider"
-                    checked={formData.provider === "ga4"}
-                    onChange={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        provider: "ga4",
-                      }))
-                    }
-                    className="h-4 w-4 border-line-strong text-brand"
-                  />
-                  Google Analytics 4
-                </label>
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-navy/80">
-                  <input
-                    type="radio"
-                    name="provider"
-                    checked={formData.provider === "gtm"}
-                    onChange={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        provider: "gtm",
-                      }))
-                    }
-                    className="h-4 w-4 border-line-strong text-brand"
-                  />
-                  Google Tag Manager
-                </label>
-              </div>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">
-                  GTM Container ID
-                </span>
-                <input
-                  value={formData.gtmContainerId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      gtmContainerId: e.target.value,
-                    }))
-                  }
-                  placeholder="GTM-XXXXXXX"
-                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                />
-                <p className="text-xs text-muted">
-                  Required when provider is Google Tag Manager.
-                </p>
-              </label>
-
-              {formData.provider === "gtm" && (
-                <div className="rounded-xl border border-gold/30 bg-gold/10 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gold-strong">
-                    GTM Setup Guide
-                  </p>
-                  <p className="mt-2 text-sm text-gold-strong">
-                    After saving, create Custom Event triggers in GTM using the
-                    exact event names below, then attach GA4 Event tags.
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {GTM_EVENT_NAMES.map((eventName) => (
-                      <div
-                        key={eventName}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-white px-3 py-2"
-                      >
-                        <p className="text-sm font-medium text-gold-strong">
-                          {eventName}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => void handleCopyEventName(eventName)}
-                          className="rounded-md border border-gold/40 bg-gold/15 px-2.5 py-1 text-xs font-semibold text-gold-strong transition hover:bg-gold/25"
-                        >
-                          {copiedEventName === eventName ? "Copied" : "Copy"}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs text-gold-strong">
-                    Recommended in GTM: one trigger + one GA4 Event tag per
-                    event name, then publish the container.
-                  </p>
-                </div>
-              )}
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">
-                  Measurement ID
-                </span>
-                <input
-                  value={formData.measurementId}
-                  disabled={formData.provider !== "ga4"}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      measurementId: e.target.value,
-                    }))
-                  }
-                  placeholder="G-XXXXXXXXXX"
-                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">
-                  Property ID
-                </span>
-                <input
-                  value={formData.propertyId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      propertyId: e.target.value,
-                    }))
-                  }
-                  placeholder="123456789"
-                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">
-                  Service Account Email
-                </span>
-                <input
-                  value={formData.serviceAccountEmail}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      serviceAccountEmail: e.target.value,
-                    }))
-                  }
-                  placeholder="analytics-reader@project.iam.gserviceaccount.com"
-                  className="rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">
-                  Service Account Private Key
-                </span>
-                <textarea
-                  value={formData.serviceAccountPrivateKey}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      serviceAccountPrivateKey: e.target.value,
-                    }))
-                  }
-                  placeholder="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
-                  className="min-h-40 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-line/50 disabled:text-muted/70"
-                />
-                {hasStoredPrivateKey && (
-                  <p className="text-xs text-muted">
-                    A private key is already saved. Leave this blank to keep it.
-                  </p>
-                )}
-              </label>
-
-              {message && (
-                <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
-                  {message}
-                </p>
-              )}
-              {error && (
-                <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
-                  {error}
-                </p>
-              )}
-              {testMessage && (
-                <p className="rounded-lg bg-success/8 px-3 py-2 text-sm text-success">
-                  {testMessage}
-                </p>
-              )}
-              {testError && (
-                <p className="rounded-lg bg-deal/6 px-3 py-2 text-sm text-deal">
-                  {testError}
-                </p>
-              )}
-
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleTestConnection()}
-                  disabled={testing}
-                  className="rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand-soft disabled:opacity-70"
-                >
-                  {testing ? "Testing..." : "Test Connection"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleSave()}
-                  disabled={saving}
-                  className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
-                >
-                  {saving ? "Saving..." : "Save Analytics Settings"}
-                </button>
-              </div>
-            </div>
+          ) : activePanel === "site-analytics" ? (
+            <SiteAnalyticsPanel />
+          ) : activePanel === "dashboard-analytics" ? (
+            <DashboardAnalyticsPanel />
+          ) : activePanel === "google-auth" ? (
+            <GoogleAuthSettingsPanel />
           ) : activePanel === "pricing" ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
@@ -1398,19 +1103,36 @@ export default function AdminSettingsPage() {
                     Currencies users can select from
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {["PKR", "USD", "EUR", "GBP", "SAR", "AED"].map((currency) => (
+                    {SUPPORTED_CURRENCIES.map((currency) => (
                       <label key={currency} className="flex items-center gap-2">
                         <input
                           type="checkbox"
                           checked={currencyForm.availableCurrencies.includes(currency)}
+                          // At least one currency must stay available.
+                          disabled={
+                            currencyForm.availableCurrencies.length === 1 &&
+                            currencyForm.availableCurrencies.includes(currency)
+                          }
                           onChange={(e) => {
                             const checked = e.target.checked;
-                            setCurrencyForm((prev) => ({
-                              ...prev,
-                              availableCurrencies: checked
-                                ? [...prev.availableCurrencies, currency]
-                                : prev.availableCurrencies.filter((c) => c !== currency),
-                            }));
+                            setCurrencyForm((prev) => {
+                              const availableCurrencies = SUPPORTED_CURRENCIES.filter(
+                                (code) =>
+                                  code === currency
+                                    ? checked
+                                    : prev.availableCurrencies.includes(code),
+                              );
+                              return {
+                                ...prev,
+                                availableCurrencies,
+                                // Unchecking the default moves it to the first remaining currency.
+                                defaultCurrency: availableCurrencies.includes(
+                                  prev.defaultCurrency as (typeof SUPPORTED_CURRENCIES)[number],
+                                )
+                                  ? prev.defaultCurrency
+                                  : availableCurrencies[0],
+                              };
+                            });
                           }}
                           className="h-4 w-4 rounded border-line-strong text-brand focus:ring-brand"
                         />

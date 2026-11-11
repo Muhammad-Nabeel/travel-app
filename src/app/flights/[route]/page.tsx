@@ -286,11 +286,13 @@ export default async function FlightRoutePage({ params }: FlightRoutePageProps) 
               facts={[
                 {
                   icon: PlaneTakeoff,
+                  iconSrc: brand.assets.planeTakeoff,
                   label: "Departure airport",
                   value: `${route.originAirport} (${route.originIata})`,
                 },
                 {
                   icon: PlaneLanding,
+                  iconSrc: brand.assets.planeLanding,
                   label: "Arrival airport",
                   value: `${route.destinationAirport} (${route.destinationIata})`,
                 },

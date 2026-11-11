@@ -6,6 +6,7 @@ import { CalendarDays, TrendingDown } from "lucide-react";
 
 import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import type { FlightSearchQuery } from "@/lib/flights/types";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 type FareCalendarStripProps = {
   query: FlightSearchQuery;
@@ -235,7 +236,9 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
       <div className="grid gap-3 lg:grid-cols-[250px_minmax(0,1fr)]">
         <div className="rounded-2xl border border-line bg-white p-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <TrendingDown className="size-4 text-success" />
+            <SlotIcon slot="offers" size={16} className="size-4 text-success">
+              <TrendingDown className="size-4 text-success" />
+            </SlotIcon>
             Lowest price found
           </p>
           <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
@@ -265,7 +268,9 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
                     ].join(" ")}
                   >
                     <p className="flex items-center gap-1 text-xs font-medium text-muted">
-                      <CalendarDays className="h-3.5 w-3.5" />
+                      <SlotIcon slot="calendar" size={14} className="h-3.5 w-3.5">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                      </SlotIcon>
                       {formatDateLabel(fare.date)}
                     </p>
                     <p className="mt-1 text-sm font-medium text-muted">
@@ -289,7 +294,9 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
                   prefetch={false}
                 >
                   <p className="flex items-center gap-1 text-xs font-medium text-muted">
-                    <CalendarDays className="h-3.5 w-3.5" />
+                    <SlotIcon slot="calendar" size={14} className="h-3.5 w-3.5">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                    </SlotIcon>
                     {formatDateLabel(fare.date)}
                   </p>
                   <p

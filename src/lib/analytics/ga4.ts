@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 
-import { getStoredGa4Settings } from "@/lib/admin-settings/ga4-settings";
+import { getStoredDashboardAnalyticsSettings } from "@/lib/admin-settings/ga4-settings";
 
 export type AdminKpis = {
     visitors: number;
@@ -32,7 +32,6 @@ export type Ga4ConnectionTestResult = {
 };
 
 type ResolvedGa4Config = {
-    measurementId: string;
     propertyId: string;
     serviceAccountEmail: string;
     serviceAccountPrivateKey: string;
@@ -59,15 +58,9 @@ function parseNumber(value: string): number {
 async function resolveGa4Config(
     overrides?: Ga4ConnectionOverrides,
 ): Promise<ResolvedGa4Config> {
-    const stored = await getStoredGa4Settings();
+    const stored = await getStoredDashboardAnalyticsSettings();
 
     return {
-        measurementId: (
-            overrides?.measurementId ||
-            stored.measurementId ||
-            process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID ||
-            ""
-        ).trim(),
         propertyId: (
             overrides?.propertyId ||
             stored.propertyId ||

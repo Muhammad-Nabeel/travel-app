@@ -205,9 +205,15 @@ export default async function TourPackageDetailsPage({
               <FactGrid
                 facts={[
                   { icon: MapPin, label: "Destination", value: pkg.destination },
-                  { icon: CalendarDays, label: "Duration", value: `${pkg.duration} days` },
+                  {
+                    icon: CalendarDays,
+                    iconSrc: brand.assets.calendar,
+                    label: "Duration",
+                    value: `${pkg.duration} days`,
+                  },
                   {
                     icon: Tag,
+                    iconSrc: brand.assets.offers,
                     label: "Tour type",
                     value: formatTourTypeLabel(pkg.tourType),
                   },

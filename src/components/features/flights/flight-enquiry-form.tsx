@@ -5,6 +5,7 @@ import { CalendarDays, CheckCircle, Loader2, Plane, Send, Users } from "lucide-r
 
 import type { FlightSearchQuery } from "@/lib/flights/types";
 import { submitServiceRequest } from "@/lib/service-requests";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 export type FlightEnquiryLeg = {
   origin: string;
@@ -160,7 +161,9 @@ export function FlightEnquiryForm({ query, legs }: FlightEnquiryFormProps) {
                   {leg.originLabel} → {leg.destinationLabel}
                 </p>
                 <p className="mt-1 flex items-center gap-2 text-sm text-muted">
-                  <CalendarDays className="size-4" />
+                  <SlotIcon slot="calendar" size={16} className="size-4">
+                    <CalendarDays className="size-4" />
+                  </SlotIcon>
                   {formatDate(leg.departureDate)}
                 </p>
               </li>
@@ -168,7 +171,9 @@ export function FlightEnquiryForm({ query, legs }: FlightEnquiryFormProps) {
           </ol>
 
           <p className="mt-4 flex items-center gap-2 text-sm text-foreground">
-            <Users className="size-4 text-muted" />
+            <SlotIcon slot="passengers" size={16} className="size-4 text-muted">
+              <Users className="size-4 text-muted" />
+            </SlotIcon>
             {passengers} · {query.cabinClass}
             {query.directOnly ? " · Direct only" : ""}
           </p>

@@ -7,6 +7,7 @@ import type { VisaType } from "@/lib/admin-settings/visa-settings";
 import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
 import { ProductTabs } from "@/components/features/home/product-tabs";
 import styles from "./visa-search-engine.module.css";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 type SearchVisaType = VisaType | "any";
 
@@ -169,7 +170,9 @@ export function VisaSearchEngine({
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Travellers</span>
                 <div className={styles.fieldBody}>
-                  <Users className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                  <SlotIcon slot="passengers" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                    <Users className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                  </SlotIcon>
                   <button
                     type="button"
                     className={styles.fieldButton}

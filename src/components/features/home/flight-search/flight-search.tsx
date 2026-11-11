@@ -23,6 +23,7 @@ import { useCurrencySettings } from "@/lib/hooks/use-currency-settings";
 import { useLiveFaresEnabled } from "@/components/shared/live-fares-provider";
 import { flightSearchSchema } from "@/lib/validations/search";
 import { trackEvent } from "@/lib/analytics/ga4-events";
+import { SlotIcon } from "@/components/shared/slot-icon";
 const CABIN_CLASSES = [
   "Economy",
   "Premium Economy",
@@ -879,7 +880,9 @@ export function FlightSearchEngine({
                   }}
                   aria-expanded={showPax}
                 >
-                  <Users className="h-4 w-4" />
+                  <SlotIcon slot="passengers" size={16} className="h-4 w-4">
+                    <Users className="h-4 w-4" />
+                  </SlotIcon>
                   <span>{passengerLabel}</span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 ${styles.ctrlBtnIcon}`}
@@ -998,9 +1001,9 @@ export function FlightSearchEngine({
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>From</span>
                         <div className={styles.fieldBody}>
-                          <PlaneTakeoff
-                            className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                          />
+                          <SlotIcon slot="planeTakeoff" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                            <PlaneTakeoff className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                          </SlotIcon>
                           <AirportInput
                             value={leg.origin}
                             onChange={(raw) =>
@@ -1025,9 +1028,9 @@ export function FlightSearchEngine({
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>To</span>
                         <div className={styles.fieldBody}>
-                          <PlaneLanding
-                            className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                          />
+                          <SlotIcon slot="planeLanding" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                            <PlaneLanding className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                          </SlotIcon>
                           <AirportInput
                             value={leg.destination}
                             onChange={(raw) =>
@@ -1054,9 +1057,9 @@ export function FlightSearchEngine({
                           Departure date
                         </span>
                         <div className={styles.fieldBody}>
-                          <CalendarDays
-                            className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                          />
+                          <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                            <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                          </SlotIcon>
                           <button
                             type="button"
                             className={styles.fareCalendarTrigger}
@@ -1109,9 +1112,9 @@ export function FlightSearchEngine({
                   <label className={styles.field}>
                     <span className={styles.fieldLabel}>From</span>
                     <div className={styles.fieldBody}>
-                      <PlaneTakeoff
-                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                      />
+                      <SlotIcon slot="planeTakeoff" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                        <PlaneTakeoff className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                      </SlotIcon>
                       <AirportInput
                         value={origin}
                         onChange={(raw) => {
@@ -1141,9 +1144,9 @@ export function FlightSearchEngine({
                   <label className={styles.field}>
                     <span className={styles.fieldLabel}>To</span>
                     <div className={styles.fieldBody}>
-                      <PlaneLanding
-                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                      />
+                      <SlotIcon slot="planeLanding" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                        <PlaneLanding className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                      </SlotIcon>
                       <AirportInput
                         value={destination}
                         onChange={(raw) => {
@@ -1167,9 +1170,9 @@ export function FlightSearchEngine({
                   <label className={styles.field}>
                     <span className={styles.fieldLabel}>Departure date</span>
                     <div className={styles.fieldBody}>
-                      <CalendarDays
-                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                      />
+                      <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                        <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                      </SlotIcon>
                       <div className={styles.fareCalendarWrapper}>
                         <button
                           type="button"
@@ -1189,9 +1192,9 @@ export function FlightSearchEngine({
                   >
                     <span className={styles.fieldLabel}>Return Date</span>
                     <div className={styles.fieldBody}>
-                      <CalendarDays
-                        className={`h-4 w-4 ${styles.fieldBodyIcon}`}
-                      />
+                      <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                        <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                      </SlotIcon>
                       <button
                         type="button"
                         disabled={tripType !== "round-trip"}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
+
 export type CurrencySettings = {
     currencySelectorEnabled: boolean;
     defaultCurrency: string;
@@ -9,14 +11,14 @@ export type CurrencySettings = {
 const DEFAULT_SETTINGS: CurrencySettings = {
     currencySelectorEnabled: true,
     defaultCurrency: "PKR",
-    availableCurrencies: ["PKR", "USD", "EUR", "GBP", "SAR", "AED", "JPY"],
+    availableCurrencies: [...SUPPORTED_CURRENCIES],
 };
 
 type LoadResult = { settings: CurrencySettings; error: string | null };
 
 async function fetchSettings(): Promise<LoadResult> {
     try {
-        const res = await fetch("/api/settings/currency");
+        const res = await fetch("/api/settings/currency", { cache: "no-store" });
         const json = await res.json();
 
         if (!res.ok) {

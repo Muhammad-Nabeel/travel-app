@@ -1,6 +1,7 @@
 import {
     defaultCurrencySettings,
     getStoredCurrencySettings,
+    sanitizeCurrencySettings,
     saveStoredCurrencySettings,
 } from "@/lib/admin-settings/currency-settings";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
@@ -52,4 +53,35 @@ it("rejects saves when the database is unavailable", async () => {
         "Database is not available",
     );
     expect(upsert).not.toHaveBeenCalled();
+});
+
+describe("sanitizeCurrencySettings", () => {
+    it("keeps the admin's selection instead of resetting to all currencies", () => {
+        expect(
+            sanitizeCurrencySettings({
+                currencySelectorEnabled: false,
+                defaultCurrency: "USD",
+                availableCurrencies: ["USD", "PKR"],
+            }),
+        ).toEqual({
+            currencySelectorEnabled: false,
+            defaultCurrency: "USD",
+            // Supported order, not click order.
+            availableCurrencies: ["PKR", "USD"],
+        });
+    });
+
+    it("drops unknown and duplicate codes", () => {
+        expect(
+            sanitizeCurrencySettings({ defaultCurrency: "PKR", availableCurrencies: ["PKR", "XYZ", "PKR", 5] })
+                .availableCurrencies,
+        ).toEqual(["PKR"]);
+    });
+
+    it("moves the default to an available currency", () => {
+        expect(
+            sanitizeCurrencySettings({ defaultCurrency: "EUR", availableCurrencies: ["GBP", "AED"] })
+                .defaultCurrency,
+        ).toBe("GBP");
+    });
 });

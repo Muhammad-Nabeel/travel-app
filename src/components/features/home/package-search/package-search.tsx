@@ -12,6 +12,7 @@ import {
 import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
 import { ProductTabs } from "../product-tabs";
 import styles from "./package-search.module.css";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 export type TourType =
   | "all"
@@ -296,7 +297,9 @@ export function PackageSearchEngine({
                   onClick={() => setShowPax((v) => !v)}
                   aria-expanded={showPax}
                 >
-                  <Users className="h-4 w-4" />
+                  <SlotIcon slot="passengers" size={16} className="h-4 w-4">
+                    <Users className="h-4 w-4" />
+                  </SlotIcon>
                   <span>{paxLabel}</span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 ${styles.ctrlBtnIcon}`}
@@ -444,7 +447,9 @@ export function PackageSearchEngine({
                 <div
                   className={`${styles.fieldBody} ${showDuration ? styles.fieldBodyActive : ""}`}
                 >
-                  <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                  <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                    <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                  </SlotIcon>
                   <span className={styles.fieldValue}>
                     {DURATION_OPTIONS.find((o) => o.value === duration)
                       ?.label ?? "1 Week"}

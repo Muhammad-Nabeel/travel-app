@@ -15,7 +15,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
 
   async function fetchGa4Health() {
     try {
-      const settingsRes = await fetch("/api/admin/settings/ga4", {
+      const settingsRes = await fetch("/api/admin/settings/site-analytics", {
         cache: "no-store",
       });
       const settingsJson = (await settingsRes.json()) as {
@@ -38,7 +38,7 @@ export function Ga4HealthStatus({ compact = false }: Ga4HealthStatusProps) {
         };
       }
 
-      const res = await fetch("/api/admin/settings/ga4?test=true", {
+      const res = await fetch("/api/admin/settings/dashboard-analytics?test=true", {
         cache: "no-store",
       });
       const json = (await res.json()) as { ok?: boolean; message?: string };

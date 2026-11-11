@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import { Check, X } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { BrandIcon } from "@/components/shared/brand-icon";
+
 // Building blocks shared by the detail pages (DESIGN_IMPROVEMENT_PLAN.md §7).
 
 /** Anchor id of the enquiry section that booking CTAs scroll to. */
@@ -26,17 +28,27 @@ export function DetailSection({
   );
 }
 
-export type Fact = { icon: LucideIcon; label: string; value: ReactNode };
+export type Fact = {
+  icon: LucideIcon;
+  /** Admin-uploaded replacement for `icon` (Admin → Media → Brand & Icons). */
+  iconSrc?: string;
+  label: string;
+  value: ReactNode;
+};
 
 export function FactGrid({ facts }: { facts: Fact[] }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
-      {facts.map(({ icon: Icon, label, value }) => (
+      {facts.map(({ icon: Icon, iconSrc, label, value }) => (
         <div
           key={label}
           className="flex items-start gap-3 rounded-xl border border-line px-4 py-3"
         >
-          <Icon className="mt-0.5 size-5 shrink-0 text-muted" strokeWidth={1.75} />
+          {iconSrc ? (
+            <BrandIcon src={iconSrc} fallback={Icon} size={20} className="mt-0.5" />
+          ) : (
+            <Icon className="mt-0.5 size-5 shrink-0 text-muted" strokeWidth={1.75} />
+          )}
           <div className="min-w-0">
             <dt className="text-xs text-muted">{label}</dt>
             <dd className="text-sm font-semibold text-foreground">{value}</dd>

@@ -52,6 +52,10 @@ export async function optimizeImage(input: Buffer, target: ImageTarget): Promise
             return { body, contentType: "image/png", extension: "png" };
         }
 
+        // Logos are fitted into a fixed header box with object-contain, so any
+        // transparent/blank border in the file shrinks the visible artwork.
+        if (target === "logo") image.trim({ threshold: 10 });
+
         const body = await image
             .resize({ width: MAX_WIDTH[target], withoutEnlargement: true })
             .webp({ quality: WEBP_QUALITY, effort: 5 })

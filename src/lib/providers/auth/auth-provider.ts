@@ -3,15 +3,16 @@ import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+
+import { getActiveGoogleCredentials } from "@/lib/admin-settings/google-auth-settings";
 import { prisma } from "../../db";
 
+/**
+ * Static options for getServerSession(). Session decoding needs no providers,
+ * so Google (configured in the admin panel) is only added in getAuthOptions().
+ */
 export const authOptions: NextAuthOptions = {
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        }),
-
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -123,3 +124,17 @@ export const authOptions: NextAuthOptions = {
 
     secret: process.env.NEXTAUTH_SECRET,
 };
+
+/** Options for the NextAuth route: adds Google when it is enabled in Admin → Settings → Google Sign-In. */
+export async function getAuthOptions(): Promise<NextAuthOptions> {
+    const google = await getActiveGoogleCredentials();
+    if (!google) return authOptions;
+
+    return {
+        ...authOptions,
+        providers: [
+            GoogleProvider({ clientId: google.clientId, clientSecret: google.clientSecret }),
+            ...authOptions.providers,
+        ],
+    };
+}

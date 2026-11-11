@@ -1,4 +1,6 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+
 import { getStoredCurrencySettings, saveStoredCurrencySettings } from "@/lib/admin-settings/currency-settings";
 
 export async function GET() {
@@ -8,21 +10,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { currencySelectorEnabled, defaultCurrency, availableCurrencies } = body;
+        const settings = await saveStoredCurrencySettings(await request.json());
+        revalidatePath("/", "layout");
 
-        const settings = {
-            currencySelectorEnabled: typeof currencySelectorEnabled === "boolean" ? currencySelectorEnabled : true,
-            defaultCurrency: typeof defaultCurrency === "string" ? defaultCurrency : "PKR",
-            availableCurrencies: Array.isArray(availableCurrencies) ? availableCurrencies : ["PKR", "USD", "EUR", "GBP", "SAR", "AED"],
-        };
-
-        await saveStoredCurrencySettings(settings);
-
-        return NextResponse.json({
-            ok: true,
-            settings,
-        }, { status: 200 });
+        return NextResponse.json({ ok: true, settings }, { status: 200 });
     } catch (error) {
         return NextResponse.json(
             {

@@ -5,6 +5,7 @@ import { BedDouble, CalendarDays, CheckCircle, Loader2, MapPin, Send, Users } fr
 
 import type { HotelSearchQuery } from "@/lib/validations/search";
 import { submitServiceRequest } from "@/lib/service-requests";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 type HotelEnquiryFormProps = {
   query: HotelSearchQuery;
@@ -142,14 +143,18 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
 
           <div className="mt-4 rounded-lg border border-line bg-subtle px-4 py-3">
             <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <CalendarDays className="size-4 text-brand" />
+              <SlotIcon slot="calendar" size={16} className="size-4 text-brand">
+                <CalendarDays className="size-4 text-brand" />
+              </SlotIcon>
               {formatDate(query.checkIn)} → {formatDate(query.checkOut)}
             </p>
             <p className="mt-1 text-sm text-muted">{nightsLabel}</p>
           </div>
 
           <p className="mt-4 flex items-center gap-2 text-sm text-foreground">
-            <Users className="size-4 text-muted" />
+            <SlotIcon slot="passengers" size={16} className="size-4 text-muted">
+              <Users className="size-4 text-muted" />
+            </SlotIcon>
             {guests}
           </p>
           <p className="mt-2 flex items-center gap-2 text-sm text-foreground">

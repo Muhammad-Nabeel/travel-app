@@ -14,6 +14,7 @@ import {
 import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-backdrop";
 import { ProductTabs } from "../product-tabs";
 import styles from "./hotel-search-engine.module.css";
+import { SlotIcon } from "@/components/shared/slot-icon";
 
 type StayType = "hotel-only" | "hotel+flight";
 
@@ -170,7 +171,9 @@ export function HotelSearchEngine({
                   onClick={() => setShowGuests((v) => !v)}
                   aria-expanded={showGuests}
                 >
-                  <Users className="h-4 w-4" />
+                  <SlotIcon slot="passengers" size={16} className="h-4 w-4">
+                    <Users className="h-4 w-4" />
+                  </SlotIcon>
                   <span>{guestLabel}</span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 ${styles.ctrlBtnIcon}`}
@@ -260,7 +263,9 @@ export function HotelSearchEngine({
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Check-in</span>
               <div className={styles.fieldBody}>
-                <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                  <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                </SlotIcon>
                 <input
                   type="date"
                   required
@@ -279,7 +284,9 @@ export function HotelSearchEngine({
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Check-out</span>
               <div className={styles.fieldBody}>
-                <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                <SlotIcon slot="calendar" size={16} className={`h-4 w-4 ${styles.fieldBodyIcon}`}>
+                  <CalendarDays className={`h-4 w-4 ${styles.fieldBodyIcon}`} />
+                </SlotIcon>
                 <input
                   type="date"
                   required

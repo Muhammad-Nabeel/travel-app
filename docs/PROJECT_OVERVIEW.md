@@ -134,7 +134,8 @@ Configure integrations according to the features being used. This list contains 
 | Purpose | Variables |
 | --- | --- |
 | Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX` |
-| Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` |
+| Google sign-in | None; enabled and configured in Admin → Settings → Google Sign-In (stored encrypted). `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are only copied into the database on first read if no setting exists yet |
 | Public site URL | `NEXT_PUBLIC_SITE_URL`, `SITE_URL` |
 | Verification emails | None; SMTP is stored encrypted in the database (needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |
 | Sabre connection | `SABRE_BASE_URL`, `SABRE_CLIENT_ID`, `SABRE_CLIENT_SECRET`, `SABRE_PCC`, `SABRE_CPA_ID` |
