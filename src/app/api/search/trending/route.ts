@@ -48,10 +48,11 @@ export async function GET() {
 
         return NextResponse.json({ ok: true, routes });
     } catch (error) {
+        console.error("[trending] Failed to load trending searches:", error);
         return NextResponse.json(
             {
                 ok: false,
-                error: error instanceof Error ? error.message : "Failed to load trending searches",
+                error: "Failed to load trending searches",
             },
             { status: 503 },
         );

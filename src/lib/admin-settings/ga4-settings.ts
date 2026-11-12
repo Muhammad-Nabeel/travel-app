@@ -203,20 +203,11 @@ export type PublicAnalyticsConfig =
     | { provider: "ga4"; id: string }
     | null;
 
-/** Only the tag IDs the browser needs; never exposes reporting credentials. */
+/**
+ * Only the tag IDs the browser needs; never exposes reporting credentials.
+ * Read from the database only (Admin → Settings → Site Analytics).
+ */
 export async function getPublicAnalyticsConfig(): Promise<PublicAnalyticsConfig> {
-    const envProvider = sanitize(process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER).toLowerCase();
-    const envGtmId = sanitize(process.env.NEXT_PUBLIC_GTM_CONTAINER_ID).toUpperCase();
-    const envMeasurementId = sanitize(process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID).toUpperCase();
-
-    if (envProvider === "gtm" && GTM_ID_PATTERN.test(envGtmId)) {
-        return { provider: "gtm", id: envGtmId };
-    }
-
-    if (GA4_ID_PATTERN.test(envMeasurementId)) {
-        return { provider: "ga4", id: envMeasurementId };
-    }
-
     const stored = await getStoredSiteAnalyticsSettings();
 
     if (stored.provider === "gtm") {

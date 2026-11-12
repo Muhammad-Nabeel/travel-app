@@ -30,11 +30,11 @@ export async function PUT(request: NextRequest) {
 
         const saved = await saveStoredSitePricingSettings({
             serviceChargePercent: body.serviceChargePercent ?? 0,
-            enableWise: body.enableWise ?? true,
-            enableStripe: body.enableStripe ?? true,
-            enablePaypal: body.enablePaypal ?? true,
-            enableSumup: body.enableSumup ?? true,
-            enablePaymob: body.enablePaymob ?? true,
+            enableWise: body.enableWise ?? false,
+            enableStripe: body.enableStripe ?? false,
+            enablePaypal: body.enablePaypal ?? false,
+            enableSumup: body.enableSumup ?? false,
+            enablePaymob: body.enablePaymob ?? false,
             enableCashOnDelivery: body.enableCashOnDelivery ?? true,
             enablePayAtBranch: body.enablePayAtBranch ?? true,
         });

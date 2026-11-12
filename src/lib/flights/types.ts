@@ -27,7 +27,7 @@ export type FlightSearchQuery = {
     directOnly: boolean;
 };
 
-// ── Unified flight offer shape (Sabre + Amadeus + Mock) ──────────────────────
+// ── Unified flight offer shape (Sabre + Amadeus) ──────────────────────
 
 /** A single flight segment (one take-off / one landing). */
 export type FlightSegment = {
@@ -94,7 +94,7 @@ export type PassengerFare = {
  */
 export type FlightOffer = {
     id: string;
-    provider: "Sabre" | "Amadeus" | "Mock";
+    provider: "Sabre" | "Amadeus";
     // ── Convenience (first outbound leg / first segment) ──
     airline: string;
     flightNumber?: string;
@@ -115,13 +115,17 @@ export type FlightOffer = {
     validatingAirline?: string;
     refundable?: boolean;
     seatsAvailable?: number;
+    // ── Integrity (set by the server; see lib/flights/offer-signature.ts) ──
+    signedAt?: string;
+    signature?: string;
 };
 
 export type FlightSearchSuccessResult = {
     ok: true;
     query: FlightSearchQuery;
     results: FlightOffer[];
-    source: "sabre" | "amadeus" | "mock";
+    /** "none" when live search is switched off in admin. */
+    source: "sabre" | "amadeus" | "none";
     warnings: string[];
     /** False when Sabre is switched off in admin; the site takes a fare request instead. */
     liveSearchEnabled: boolean;

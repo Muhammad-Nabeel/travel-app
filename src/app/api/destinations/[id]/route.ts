@@ -35,14 +35,16 @@ async function getUniqueDestinationSlug(city: string, destinationId: string) {
 }
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> },
 ) {
     try {
         const { id } = await context.params;
+        // Inactive destinations only with ?all=true, which the proxy limits to admins.
+        const includeInactive = request.nextUrl.searchParams.get("all") === "true";
         const destination = await prisma.destination.findUnique({ where: { id } });
 
-        if (!destination) {
+        if (!destination || (!includeInactive && !destination.isActive)) {
             return NextResponse.json(
                 { ok: false, error: "Destination not found" },
                 { status: 404 },
@@ -51,12 +53,7 @@ export async function GET(
 
         return NextResponse.json(destination);
     } catch (err) {
-        if (err instanceof Error) {
-            return NextResponse.json(
-                { ok: false, error: err.message },
-                { status: 503 },
-            );
-        }
+        console.error("[destinations] Failed to load destination:", err);
         return NextResponse.json(
             { ok: false, error: "Fetch failed" },
             { status: 503 },

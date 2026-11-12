@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
+
 import {
     createPasswordResetToken,
     sendPasswordResetEmail,
@@ -24,6 +26,12 @@ export async function POST(req: NextRequest) {
     } catch {
         return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
+
+    const captchaRejection = await rejectWithoutCaptcha(
+        req,
+        (body as { captchaToken?: unknown } | null)?.captchaToken,
+    );
+    if (captchaRejection) return captchaRejection;
 
     const parsed = forgotPasswordSchema.safeParse(body);
     if (!parsed.success) {

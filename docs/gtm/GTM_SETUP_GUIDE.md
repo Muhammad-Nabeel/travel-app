@@ -10,6 +10,8 @@ You will end up with:
 
 Everything below is done in the GTM, GA4 and Google Ads web interfaces. The website already sends all the events; no code changes are needed.
 
+If you imported a container before `view_item` and the hotel, tour and visa search parameters were added, download it again from **Admin → Settings → Site Analytics** and re-import it with **Merge → Overwrite conflicting tags, triggers and variables**.
+
 > The same instructions, per service and with copy buttons, are in the admin panel under **Admin → Settings → Site Analytics** (choose Google Tag Manager).
 
 ---
@@ -46,6 +48,17 @@ These services take enquiries rather than instant bookings. Each one sends **`ge
 
 All enquiry leads have `lead_source` = `enquiry_form`.
 
+### Hotels, Tours, Visa: searches and page views
+
+| Event | When it fires | Useful parameters |
+| --- | --- | --- |
+| `search` | Hotel search submitted | `search_type` = `hotel`, `destination`, `check_in`, `check_out`, `adults`, `children`, `rooms`, `search_surface` |
+| `search` | Tour search submitted | `search_type` = `tour`, `destination`, `duration`, `tour_type`, `adults`, `children`, `search_surface` |
+| `search` | Visa search submitted | `search_type` = `visa`, `destination`, `visa_type`, `adults`, `children`, `search_surface` |
+| `view_item` | Umrah package, tour package or visa country page opens | `ecommerce` object (`value`, `currency`, `items`); the item's `item_category` is `umrah`, `tour` or `visa` |
+
+Umrah has no search form, so it sends no `search` event.
+
 ### Site-wide events
 
 | Event | When | Parameters |
@@ -65,7 +78,7 @@ No personal data (name, email, phone) is ever sent.
 2. On the website, go to **Admin → Settings → Site Analytics**.
 3. Choose **Google Tag Manager**, paste the container ID and click **Save Site Analytics**.
 
-The site now loads GTM on every public page.
+The site now loads GTM on every page except the admin panel (`/admin`), so staff activity is not counted as traffic. Customer account pages (`/dashboard`) are tracked.
 
 ---
 
@@ -81,7 +94,7 @@ The downloaded file has your IDs already filled in and contains everything below
 - `GA4 Event - Standard`
 
 **Triggers for GA4**
-- `CE - GA4 ecommerce events`: `select_item`, `begin_checkout`, `add_payment_info`, `purchase`
+- `CE - GA4 ecommerce events`: `view_item`, `select_item`, `begin_checkout`, `add_payment_info`, `purchase`
 - `CE - GA4 standard events`: `search`, `payment_page_viewed`, `generate_lead`, `contact_click`, `sign_up`
 
 **Triggers per service** (for ad platform conversions, see step 6)
@@ -113,7 +126,7 @@ The downloaded file has your IDs already filled in and contains everything below
 
 1. **Variables → New → Data Layer Variable** for each parameter in section 1. Name it `DLV - <parameter>`, Data Layer Version 2.
 2. **Tag: Google Tag.** Tag ID = your `G-…` ID. Trigger: **Initialization – All Pages**.
-3. **Trigger: Custom Event**, event name `^(select_item|begin_checkout|add_payment_info|purchase)$`, tick **Use regex matching**.
+3. **Trigger: Custom Event**, event name `^(view_item|select_item|begin_checkout|add_payment_info|purchase)$`, tick **Use regex matching**.
 4. **Tag: GA4 Event.**
    - Event Name = `{{Event}}`.
    - Tick **More settings → Ecommerce → Send Ecommerce data**, Data source **Data Layer**.
@@ -143,6 +156,9 @@ GA4 → **Admin → Custom definitions → Create custom dimension**. Scope **Ev
 | Cabin class | `cabin_class` |
 | Contact method | `method` |
 | Search surface | `search_surface` |
+| Tour type | `tour_type` |
+| Visa type | `visa_type` |
+| Item category | `item_category` (optional: GA4's built-in *Item category* item dimension already covers `view_item` reports) |
 
 After this, any report on `generate_lead` can be broken down by **Lead type** to show Flight / Hotel / Umrah / Tour / Visa / Contact / Chat side by side. Data appears from the moment the dimension is created; it is not backfilled.
 
@@ -180,6 +196,23 @@ GA4 → **Explore → Funnel exploration**. Add these steps in order:
 6. `purchase`
 
 This shows where flight visitors drop off.
+
+### 4d. Property settings
+
+These make the data complete and trustworthy. All are in **GA4 → Admin**.
+
+| Setting | Where | Set to |
+| --- | --- | --- |
+| Enhanced measurement | **Data streams → your web stream → Enhanced measurement** | On. Under the gear, keep **Page changes based on browser history events** ticked. The site switches pages without full reloads; without this, only the first page of each visit is counted. |
+| Data retention | **Data collection and modification → Data retention** | **14 months**, and **Reset user data on new activity** on. The default of 2 months limits explorations and funnel reports. |
+| Internal traffic | **Data streams → your web stream → Configure tag settings → Define internal traffic** | Add a rule with `traffic_type` = `internal` for each office IP address. |
+| Data filter | **Data collection and modification → Data filters** | Set the built-in *Internal Traffic* filter to **Active** (it starts in Testing). |
+| Unwanted referrals | **Data streams → your web stream → Configure tag settings → List unwanted referrals** | Add any payment gateway domain once online payments are connected, so returning payers aren't recorded as new referral visits. |
+| Search Console | **Product links → Search Console links** | Link the `easytrip.com.pk` property to see Google search queries in GA4. |
+| Google Ads | **Product links → Google Ads links** | Link the Ads account so key events can be imported as conversions (step 6, option A). |
+| Google signals | **Data collection and modification → Data collection** | Optional. Turns on cross-device and demographic reports. |
+
+The admin panel is already excluded in the website code, so the internal traffic filter is only needed for staff browsing the public site.
 
 ---
 
@@ -253,16 +286,19 @@ The same per-service triggers work for other ad platforms too, such as a Meta Pi
 | --- | --- | --- |
 | Flights (booking) | Search a flight → **Book** a result → fill passengers → on payment choose **Pay at Branch** or **Cash on Delivery** → confirm | `search`, `select_item`, `begin_checkout`, `payment_page_viewed`, `add_payment_info`, `purchase`. GA4 tags fire on each; *Ads - Flight booking* fires on `purchase` |
 | Flights (enquiry) | Submit the flight enquiry form | `generate_lead` with `lead_type` = `flight` |
-| Hotels | `/hotels` → submit the enquiry form | `generate_lead`, `lead_type` = `hotel` |
-| Umrah | Open any Umrah package → submit the enquiry | `generate_lead`, `lead_type` = `umrah`, with `value` |
-| Tours | Open any tour package → submit the enquiry | `generate_lead`, `lead_type` = `tour`, with `value` |
-| Visa | Open any visa country page → submit the enquiry | `generate_lead`, `lead_type` = `visa` |
+| Hotels | `/hotels` → run a hotel search → submit the enquiry form | `search` (`search_type` = `hotel`), then `generate_lead`, `lead_type` = `hotel` |
+| Umrah | Open any Umrah package → submit the enquiry | `view_item` on page open, then `generate_lead`, `lead_type` = `umrah`, with `value` |
+| Tours | Run a tour search → open a tour package → submit the enquiry | `search` (`search_type` = `tour`), `view_item`, then `generate_lead`, `lead_type` = `tour`, with `value` |
+| Visa | Run a visa search → open a visa country page → submit the enquiry | `search` (`search_type` = `visa`), `view_item`, then `generate_lead`, `lead_type` = `visa` |
+| Admin excluded | Open any `/admin` page | No GTM container loads; nothing appears in Tag Assistant |
 | Contact | Submit `/contact-us`; click a phone/WhatsApp link | `generate_lead` (`contact`), `contact_click` (`method`) |
 | Sign-up | Create an account with email | `sign_up` |
 
 On each `generate_lead`, open **Variables** in Tag Assistant and confirm `DLV - lead_type` holds the right service. Only that service's `CE - Lead - …` trigger should fire.
 
 Test submissions create real enquiries and bookings in **Admin → Bookings**. Delete them afterwards, or tell the team they are tests.
+
+After publishing, **Admin → Tracking Report** shows every event GA4 received, per-service searches, views and enquiries, and the flight funnel. Its **Live (30 min)** column confirms a test journey within minutes. It uses the GA4 connection from **Admin → Settings → Dashboard Analytics**, and the per-service numbers need the custom dimensions from step 4a.
 
 Once everything fires correctly:
 
@@ -275,6 +311,4 @@ Once everything fires correctly:
 
 These are not tracked yet and need code changes if you want them:
 
-- **Search events for Hotels, Umrah, Tours and Visa.** Only the flight search form sends `search`. The other search forms send nothing until an enquiry is submitted.
-- **Package views** (`view_item`) for Umrah and tour package pages.
 - **Online payments.** `purchase` fires only for Cash on Delivery and Pay at Branch until the card/online gateways are connected.

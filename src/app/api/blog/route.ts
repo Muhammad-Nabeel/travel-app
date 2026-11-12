@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, markDatabaseUnavailable } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
 import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { sanitizeBlogHtml } from "@/lib/sanitize-blog-html";
 
 export type BlogPostRow = {
     id: string;
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
         const post = await prisma.blogPost.create({
             data: {
                 ...validated,
+                content: sanitizeBlogHtml(validated.content),
                 tags: validated.tags ?? [],
                 publishedAt: validated.publishedAt
                     ? new Date(validated.publishedAt)

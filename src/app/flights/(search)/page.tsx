@@ -19,7 +19,7 @@ import { BlogSlider } from "@/components/features/home/blog-slider";
 import { DestinationsSlider } from "@/components/features/home/destinations-slider";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { getAirportDisplay } from "@/lib/aviation-reference";
-import { prisma, shouldBypassDatabase } from "@/lib/db";
+import { recordFlightSearch } from "@/lib/flights/search-log";
 import { searchFlights } from "@/lib/flights/search-service";
 import {
   buildMetadata,
@@ -153,13 +153,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
     return <HomeLayout />;
   }
 
-  console.log("[Flights Page] Received searchParams:", resolvedSearchParams);
-
   const result = await searchFlights(resolvedSearchParams);
-  console.log("[Flights Page] Search result:", {
-    ok: result.ok,
-    errors: result.ok ? "none" : result.errors,
-  });
 
   if (!result.ok) {
     return (
@@ -181,41 +175,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
     );
   }
 
-  if (!shouldBypassDatabase()) {
-    try {
-      const provider =
-        result.source === "sabre"
-          ? "SABRE"
-          : result.source === "amadeus"
-            ? "AMADEUS"
-            : "INTERNAL";
-
-      await prisma.flightSearchLog.create({
-        data: {
-          origin: result.query.origin,
-          destination: result.query.destination,
-          departureDate: new Date(
-            `${result.query.departureDate}T00:00:00.000Z`,
-          ),
-          returnDate: result.query.returnDate
-            ? new Date(`${result.query.returnDate}T00:00:00.000Z`)
-            : null,
-          adults: result.query.adults,
-          children: result.query.children,
-          infants: result.query.infants,
-          cabinClass: result.query.cabinClass,
-          provider,
-          requestPayload: result.query,
-          responsePayload: {
-            source: result.source,
-            resultCount: result.results.length,
-          },
-        },
-      });
-    } catch {
-      // Keep page rendering resilient even if logging fails.
-    }
-  }
+  recordFlightSearch(result);
 
   const { query } = result;
   const originDisplay = getAirportDisplay(query.origin);
@@ -300,7 +260,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
         />
       </MobileSearchToggle>
 
-      {result.liveSearchEnabled ? (
+      {result.liveSearchEnabled && result.results.length > 0 ? (
         <>
           <FareCalendarStrip query={query} />
 
@@ -312,7 +272,17 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
           />
         </>
       ) : (
-        <FlightEnquiryForm query={query} legs={enquiryLegs} />
+        // Live search off, failed, or found nothing: the search becomes a fare request.
+        <>
+          {result.warnings.length > 0 ? (
+            <div className="section-shell mt-6">
+              <div className="alert alert-warning bg-amber-50 text-amber-900">
+                <span>{result.warnings[0]}</span>
+              </div>
+            </div>
+          ) : null}
+          <FlightEnquiryForm query={query} legs={enquiryLegs} />
+        </>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle, Loader2, Send } from "lucide-react";
 
 import type { PackageRow } from "@/app/api/packages/route";
+import { useCaptcha } from "@/components/shared/captcha";
 import { submitServiceRequest } from "@/lib/service-requests";
 
 type Props = {
@@ -37,6 +38,7 @@ export function UmrahEnquiryForm({
   >("idle");
   const [reference, setReference] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const captcha = useCaptcha();
 
   function validate() {
     const next: Partial<typeof form> = {};
@@ -55,12 +57,17 @@ export function UmrahEnquiryForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+    if (!captcha.ready) {
+      setServerError("Please complete the security check.");
+      return;
+    }
 
     setStatus("submitting");
     setServerError(null);
 
     try {
       const response = await submitServiceRequest({
+        captchaToken: captcha.token,
         type: "UMRAH",
         title: pkg.title,
         amount: estimatedTotal,
@@ -95,6 +102,8 @@ export function UmrahEnquiryForm({
           : "Unable to submit enquiry. Please try again.",
       );
       setStatus("error");
+    } finally {
+      captcha.reset();
     }
   }
 
@@ -226,6 +235,8 @@ export function UmrahEnquiryForm({
         />
       </div>
 
+      {captcha.widget}
+
       {serverError && (
         <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
           {serverError}
@@ -234,7 +245,7 @@ export function UmrahEnquiryForm({
 
       <button
         type="submit"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !captcha.ready}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? (

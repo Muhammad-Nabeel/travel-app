@@ -104,13 +104,12 @@ export async function GET(request: NextRequest) {
                 .sort((a, b) => a.date.localeCompare(b.date)),
         });
     } catch (error) {
+        // Provider details stay in the server log.
+        console.error("[fare-calendar] Live fare calendar failed:", error);
         return NextResponse.json(
             {
                 ok: false,
-                error:
-                    error instanceof Error
-                        ? `Sabre fare calendar unavailable: ${error.message}`
-                        : "Sabre fare calendar unavailable right now.",
+                error: "Fare calendar is unavailable right now.",
             },
             { status: 503 },
         );

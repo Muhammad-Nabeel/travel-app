@@ -292,6 +292,8 @@ const NavBar = () => {
                   alt=""
                   width={20}
                   height={20}
+                  // In the header, so above the fold on every page.
+                  loading="eager"
                   className="size-5 object-contain"
                 />
               ) : null}

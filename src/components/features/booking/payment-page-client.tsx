@@ -7,6 +7,7 @@ import { CheckCircle2, ChevronLeft, Loader2, Lock, ShieldCheck } from "lucide-re
 
 import { BookingFlightSummary } from "@/components/features/booking/booking-flight-summary";
 import { BookingSteps } from "@/components/features/booking/booking-steps";
+import { useCaptcha } from "@/components/shared/captcha";
 import {
   PaymentGatewayCard,
   type Gateway,
@@ -103,11 +104,11 @@ type BranchOption = {
 };
 
 const DEFAULT_PAYMENT_SWITCHES = {
-  enableWise: true,
-  enableStripe: true,
-  enablePaypal: true,
-  enableSumup: true,
-  enablePaymob: true,
+  enableWise: false,
+  enableStripe: false,
+  enablePaypal: false,
+  enableSumup: false,
+  enablePaymob: false,
   enableCashOnDelivery: true,
   enablePayAtBranch: true,
 };
@@ -173,6 +174,7 @@ export function PaymentPageClient() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const captcha = useCaptcha();
   const [notice, setNotice] = useState("");
   const [confirmed, setConfirmed] = useState<{
     reference: string | null;
@@ -209,11 +211,11 @@ export function PaymentPageClient() {
         const json = (await res.json()) as SitePricingResponse;
         setServiceChargePercent(Number(json.serviceChargePercent ?? 0));
         setPaymentSwitches({
-          enableWise: json.enableWise ?? true,
-          enableStripe: json.enableStripe ?? true,
-          enablePaypal: json.enablePaypal ?? true,
-          enableSumup: json.enableSumup ?? true,
-          enablePaymob: json.enablePaymob ?? true,
+          enableWise: json.enableWise ?? false,
+          enableStripe: json.enableStripe ?? false,
+          enablePaypal: json.enablePaypal ?? false,
+          enableSumup: json.enableSumup ?? false,
+          enablePaymob: json.enablePaymob ?? false,
           enableCashOnDelivery: json.enableCashOnDelivery ?? true,
           enablePayAtBranch: json.enablePayAtBranch ?? true,
         });
@@ -242,7 +244,10 @@ export function PaymentPageClient() {
     void loadBranches();
   }, []);
 
+  // Only gateways that can complete a booking are offered; online ones are
+  // listed in GATEWAYS for when they are integrated.
   const availableGateways = GATEWAYS.filter((gateway) => {
+    if (!OFFLINE_GATEWAYS.has(gateway.id)) return false;
     const toggleKey = GATEWAY_TOGGLE_KEY[gateway.id];
     return toggleKey ? paymentSwitches[toggleKey] : true;
   });
@@ -284,6 +289,11 @@ export function PaymentPageClient() {
       return;
     }
 
+    if (!captcha.ready) {
+      setPaymentError("Please complete the security check.");
+      return;
+    }
+
     setPaymentError("");
     setNotice("");
 
@@ -319,12 +329,10 @@ export function PaymentPageClient() {
               selectedGateway === "pay_at_branch"
                 ? selectedBranchId
                 : undefined,
+            // The server prices the booking itself from the signed offer
+            // and the saved service charge.
             payload,
-            pricing: {
-              serviceChargePercent,
-              serviceChargeAmount: pricing.serviceChargeAmount,
-              grandTotal: pricing.grandTotal,
-            },
+            captchaToken: captcha.token,
           }),
         });
 
@@ -362,13 +370,13 @@ export function PaymentPageClient() {
         );
       } finally {
         setSubmittingPayment(false);
+        captcha.reset();
       }
 
       return;
     }
 
-    // TODO: integrate each gateway's SDK / redirect
-    // The full `payload` object is available here and is database-ready.
+    // Unreachable until an online gateway is integrated (see availableGateways).
     setNotice(
       `Online payment with ${selected?.name ?? "this method"} is not available yet. Choose Cash on Delivery or Pay at Branch, or contact us to complete your booking.`,
     );
@@ -595,9 +603,11 @@ export function PaymentPageClient() {
           </div>
           <p className="mt-0.5 text-right text-xs text-muted">Taxes and fees included</p>
 
+          {captcha.widget ? <div className="mt-5">{captcha.widget}</div> : null}
+
           <button
             type="button"
-            disabled={!selectedGateway || submittingPayment}
+            disabled={!selectedGateway || submittingPayment || !captcha.ready}
             onClick={() => void handlePayNow()}
             className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-base font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+import { useCaptcha } from "@/components/shared/captcha";
 import { trackLead } from "@/lib/analytics/ga4-events";
 
 type ContactFormProps = {
@@ -27,6 +28,7 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
+  const captcha = useCaptcha();
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -41,6 +43,11 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
       return;
     }
 
+    if (!captcha.ready) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setStatus("submitting");
     setError(null);
 
@@ -48,7 +55,7 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, captchaToken: captcha.token }),
       });
       const json = (await response.json()) as { ok?: boolean; error?: string };
 
@@ -64,6 +71,8 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
       setError(
         `${err instanceof Error ? err.message : "Unable to send your message."} You can also email us at ${supportEmail}.`,
       );
+    } finally {
+      captcha.reset();
     }
   }
 
@@ -122,13 +131,15 @@ export function ContactForm({ labels, supportEmail }: ContactFormProps) {
         />
       </label>
 
+      {captcha.widget}
+
       {error ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
       ) : null}
 
       <button
         type="submit"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !captcha.ready}
         className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-lg font-semibold text-white transition hover:bg-brand-strong disabled:opacity-70"
       >
         {status === "submitting" ? <Loader2 className="h-5 w-5 animate-spin" /> : null}

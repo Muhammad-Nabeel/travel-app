@@ -63,6 +63,7 @@ model User {
   updatedAt      DateTime        @updatedAt
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
+  bookingEvents           BookingEvent[]
 }
 
 model EmailVerificationToken {
@@ -128,6 +129,9 @@ model FlightSearchLog {
   requestPayload  Json
   responsePayload Json?
   searchedAt      DateTime       @default(now())
+
+  /// Trending searches read recent rows; the retention sweep deletes old ones.
+  @@index([searchedAt])
 }
 
 // Every customer request: checkout bookings, service request forms and chatbot leads.
@@ -151,6 +155,7 @@ model Booking {
   paymentData    Json?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  events         BookingEvent[]
 
   @@index([type, createdAt])
   @@index([status, createdAt])
@@ -375,4 +380,31 @@ model Branch {
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+/// Request counters for rate-limited public endpoints (src/lib/rate-limit-store.ts).
+/// Shared by every app process; rows expire and are swept automatically.
+model RateLimitBucket {
+  /// "<rule id>:<sha256 of client IP>"
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+/// Append-only history of a booking: every status change and who made it.
+model BookingEvent {
+  id         String         @id @default(cuid())
+  bookingId  String
+  booking    Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromStatus BookingStatus?
+  toStatus   BookingStatus?
+  note       String?
+  /// The admin who made the change; kept as a name too in case the account is deleted.
+  actorId    String?
+  actor      User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName  String
+  createdAt  DateTime       @default(now())
+
+  @@index([bookingId, createdAt])
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BookingHistory } from "@/components/admin/booking-history";
 import { BookingStatusSelect } from "@/components/admin/booking-status-select";
 import { BookingRequestDetails } from "@/components/features/booking/booking-request-details";
 
@@ -248,6 +249,12 @@ export default async function AdminBookingDetailsPage({
           </p>
           <BookingRequestDetails channel={booking.channel} payload={booking.payload} />
         </section>
+        <BookingHistory
+        bookingId={booking.id}
+        status={booking.status}
+        createdAt={booking.createdAt}
+        events={booking.events}
+      />
       </main>
     );
   }
@@ -446,6 +453,12 @@ export default async function AdminBookingDetailsPage({
           </p>
         )}
       </section>
+      <BookingHistory
+        bookingId={booking.id}
+        status={booking.status}
+        createdAt={booking.createdAt}
+        events={booking.events}
+      />
     </main>
   );
 }
@@ -456,7 +469,22 @@ async function getBookingById(id: string) {
   }
 
   try {
-    return await prisma.booking.findUnique({ where: { id } });
+    return await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        events: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            fromStatus: true,
+            toStatus: true,
+            note: true,
+            actorName: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
   } catch (err) {
     markDatabaseUnavailable(err);
     return null;

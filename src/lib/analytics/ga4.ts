@@ -1,4 +1,6 @@
-import { google } from "googleapis";
+// Only the Analytics Data API: the full "googleapis" package bundles every
+// Google API and takes minutes to compile in dev.
+import { analyticsdata, auth as googleAuth } from "googleapis/build/src/apis/analyticsdata";
 
 import { getStoredDashboardAnalyticsSettings } from "@/lib/admin-settings/ga4-settings";
 
@@ -61,23 +63,12 @@ async function resolveGa4Config(
     const stored = await getStoredDashboardAnalyticsSettings();
 
     return {
-        propertyId: (
-            overrides?.propertyId ||
-            stored.propertyId ||
-            process.env.GA4_PROPERTY_ID ||
-            ""
-        ).trim(),
+        propertyId: (overrides?.propertyId || stored.propertyId).trim(),
         serviceAccountEmail: (
-            overrides?.serviceAccountEmail ||
-            stored.serviceAccountEmail ||
-            process.env.GA4_SERVICE_ACCOUNT_EMAIL ||
-            ""
+            overrides?.serviceAccountEmail || stored.serviceAccountEmail
         ).trim(),
         serviceAccountPrivateKey: (
-            overrides?.serviceAccountPrivateKey ||
-            stored.serviceAccountPrivateKey ||
-            process.env.GA4_SERVICE_ACCOUNT_PRIVATE_KEY ||
-            ""
+            overrides?.serviceAccountPrivateKey || stored.serviceAccountPrivateKey
         )
             .replace(/\\n/g, "\n")
             .trim(),
@@ -92,16 +83,40 @@ function hasRequiredGa4Config(config: ResolvedGa4Config) {
     );
 }
 
+export type Ga4ReportingClient = {
+    /** `properties/<id>`, ready for Data API calls. */
+    property: string;
+    auth: InstanceType<typeof googleAuth.JWT>;
+};
+
+/**
+ * Data API client from the stored Dashboard Analytics settings, or null when
+ * they are incomplete.
+ */
+export async function getGa4ReportingClient(): Promise<Ga4ReportingClient | null> {
+    const config = await resolveGa4Config();
+    if (!hasRequiredGa4Config(config)) return null;
+
+    return {
+        property: `properties/${config.propertyId}`,
+        auth: new googleAuth.JWT({
+            email: config.serviceAccountEmail,
+            key: config.serviceAccountPrivateKey,
+            scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+        }),
+    };
+}
+
 async function fetchGa4AnalyticsData(
     config: ResolvedGa4Config,
 ): Promise<AdminAnalyticsData> {
-    const auth = new google.auth.JWT({
+    const auth = new googleAuth.JWT({
         email: config.serviceAccountEmail,
         key: config.serviceAccountPrivateKey,
         scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
     });
 
-    const analyticsData = google.analyticsdata("v1beta");
+    const analyticsData = analyticsdata("v1beta");
 
     const kpiResponse = await analyticsData.properties.runReport({
         property: `properties/${config.propertyId}`,
@@ -209,13 +224,13 @@ async function fetchGa4AnalyticsData(
 }
 
 async function runGa4ConnectionProbe(config: ResolvedGa4Config): Promise<void> {
-    const auth = new google.auth.JWT({
+    const auth = new googleAuth.JWT({
         email: config.serviceAccountEmail,
         key: config.serviceAccountPrivateKey,
         scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
     });
 
-    const analyticsData = google.analyticsdata("v1beta");
+    const analyticsData = analyticsdata("v1beta");
     await analyticsData.properties.runReport({
         property: `properties/${config.propertyId}`,
         auth,

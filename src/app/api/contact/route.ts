@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getStoredSupportContactSettings } from "@/lib/admin-settings/support-contact-settings";
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
 import { sendMail } from "@/lib/email/mailer";
 
 const contactMessageSchema = z.object({
@@ -20,7 +21,12 @@ function escapeHtml(value: string) {
 
 // Sends a Contact Us message to the support email set in Admin → Settings → Contact Details.
 export async function POST(request: NextRequest) {
-    const parsed = contactMessageSchema.safeParse(await request.json().catch(() => null));
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+    const captchaRejection = await rejectWithoutCaptcha(request, body?.captchaToken);
+    if (captchaRejection) return captchaRejection;
+
+    const parsed = contactMessageSchema.safeParse(body);
     if (!parsed.success) {
         return NextResponse.json(
             { ok: false, error: "Please enter your name, a valid email and a message." },

@@ -1,8 +1,10 @@
 import { Prisma } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
 import { resolveBookingUserId } from "@/lib/bookings/link-user";
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { sendBookingRequestEmails } from "@/lib/email/booking-emails";
 
 type ChatbotBookingRequestBody = {
     departureCity?: string;
@@ -28,7 +30,12 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body = (await request.json()) as ChatbotBookingRequestBody;
+        const body = (await request.json()) as ChatbotBookingRequestBody & {
+            captchaToken?: string | null;
+        };
+
+        const captchaRejection = await rejectWithoutCaptcha(request, body.captchaToken);
+        if (captchaRejection) return captchaRejection;
 
         const departureCity = body.departureCity?.trim() ?? "";
         const destination = body.destination?.trim() ?? "";
@@ -37,7 +44,7 @@ export async function POST(request: NextRequest) {
         const travelClass = body.travelClass?.trim() ?? "";
         const fullName = body.fullName?.trim() ?? "";
         const phone = body.phone?.trim() ?? "";
-        const email = body.email?.trim() ?? "";
+        const email = body.email?.trim().toLowerCase() ?? "";
 
         if (
             !departureCity ||
@@ -55,7 +62,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const userId = await resolveBookingUserId(email);
+        const userId = await resolveBookingUserId();
 
         const reference = buildReference();
 
@@ -92,6 +99,25 @@ export async function POST(request: NextRequest) {
                 reference: true,
             },
         });
+
+        after(() =>
+            sendBookingRequestEmails({
+                bookingId: created.id,
+                isGuest: userId === null,
+                reference: created.reference,
+                kind: "Flight request",
+                customerName: fullName,
+                customerEmail: email,
+                customerPhone: phone,
+                summary: [
+                    ["From", departureCity],
+                    ["To", destination],
+                    ["Dates", travelDates],
+                    ["Passengers", passengers],
+                    ["Class", travelClass],
+                ],
+            }),
+        );
 
         return NextResponse.json(
             { ok: true, bookingId: created.id, reference: created.reference },

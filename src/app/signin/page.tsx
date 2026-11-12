@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
+import { ResendVerification } from "@/components/features/auth/resend-verification";
 import { useBrand } from "@/components/shared/brand-provider";
 import { useGoogleSignInEnabled } from "@/lib/hooks/use-google-sign-in";
 
@@ -33,6 +34,7 @@ function SignInForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +53,7 @@ function SignInForm() {
     if (result?.error) {
       if (result.error.includes("EMAIL_NOT_VERIFIED")) {
         setError("Please verify your email before signing in.");
+        setNeedsVerification(true);
       } else {
         setError("Invalid email or password. Please try again.");
       }
@@ -149,9 +152,8 @@ function SignInForm() {
 
           {verificationStatus === "sent" && (
             <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-              Verification email sent
-              {verificationEmail ? ` to ${verificationEmail}` : ""}. Please
-              verify before signing in.
+              Check {verificationEmail ? verificationEmail : "your email"} for a
+              link to verify your account before signing in.
             </div>
           )}
 
@@ -163,9 +165,17 @@ function SignInForm() {
 
           {verificationStatus === "expired" && (
             <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              Verification link expired. Please sign up again or contact
-              support.
+              Verification link expired. Send yourself a new one below.
             </div>
+          )}
+
+          {(needsVerification ||
+            verificationStatus === "sent" ||
+            verificationStatus === "expired" ||
+            verificationStatus === "invalid") && (
+            <ResendVerification
+              defaultEmail={verificationEmail ?? email.trim().toLowerCase()}
+            />
           )}
 
           {searchParams.get("reset") === "success" && (

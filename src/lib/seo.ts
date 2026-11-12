@@ -215,7 +215,7 @@ export function buildMetadata({
       description: finalDescription,
       url: absoluteUrl(canonicalPath),
       siteName,
-      locale: "en_GB",
+      locale: "en_PK",
       images: [
         {
           url: finalImage,
@@ -269,7 +269,7 @@ export function createWebPageSchema({
     description: toMetaDescription(description),
     url: absoluteUrl(path),
     isPartOf: { "@id": absoluteUrl(WEBSITE_ID_PATH) },
-    inLanguage: "en",
+    inLanguage: "en-PK",
   };
 }
 
@@ -331,7 +331,7 @@ export function createArticleSchema({
     },
     articleSection: section,
     keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
-    inLanguage: "en",
+    inLanguage: "en-PK",
   };
 }
 
@@ -455,7 +455,7 @@ export function createWebsiteSchema(name = SITE_NAME) {
     url: absoluteUrl("/"),
     description: SITE_DESCRIPTION,
     publisher: { "@id": absoluteUrl(ORGANIZATION_ID_PATH) },
-    inLanguage: "en",
+    inLanguage: "en-PK",
   };
 }
 

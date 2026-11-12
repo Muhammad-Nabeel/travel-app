@@ -1,9 +1,19 @@
+# Secrets: never copy any env file into an image layer.
+.env
+.env.*
+*.pem
+
+# Build output, caches and local backups
 node_modules
 .next
+.next-backup-*
 dist
+coverage
+*.tsbuildinfo
+
+# Repo and editor noise
+.git
+.github
 .DS_Store
-npm-debug.log
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+npm-debug.log*
+docs

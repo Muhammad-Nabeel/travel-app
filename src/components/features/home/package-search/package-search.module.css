@@ -357,7 +357,8 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #ffffff;
-  background: var(--primary);
+  background-color: var(--primary);
+  background-image: var(--brand-gradient);
   border: none;
   border-radius: 999px;
   padding: 0 28px;
@@ -375,7 +376,8 @@
 .searchBtn:hover {
   opacity: 0.92;
   transform: none;
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
+  background-image: var(--brand-gradient-hover);
 }
 
 .searchBtn:active {

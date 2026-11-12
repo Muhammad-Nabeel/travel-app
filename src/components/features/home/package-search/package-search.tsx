@@ -13,6 +13,7 @@ import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-bac
 import { ProductTabs } from "../product-tabs";
 import styles from "./package-search.module.css";
 import { SlotIcon } from "@/components/shared/slot-icon";
+import { trackEvent } from "@/lib/analytics/ga4-events";
 
 export type TourType =
   | "all"
@@ -244,6 +245,16 @@ export function PackageSearchEngine({
       window.alert("Please enter a destination.");
       return;
     }
+    trackEvent("search", {
+      search_term: destination.trim(),
+      search_type: "tour",
+      destination: destination.trim(),
+      duration,
+      tour_type: tourType,
+      adults,
+      children,
+      search_surface: variant,
+    });
     onSearch?.({ destination, duration, adults, children, tourType });
   };
 

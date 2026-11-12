@@ -13,14 +13,22 @@ export type SitePricingSettings = {
 
 const SITE_PRICING_KEY = "site_pricing";
 
-function defaultPricingSettings(): SitePricingSettings {
+/**
+ * Payment methods that actually complete a booking today. Online gateways
+ * stay switched off and hidden from checkout until each one is integrated
+ * end to end (server-created payment, webhook confirmation).
+ */
+export const IMPLEMENTED_PAYMENT_METHODS = ["cash_on_delivery", "pay_at_branch"] as const;
+export type ImplementedPaymentMethod = (typeof IMPLEMENTED_PAYMENT_METHODS)[number];
+
+export function defaultPricingSettings(): SitePricingSettings {
     return {
         serviceChargePercent: 0,
-        enableWise: true,
-        enableStripe: true,
-        enablePaypal: true,
-        enableSumup: true,
-        enablePaymob: true,
+        enableWise: false,
+        enableStripe: false,
+        enablePaypal: false,
+        enableSumup: false,
+        enablePaymob: false,
         enableCashOnDelivery: true,
         enablePayAtBranch: true,
     };
@@ -49,11 +57,11 @@ async function readSitePricingSettings(): Promise<SitePricingSettings | null> {
 
     return {
         serviceChargePercent: toPercent(parsed.serviceChargePercent),
-        enableWise: parsed.enableWise ?? true,
-        enableStripe: parsed.enableStripe ?? true,
-        enablePaypal: parsed.enablePaypal ?? true,
-        enableSumup: parsed.enableSumup ?? true,
-        enablePaymob: parsed.enablePaymob ?? true,
+        enableWise: parsed.enableWise ?? false,
+        enableStripe: parsed.enableStripe ?? false,
+        enablePaypal: parsed.enablePaypal ?? false,
+        enableSumup: parsed.enableSumup ?? false,
+        enablePaymob: parsed.enablePaymob ?? false,
         enableCashOnDelivery: parsed.enableCashOnDelivery ?? true,
         enablePayAtBranch: parsed.enablePayAtBranch ?? true,
     };
@@ -77,6 +85,24 @@ export async function getStoredSitePricingSettings(): Promise<SitePricingSetting
     } catch {
         return defaultPricingSettings();
     }
+}
+
+/**
+ * For pricing a booking: unlike getStoredSitePricingSettings it never falls
+ * back to defaults on a database error, so a booking is never priced with a
+ * 0% service charge just because the settings could not be read.
+ */
+export async function loadSitePricingSettingsForBooking(): Promise<SitePricingSettings> {
+    return (await readSitePricingSettings()) ?? defaultPricingSettings();
+}
+
+export function isPaymentMethodEnabled(
+    settings: SitePricingSettings,
+    method: string,
+): method is ImplementedPaymentMethod {
+    if (method === "cash_on_delivery") return settings.enableCashOnDelivery;
+    if (method === "pay_at_branch") return settings.enablePayAtBranch;
+    return false;
 }
 
 export async function saveStoredSitePricingSettings(

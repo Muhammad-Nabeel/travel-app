@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 
 import { BlogSearch } from "@/components/features/blog/blog-search";
 import { StructuredData } from "@/components/shared/structured-data";
+import { sanitizeBlogHtml } from "@/lib/sanitize-blog-html";
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 import {
   getPublishedBlogPostBySlug,
@@ -107,7 +108,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
   // The page title is the only H1; demote any H1 an editor typed into the body.
   const content = unlinkUnpublishedPosts(
-    post.content.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2"),
+    sanitizeBlogHtml(post.content).replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2"),
     new Set(posts.map((item) => item.slug)),
   );
 

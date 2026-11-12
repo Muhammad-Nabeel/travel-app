@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2, PlaneTakeoff } from "lucide-react";
 import { useBrand } from "@/components/shared/brand-provider";
+import { useCaptcha } from "@/components/shared/captcha";
 
 export default function ForgotPasswordPage() {
   const brand = useBrand();
@@ -12,17 +13,25 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [sentMessage, setSentMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const captcha = useCaptcha();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!captcha.ready) {
+      setError("Please complete the security check.");
+      return;
+    }
     setLoading(true);
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          captchaToken: captcha.token,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -34,6 +43,7 @@ export default function ForgotPasswordPage() {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+      captcha.reset();
     }
   }
 
@@ -97,9 +107,11 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
+              {captcha.widget}
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !captcha.ready}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 className="size-4 animate-spin" />}

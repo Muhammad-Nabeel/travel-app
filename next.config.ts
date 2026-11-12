@@ -56,6 +56,9 @@ const nextConfig = {
   turbopack: {
     root: rootDirectory,
   },
+  // Loaded from node_modules at runtime instead of bundled: googleapis is
+  // ~200 MB and made admin analytics routes take minutes to compile in dev.
+  serverExternalPackages: ["googleapis"],
   images: {
     remotePatterns,
     // Every image is served as WebP at the width the device needs.

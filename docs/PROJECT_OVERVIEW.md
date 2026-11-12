@@ -27,7 +27,11 @@ This overview reflects the source code reviewed on October 26, 2026. Integration
 
 - Flight search with one-way, round-trip, and multi-city input, passenger counts, cabin selection, currency, and direct-flight filtering.
 - Flight passenger/contact forms and a payment selection page.
-- Booking requests for cash on delivery or payment at a branch.
+- Booking requests for cash on delivery or payment at a branch. Online payment gateways (Wise, Stripe, PayPal, SumUp, Paymob) are planned for phase 2 and are hidden at checkout until then.
+- Every booking status change and admin note is kept in `BookingEvent` (who, when, from → to) and shown as a history on the admin booking page.
+- Guest bookings are not attached to an account by email alone: the confirmation email carries a signed "Add this booking to my account" link that works only when signed in with that verified email.
+- Flight search logs are written after the response and pruned after 90 days.
+- Public forms (sign-up, forgot password, contact, enquiries, flight booking requests, reviews, chat requests) are protected by Cloudflare Turnstile when it is enabled in Admin → Settings → Form Protection, and by per-IP rate limits stored in Postgres (`RateLimitBucket`) so every app process shares one count.
 - Hotel search page and an API that currently returns mock hotel results.
 - Umrah and tour package listing/detail pages.
 - Destination, activity, visa, and blog pages.
@@ -133,8 +137,10 @@ Configure integrations according to the features being used. This list contains 
 
 | Purpose | Variables |
 | --- | --- |
-| Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX` |
-| Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` |
+| Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX`, optional `DATABASE_SSL_CA` (PEM text or path to the server's CA certificate; turns on TLS certificate verification) |
+| Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` (also signs flight offers between search and booking) |
+| Error tracking | none: the Sentry DSN, environment and tracing rate are set in Admin → Settings → Error Tracking (stored in the database; picked up by every server process within 5 minutes). Request bodies, headers, cookies, query strings and user details are never sent. |
+| Form protection | none: the Turnstile site key and secret key are entered in Admin → Settings → Form Protection and stored encrypted in the database (needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |
 | Google sign-in | None; enabled and configured in Admin → Settings → Google Sign-In (stored encrypted). `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are only copied into the database on first read if no setting exists yet |
 | Public site URL | `NEXT_PUBLIC_SITE_URL`, `SITE_URL` |
 | Verification emails | None; SMTP is stored encrypted in the database (needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |
@@ -142,8 +148,8 @@ Configure integrations according to the features being used. This list contains 
 | Sabre options | `SABRE_REQUESTOR_COMPANY_CODE`, `SABRE_ISO_COUNTRY`, `SABRE_ISO_CURRENCY`, `SABRE_INCLUDE_VENDOR_CODES`, `SABRE_NDC_ENABLED`, `SABRE_FLIGHT_SEARCH_PATH`, `SABRE_FARE_CALENDAR_PATH` |
 | Amadeus adapter | `AMADEUS_BASE_URL`, `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`, `AMADEUS_CURRENCY`, `AMADEUS_MAX_OFFERS` |
 | Cloudflare R2 | `CLOUDFLARE_R2_ENDPOINT`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_BUCKET_NAME`, `CLOUDFLARE_R2_PUBLIC_URL` |
-| Browser analytics | `NEXT_PUBLIC_ANALYTICS_PROVIDER`, `NEXT_PUBLIC_GTM_CONTAINER_ID`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID` |
-| Admin analytics | `GA4_PROPERTY_ID`, `GA4_SERVICE_ACCOUNT_EMAIL`, `GA4_SERVICE_ACCOUNT_PRIVATE_KEY`, `ADMIN_SETTINGS_ENCRYPTION_KEY` |
+| Browser analytics | None; the GTM container or GA4 Measurement ID is stored in the database (Admin → Settings → Site Analytics) |
+| Admin analytics | None; the GA4 property and service account are stored encrypted in the database (Admin → Settings → Dashboard Analytics, needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |
 
 Runtime database connections prefer `DATABASE_URL`, with `DIRECT_URL` as a fallback. Prisma CLI configuration prefers `DIRECT_URL`, with `DATABASE_URL` as a fallback. For Supabase, use the appropriate pooled runtime connection and direct migration connection.
 

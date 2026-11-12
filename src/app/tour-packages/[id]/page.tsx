@@ -1,3 +1,4 @@
+import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CalendarDays, MapPin, Star, Tag } from "lucide-react";
@@ -107,6 +108,13 @@ export default async function TourPackageDetailsPage({
 
   return (
     <DetailPage>
+      <ViewItemTracker
+        itemId={pkg.slug}
+        itemName={pkg.title}
+        itemCategory="tour"
+        price={pkg.pricePerAdult}
+        currency={pkg.currency}
+      />
       <StructuredData
         data={[
           createWebPageSchema({

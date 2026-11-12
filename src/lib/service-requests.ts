@@ -19,6 +19,8 @@ export type ServiceRequestInput = {
     customerEmail?: string;
     customerPhone?: string;
     payload: Record<string, unknown>;
+    /** Turnstile token from useCaptcha(); checked by the server when form protection is on. */
+    captchaToken?: string | null;
 };
 
 const SERVICE_REQUEST_PREFIX: Record<ServiceRequestType, string> = {

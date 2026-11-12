@@ -1,3 +1,4 @@
+import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BadgeCheck, CalendarDays, Clock, FileCheck2, Globe2 } from "lucide-react";
@@ -112,6 +113,13 @@ export default async function VisaDetailsPage({
 
   return (
     <DetailPage>
+      <ViewItemTracker
+        itemId={slug}
+        itemName={detailsTitle(visa)}
+        itemCategory="visa"
+        price={Number(offerPrice(visa.netCost) ?? 0)}
+        currency="PKR"
+      />
       <StructuredData
         data={[
           createWebPageSchema({

@@ -305,7 +305,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--primary);
+  background-color: var(--primary);
+  background-image: var(--brand-gradient);
   color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
@@ -321,7 +322,8 @@
 }
 
 .searchBtn:hover {
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
+  background-image: var(--brand-gradient-hover);
   transform: none;
 }
 

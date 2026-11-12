@@ -30,7 +30,7 @@ import { buildFlightItem, trackEcommerceEvent } from "@/lib/analytics/ga4-events
 type FlightsResultsPanelProps = {
   offers: FlightOffer[];
   query: FlightSearchQuery;
-  source: "sabre" | "amadeus" | "mock";
+  source: "sabre" | "amadeus" | "none";
   warnings: string[];
 };
 

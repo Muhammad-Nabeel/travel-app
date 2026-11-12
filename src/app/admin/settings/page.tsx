@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { BrandSettingsPanel } from "@/components/admin/brand-settings-panel";
+import { CaptchaSettingsPanel } from "@/components/admin/captcha-settings-panel";
+import { ErrorTrackingSettingsPanel } from "@/components/admin/error-tracking-settings-panel";
 import { DashboardAnalyticsPanel } from "@/components/admin/dashboard-analytics-panel";
 import { GoogleAuthSettingsPanel } from "@/components/admin/google-auth-settings-panel";
 import { SabreSettingsPanel } from "@/components/admin/sabre-settings-panel";
@@ -15,11 +17,11 @@ const EMPTY_PRICING_FORM = {
 };
 
 const EMPTY_PAYMENT_FORM = {
-  enableWise: true,
-  enableStripe: true,
-  enablePaypal: true,
-  enableSumup: true,
-  enablePaymob: true,
+  enableWise: false,
+  enableStripe: false,
+  enablePaypal: false,
+  enableSumup: false,
+  enablePaymob: false,
   enableCashOnDelivery: true,
   enablePayAtBranch: true,
 };
@@ -70,6 +72,8 @@ type SettingsPanel =
   | "site-analytics"
   | "dashboard-analytics"
   | "google-auth"
+  | "captcha"
+  | "error-tracking"
   | "pricing"
   | "payments"
   | "branches"
@@ -152,11 +156,11 @@ export default function AdminSettingsPage() {
           serviceChargePercent: String(pricingJson.serviceChargePercent ?? 0),
         });
         setPaymentForm({
-          enableWise: pricingJson.enableWise ?? true,
-          enableStripe: pricingJson.enableStripe ?? true,
-          enablePaypal: pricingJson.enablePaypal ?? true,
-          enableSumup: pricingJson.enableSumup ?? true,
-          enablePaymob: pricingJson.enablePaymob ?? true,
+          enableWise: pricingJson.enableWise ?? false,
+          enableStripe: pricingJson.enableStripe ?? false,
+          enablePaypal: pricingJson.enablePaypal ?? false,
+          enableSumup: pricingJson.enableSumup ?? false,
+          enablePaymob: pricingJson.enablePaymob ?? false,
           enableCashOnDelivery: pricingJson.enableCashOnDelivery ?? true,
           enablePayAtBranch: pricingJson.enablePayAtBranch ?? true,
         });
@@ -470,6 +474,28 @@ export default function AdminSettingsPage() {
             </button>
             <button
               type="button"
+              onClick={() => setActivePanel("captcha")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "captcha"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Form Protection
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("error-tracking")}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                activePanel === "error-tracking"
+                  ? "border-line bg-brand-soft text-brand-strong"
+                  : "border-line bg-white text-navy/80 hover:bg-subtle"
+              }`}
+            >
+              Error Tracking
+            </button>
+            <button
+              type="button"
               onClick={() => setActivePanel("pricing")}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
                 activePanel === "pricing"
@@ -572,6 +598,10 @@ export default function AdminSettingsPage() {
             <DashboardAnalyticsPanel />
           ) : activePanel === "google-auth" ? (
             <GoogleAuthSettingsPanel />
+          ) : activePanel === "captcha" ? (
+            <CaptchaSettingsPanel />
+          ) : activePanel === "error-tracking" ? (
+            <ErrorTrackingSettingsPanel />
           ) : activePanel === "pricing" ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
@@ -647,22 +677,35 @@ export default function AdminSettingsPage() {
                   {[
                     { key: "enableCashOnDelivery", label: "Cash on Delivery" },
                     { key: "enablePayAtBranch", label: "Pay at Branch" },
-                    { key: "enableWise", label: "Wise" },
-                    { key: "enableStripe", label: "Stripe" },
-                    { key: "enablePaypal", label: "PayPal" },
-                    { key: "enableSumup", label: "SumUp" },
-                    { key: "enablePaymob", label: "Paymob" },
+                    // Online gateways are phase 2; checkout hides them either way.
+                    { key: "enableWise", label: "Wise", comingSoon: true },
+                    { key: "enableStripe", label: "Stripe", comingSoon: true },
+                    { key: "enablePaypal", label: "PayPal", comingSoon: true },
+                    { key: "enableSumup", label: "SumUp", comingSoon: true },
+                    { key: "enablePaymob", label: "Paymob", comingSoon: true },
                   ].map((item) => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between rounded-md border border-line bg-white px-3 py-2"
+                      className={`flex items-center justify-between rounded-md border border-line bg-white px-3 py-2 ${
+                        "comingSoon" in item ? "opacity-60" : ""
+                      }`}
                     >
                       <span className="text-sm font-medium text-navy/80">
                         {item.label}
+                        {"comingSoon" in item ? (
+                          <span className="ml-2 text-xs font-normal text-muted">
+                            Coming in phase 2
+                          </span>
+                        ) : null}
                       </span>
                       <input
                         type="checkbox"
-                        checked={paymentForm[item.key as PaymentSwitchKey]}
+                        disabled={"comingSoon" in item}
+                        checked={
+                          "comingSoon" in item
+                            ? false
+                            : paymentForm[item.key as PaymentSwitchKey]
+                        }
                         onChange={(e) =>
                           setPaymentForm((prev) => ({
                             ...prev,

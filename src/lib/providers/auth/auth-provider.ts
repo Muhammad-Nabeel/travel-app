@@ -11,6 +11,9 @@ import { prisma } from "../../db";
  * Static options for getServerSession(). Session decoding needs no providers,
  * so Google (configured in the admin panel) is only added in getAuthOptions().
  */
+// How often a session re-reads the user's role from the database.
+const ROLE_REFRESH_MS = 5 * 60 * 1000;
+
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
@@ -106,6 +109,25 @@ export const authOptions: NextAuthOptions = {
                     // Credentials sign-in
                     token.id = user.id;
                     token.role = (user as User & { role: string }).role;
+                }
+                token.roleCheckedAt = Date.now();
+                return token;
+            }
+
+            // The session (navbar, dashboard, server checks) should follow a
+            // role change without waiting 30 days for the token to expire.
+            // Admin access itself is checked against the database in the proxy.
+            const checkedAt = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
+            if (typeof token.id === "string" && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+                try {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: token.id },
+                        select: { role: true },
+                    });
+                    token.role = dbUser?.role ?? "CUSTOMER";
+                    token.roleCheckedAt = Date.now();
+                } catch {
+                    // Keep the current claims; the next request retries.
                 }
             }
             return token;

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { useBrand } from "@/components/shared/brand-provider";
 import {
+  Activity,
   BookOpen,
   Briefcase,
   BriefcaseBusiness,
@@ -36,6 +37,7 @@ export const adminNavGroups: { title: string; links: AdminLink[] }[] = [
     links: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/bookings", label: "Bookings", icon: BookOpen },
+      { href: "/admin/tracking-report", label: "Tracking Report", icon: Activity },
     ],
   },
   {

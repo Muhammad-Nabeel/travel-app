@@ -76,7 +76,7 @@ export const GA4_EVENT_TAGS = {
     ecommerce: {
         name: "GA4 Event - Ecommerce",
         triggerName: "CE - GA4 ecommerce events",
-        events: ["select_item", "begin_checkout", "add_payment_info", "purchase"],
+        events: ["view_item", "select_item", "begin_checkout", "add_payment_info", "purchase"],
     },
     standard: {
         name: "GA4 Event - Standard",
@@ -132,8 +132,9 @@ export const SERVICE_TRACKING: ServiceTrackingGuide[] = [
     {
         key: "hotels",
         label: "Hotels",
-        summary: "Enquiry lead when the hotel enquiry form on /hotels is sent.",
+        summary: "Hotel searches and the enquiry lead when the hotel enquiry form on /hotels is sent.",
         events: [
+            { name: "search", when: "Hotel search submitted", params: "search_type=hotel, destination, check_in, check_out, adults, children, rooms" },
             { name: "generate_lead", when: "Hotel enquiry form sent", params: "lead_type=hotel, lead_source=enquiry_form, item_name (stay type, destination, dates)" },
         ],
         triggers: [
@@ -148,8 +149,9 @@ export const SERVICE_TRACKING: ServiceTrackingGuide[] = [
     {
         key: "umrah",
         label: "Umrah",
-        summary: "Enquiry lead with the package's estimated value.",
+        summary: "Package views and the enquiry lead with the package's estimated value.",
         events: [
+            { name: "view_item", when: "Umrah package page opened", params: "ecommerce (value, currency, items with item_category=umrah)" },
             { name: "generate_lead", when: "Umrah package enquiry sent", params: "lead_type=umrah, item_name (package), value, currency" },
         ],
         triggers: [
@@ -164,8 +166,10 @@ export const SERVICE_TRACKING: ServiceTrackingGuide[] = [
     {
         key: "tours",
         label: "Tours",
-        summary: "Enquiry lead with the tour's estimated value.",
+        summary: "Tour searches, package views and the enquiry lead with the tour's estimated value.",
         events: [
+            { name: "search", when: "Tour search submitted", params: "search_type=tour, destination, duration, tour_type, adults, children" },
+            { name: "view_item", when: "Tour package page opened", params: "ecommerce (value, currency, items with item_category=tour)" },
             { name: "generate_lead", when: "Tour package enquiry sent", params: "lead_type=tour, item_name (package), value, currency" },
         ],
         triggers: [
@@ -180,8 +184,10 @@ export const SERVICE_TRACKING: ServiceTrackingGuide[] = [
     {
         key: "visa",
         label: "Visa",
-        summary: "Enquiry lead from a visa country page.",
+        summary: "Visa searches, visa page views and the enquiry lead from a visa country page.",
         events: [
+            { name: "search", when: "Visa search submitted", params: "search_type=visa, destination, visa_type, adults, children" },
+            { name: "view_item", when: "Visa country page opened", params: "ecommerce (value, currency, items with item_category=visa)" },
             { name: "generate_lead", when: "Visa enquiry sent", params: "lead_type=visa, item_name (country and visa type)" },
         ],
         triggers: [
@@ -225,4 +231,6 @@ export const GA4_CUSTOM_DIMENSIONS = [
     ["Cabin class", "cabin_class"],
     ["Contact method", "method"],
     ["Search surface", "search_surface"],
+    ["Tour type", "tour_type"],
+    ["Visa type", "visa_type"],
 ] as const;

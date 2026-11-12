@@ -1,9 +1,17 @@
 import { Prisma } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
+import {
+    isPaymentMethodEnabled,
+    loadSitePricingSettingsForBooking,
+} from "@/lib/admin-settings/site-pricing-settings";
 import { resolveBookingUserId } from "@/lib/bookings/link-user";
 import type { BookingPayload } from "@/lib/flights/booking-types";
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
+import { verifyOffer } from "@/lib/flights/offer-signature";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { sendBookingRequestEmails } from "@/lib/email/booking-emails";
+import { calculateBookingPricing } from "@/lib/pricing/booking-pricing";
 
 const BRANCHES_KEY = "branches_catalog";
 
@@ -11,16 +19,26 @@ type FlightBookingRequestBody = {
     payload?: BookingPayload;
     paymentMethod?: "cash_on_delivery" | "pay_at_branch" | string;
     selectedBranchId?: string;
-    pricing?: {
-        serviceChargePercent?: number;
-        serviceChargeAmount?: number;
-        grandTotal?: number;
-    };
+    captchaToken?: string | null;
 };
 
-function toNumber(value: unknown, fallback = 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
+const OFFER_REJECTED_MESSAGE: Record<"unsigned" | "tampered" | "expired", string> = {
+    unsigned: "This fare could not be verified. Please search again and reselect your flight.",
+    tampered: "This fare could not be verified. Please search again and reselect your flight.",
+    expired: "This fare has expired. Please search again to get the latest price.",
+};
+
+/** The passenger list must match the mix the fare was priced for. */
+function passengersMatchQuery(payload: BookingPayload) {
+    const passengers = Array.isArray(payload.passengers) ? payload.passengers : [];
+    const count = (type: string) => passengers.filter((p) => p?.type === type).length;
+    return (
+        passengers.length > 0 &&
+        count("adult") === payload.query.adults &&
+        count("child") === payload.query.children &&
+        count("infant") === payload.query.infants &&
+        passengers.length === payload.query.adults + payload.query.children + payload.query.infants
+    );
 }
 
 function buildCustomerName(payload: BookingPayload) {
@@ -98,21 +116,26 @@ export async function POST(request: NextRequest) {
     try {
         const body = (await request.json()) as FlightBookingRequestBody;
 
-        if (
-            body.paymentMethod !== "cash_on_delivery" &&
-            body.paymentMethod !== "pay_at_branch"
-        ) {
+        const captchaRejection = await rejectWithoutCaptcha(request, body.captchaToken);
+        if (captchaRejection) return captchaRejection;
+
+        // Service charge and payment switches come from the admin settings in
+        // the database, never from the request.
+        const pricingSettings = await loadSitePricingSettingsForBooking();
+        const paymentMethod = body.paymentMethod ?? "";
+
+        if (!isPaymentMethodEnabled(pricingSettings, paymentMethod)) {
             return NextResponse.json(
                 {
                     ok: false,
-                    error: "Unsupported payment method for booking request.",
+                    error: "This payment method is not available. Please choose another.",
                 },
                 { status: 400 },
             );
         }
 
         const payload = body.payload;
-        if (!payload?.offer || !payload.contact) {
+        if (!payload?.offer || !payload.contact || !payload.query) {
             return NextResponse.json(
                 {
                     ok: false,
@@ -122,10 +145,33 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const trimmedEmail = payload.contact.email?.trim();
+        // The offer came back from the browser: only its signed contents are trusted.
+        const verification = verifyOffer(payload.offer, payload.query);
+        if (!verification.ok) {
+            return NextResponse.json(
+                { ok: false, error: OFFER_REJECTED_MESSAGE[verification.reason] },
+                { status: 409 },
+            );
+        }
+
+        if (!passengersMatchQuery(payload)) {
+            return NextResponse.json(
+                {
+                    ok: false,
+                    error: "Passenger details don't match the fare you selected. Please search again.",
+                },
+                { status: 400 },
+            );
+        }
+
+        const pricing = calculateBookingPricing(payload.offer.price, {
+            serviceChargePercent: pricingSettings.serviceChargePercent,
+        });
+
+        const trimmedEmail = payload.contact.email?.trim().toLowerCase();
         const contactEmail =
             trimmedEmail && trimmedEmail.includes("@") ? trimmedEmail : null;
-        const userId = await resolveBookingUserId(contactEmail);
+        const userId = await resolveBookingUserId();
 
         let selectedBranch:
             | {
@@ -137,7 +183,7 @@ export async function POST(request: NextRequest) {
             }
             | null = null;
 
-        if (body.paymentMethod === "pay_at_branch") {
+        if (paymentMethod === "pay_at_branch") {
             if (!body.selectedBranchId) {
                 return NextResponse.json(
                     {
@@ -177,10 +223,6 @@ export async function POST(request: NextRequest) {
         }
 
         const reference = await generateUniqueReference();
-        const totalAmount = toNumber(
-            body.pricing?.grandTotal,
-            toNumber(payload.offer.price, 0),
-        );
 
         const created = await prisma.booking.create({
             data: {
@@ -193,8 +235,8 @@ export async function POST(request: NextRequest) {
                 customerEmail: contactEmail,
                 customerPhone: payload.contact.phone?.trim() || null,
                 provider: "INTERNAL",
-                totalAmount: new Prisma.Decimal(totalAmount),
-                currency: payload.offer.currency || "PKR",
+                totalAmount: new Prisma.Decimal(pricing.grandTotal),
+                currency: payload.offer.currency,
                 payload: {
                     offer: payload.offer,
                     query: payload.query,
@@ -202,11 +244,12 @@ export async function POST(request: NextRequest) {
                     contact: payload.contact,
                 },
                 paymentData: {
-                    method: body.paymentMethod,
+                    method: paymentMethod,
                     status: "REQUESTED",
-                    serviceChargePercent: toNumber(body.pricing?.serviceChargePercent, 0),
-                    serviceChargeAmount: toNumber(body.pricing?.serviceChargeAmount, 0),
-                    grandTotal: totalAmount,
+                    baseFare: pricing.baseTotal,
+                    serviceChargePercent: pricingSettings.serviceChargePercent,
+                    serviceChargeAmount: pricing.serviceChargeAmount,
+                    grandTotal: pricing.grandTotal,
                     branch: selectedBranch,
                     requestedAt: new Date().toISOString(),
                 },
@@ -216,6 +259,39 @@ export async function POST(request: NextRequest) {
                 reference: true,
             },
         });
+
+        const customerName = buildCustomerName(payload);
+        const route =
+            payload.query.tripType === "multi-city"
+                ? (payload.query.legs ?? []).map((leg) => `${leg.origin}→${leg.destination}`).join(", ")
+                : `${payload.offer.origin} → ${payload.offer.destination}`;
+        after(() =>
+            sendBookingRequestEmails({
+                bookingId: created.id,
+                isGuest: userId === null,
+                reference: created.reference,
+                kind: "Flight booking request",
+                customerName,
+                customerEmail: contactEmail,
+                customerPhone: payload.contact.phone?.trim() || null,
+                summary: [
+                    ["Route", route],
+                    ["Departure", payload.query.departureDate],
+                    ...(payload.query.returnDate
+                        ? ([["Return", payload.query.returnDate]] as Array<[string, string]>)
+                        : []),
+                    ["Airline", payload.offer.airline],
+                    ["Passengers", String(payload.passengers.length)],
+                    [
+                        "Payment",
+                        paymentMethod === "pay_at_branch"
+                            ? `Pay at branch${selectedBranch ? ` (${selectedBranch.name})` : ""}`
+                            : "Cash on delivery",
+                    ],
+                ],
+                total: { amount: pricing.grandTotal, currency: payload.offer.currency },
+            }),
+        );
 
         return NextResponse.json(
             {

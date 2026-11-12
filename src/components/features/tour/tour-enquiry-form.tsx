@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, Loader2, Send } from "lucide-react";
 
+import { useCaptcha } from "@/components/shared/captcha";
 import { submitServiceRequest } from "@/lib/service-requests";
 import type { TourPackage } from "@/lib/tour-packages";
 
@@ -27,6 +28,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
   >("idle");
   const [reference, setReference] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const captcha = useCaptcha();
 
   function validate() {
     const next: Partial<Record<keyof typeof form, string>> = {};
@@ -57,6 +59,10 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!validate()) return;
+    if (!captcha.ready) {
+      setServerError("Please complete the security check.");
+      return;
+    }
 
     setStatus("submitting");
     setServerError(null);
@@ -66,6 +72,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
       const estimatedAmount = pkg.pricePerAdult * travelersCount;
 
       const response = await submitServiceRequest({
+        captchaToken: captcha.token,
         type: "TOUR",
         title: pkg.title,
         amount: estimatedAmount,
@@ -95,6 +102,8 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
           : "Unable to submit enquiry. Please try again.",
       );
       setStatus("error");
+    } finally {
+      captcha.reset();
     }
   }
 
@@ -265,6 +274,8 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
         />
       </div>
 
+      {captcha.widget}
+
       {serverError ? (
         <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
           {serverError}
@@ -273,7 +284,7 @@ export function TourEnquiryForm({ pkg }: TourEnquiryFormProps) {
 
       <button
         type="submit"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !captcha.ready}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? (

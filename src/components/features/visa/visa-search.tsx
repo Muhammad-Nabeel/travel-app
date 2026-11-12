@@ -8,6 +8,7 @@ import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-bac
 import { ProductTabs } from "@/components/features/home/product-tabs";
 import styles from "./visa-search-engine.module.css";
 import { SlotIcon } from "@/components/shared/slot-icon";
+import { trackEvent } from "@/lib/analytics/ga4-events";
 
 type SearchVisaType = VisaType | "any";
 
@@ -89,6 +90,15 @@ export function VisaSearchEngine({
       window.alert("Please enter a destination.");
       return;
     }
+    trackEvent("search", {
+      search_term: applyingFor.trim(),
+      search_type: "visa",
+      destination: applyingFor.trim(),
+      visa_type: visaType,
+      adults,
+      children,
+      search_surface: variant,
+    });
     onSearch?.({
       visaType,
       applyingFor,

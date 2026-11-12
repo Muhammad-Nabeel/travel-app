@@ -1,3 +1,4 @@
+import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -172,6 +173,13 @@ export default async function UmrahPackageDetailPage({
 
   return (
     <DetailPage>
+      <ViewItemTracker
+        itemId={pkg.slug}
+        itemName={pkg.title}
+        itemCategory="umrah"
+        price={pkg.basePrice}
+        currency={pkg.currency}
+      />
       <StructuredData
         data={[
           createTouristTripSchema({

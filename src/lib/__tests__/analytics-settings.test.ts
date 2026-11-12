@@ -38,9 +38,6 @@ function rows(map: Record<string, string>) {
 beforeEach(() => {
     jest.resetAllMocks();
     jest.mocked(shouldBypassDatabase).mockReturnValue(false);
-    delete process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER;
-    delete process.env.NEXT_PUBLIC_GTM_CONTAINER_ID;
-    delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 });
 
 it("splits the legacy combined ga4 row into site and dashboard rows", async () => {
@@ -83,6 +80,25 @@ it("reads site and dashboard settings independently once split", async () => {
     await expect(getStoredDashboardAnalyticsSettings()).resolves.toMatchObject({ propertyId: "999" });
     await expect(getPublicAnalyticsConfig()).resolves.toEqual({ provider: "ga4", id: "G-SITE1" });
     expect(createMany).not.toHaveBeenCalled();
+});
+
+it("serves the site tag from the database even when env vars are set", async () => {
+    process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER = "gtm";
+    process.env.NEXT_PUBLIC_GTM_CONTAINER_ID = "GTM-ENV999";
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = "G-ENV999";
+    try {
+        rows({
+            site_analytics: JSON.stringify({ provider: "gtm", gtmContainerId: "GTM-DB1", measurementId: "G-DB1" }),
+        });
+        await expect(getPublicAnalyticsConfig()).resolves.toEqual({ provider: "gtm", id: "GTM-DB1" });
+
+        rows({});
+        await expect(getPublicAnalyticsConfig()).resolves.toBeNull();
+    } finally {
+        delete process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER;
+        delete process.env.NEXT_PUBLIC_GTM_CONTAINER_ID;
+        delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+    }
 });
 
 it("saving the site tag never touches dashboard credentials", async () => {

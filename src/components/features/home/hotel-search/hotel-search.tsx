@@ -15,6 +15,7 @@ import { HeroBackdrop, type HeroBannerProps } from "@/components/shared/hero-bac
 import { ProductTabs } from "../product-tabs";
 import styles from "./hotel-search-engine.module.css";
 import { SlotIcon } from "@/components/shared/slot-icon";
+import { trackEvent } from "@/lib/analytics/ga4-events";
 
 type StayType = "hotel-only" | "hotel+flight";
 
@@ -111,6 +112,17 @@ export function HotelSearchEngine({
       rooms,
       stayType,
     };
+    trackEvent("search", {
+      search_term: search.destination,
+      search_type: "hotel",
+      destination: search.destination,
+      check_in: checkIn,
+      check_out: checkOut,
+      adults,
+      children,
+      rooms,
+      search_surface: variant,
+    });
     if (onSearch) {
       onSearch(search);
       return;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { authOptions } from "@/lib/providers/auth/auth-provider";
 import { revalidatePublicSite } from "@/lib/revalidate-site";
@@ -51,7 +52,20 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body = (await request.json()) as Partial<CustomerReviewRow>;
+        const body = (await request.json()) as Partial<CustomerReviewRow> & {
+            captchaToken?: string | null;
+        };
+
+        // Visitor reviews stay hidden until an admin publishes them.
+        const session = await getServerSession(authOptions);
+        const isAdmin =
+            (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+
+        // Admins add reviews from the admin panel; visitors pass the form check.
+        if (!isAdmin) {
+            const captchaRejection = await rejectWithoutCaptcha(request, body.captchaToken);
+            if (captchaRejection) return captchaRejection;
+        }
 
         if (!body.customerName?.trim()) {
             return NextResponse.json(
@@ -73,10 +87,6 @@ export async function POST(request: NextRequest) {
         }
 
         const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
-        // Visitor reviews stay hidden until an admin publishes them.
-        const session = await getServerSession(authOptions);
-        const isAdmin =
-            (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
         const review = await prisma.customerReview.create({
             data: {

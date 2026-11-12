@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle, Loader2, Send } from "lucide-react";
 
 import type { VisaCountryEntry } from "@/lib/admin-settings/visa-settings";
+import { useCaptcha } from "@/components/shared/captcha";
 import { submitServiceRequest } from "@/lib/service-requests";
 
 type VisaEnquiryFormProps = {
@@ -27,6 +28,7 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
   >("idle");
   const [reference, setReference] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const captcha = useCaptcha();
 
   function validate() {
     const next: Partial<Record<keyof typeof form, string>> = {};
@@ -54,6 +56,10 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!validate()) return;
+    if (!captcha.ready) {
+      setServerError("Please complete the security check.");
+      return;
+    }
 
     setStatus("submitting");
     setServerError(null);
@@ -61,6 +67,7 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
     try {
       const travelersCount = Math.max(1, Number(form.travelers) || 1);
       const response = await submitServiceRequest({
+        captchaToken: captcha.token,
         type: "VISA",
         title: `${visa.country} ${visa.visaType === "e-visa" ? "e-Visa" : "Sticker Visa"}`,
         customerName: form.customerName.trim(),
@@ -90,6 +97,8 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
           : "Unable to submit enquiry. Please try again.",
       );
       setStatus("error");
+    } finally {
+      captcha.reset();
     }
   }
 
@@ -261,6 +270,8 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
         />
       </div>
 
+      {captcha.widget}
+
       {serverError ? (
         <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
           {serverError}
@@ -269,7 +280,7 @@ export function VisaEnquiryForm({ visa }: VisaEnquiryFormProps) {
 
       <button
         type="submit"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !captcha.ready}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? (

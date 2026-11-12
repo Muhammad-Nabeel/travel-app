@@ -5,6 +5,7 @@ import { MessageCircle, Star, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useBrand } from "@/components/shared/brand-provider";
+import { useCaptcha } from "@/components/shared/captcha";
 import { trackLead } from "@/lib/analytics/ga4-events";
 
 const TRIP_TYPES = [
@@ -38,6 +39,8 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
   );
   const [chatError, setChatError] = useState("");
   const [chatSubmitting, setChatSubmitting] = useState(false);
+  const reviewCaptcha = useCaptcha();
+  const chatCaptcha = useCaptcha();
   const [chatReference, setChatReference] = useState("");
   const [chatForm, setChatForm] = useState({
     departureCity: "",
@@ -82,6 +85,11 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
       return;
     }
 
+    if (!reviewCaptcha.ready) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/reviews", {
@@ -96,6 +104,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
           tripType: form.tripType || null,
           isPublished: false,
           isVerified: false,
+          captchaToken: reviewCaptcha.token,
         }),
       });
 
@@ -117,6 +126,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
       setError(err instanceof Error ? err.message : "Unable to submit review.");
     } finally {
       setSubmitting(false);
+      reviewCaptcha.reset();
     }
   }
 
@@ -168,6 +178,11 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
       return;
     }
 
+    if (!chatCaptcha.ready) {
+      setChatError("Please complete the security check.");
+      return;
+    }
+
     setChatSubmitting(true);
     try {
       const res = await fetch("/api/bookings/chatbot-request", {
@@ -182,6 +197,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
           fullName: chatForm.fullName.trim(),
           phone: chatForm.phone.trim(),
           email: chatForm.email.trim(),
+          captchaToken: chatCaptcha.token,
         }),
       });
 
@@ -199,6 +215,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
       );
     } finally {
       setChatSubmitting(false);
+      chatCaptcha.reset();
     }
   }
 
@@ -431,6 +448,8 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
                 />
               </label>
 
+              {chatCaptcha.widget}
+
               {chatError ? (
                 <p className="text-xs text-red-600">{chatError}</p>
               ) : null}
@@ -438,7 +457,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
               <button
                 type="submit"
                 className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={chatSubmitting}
+                disabled={chatSubmitting || !chatCaptcha.ready}
               >
                 {chatSubmitting ? "Submitting..." : "Submit request"}
               </button>
@@ -630,6 +649,8 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
                 />
               </label>
 
+              {reviewCaptcha.widget}
+
               {message && (
                 <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   {message}
@@ -651,7 +672,7 @@ export function FloatingReviewWidget({ whatsappLink }: FloatingReviewWidgetProps
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !reviewCaptcha.ready}
                   className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong disabled:opacity-70"
                 >
                   {submitting ? "Submitting..." : "Submit Review"}

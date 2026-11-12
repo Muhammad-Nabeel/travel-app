@@ -1,26 +1,15 @@
-import { flightResults } from "@/lib/mock-data";
 import { getActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
+import { signOffers } from "@/lib/flights/offer-signature";
 import { searchSabreFlights } from "@/lib/providers/sabre/flight-search";
 import { flightSearchSchema } from "@/lib/validations/search";
 
 import type {
-    FlightLeg,
     FlightOffer,
     FlightSearchQuery,
     FlightSearchResult,
 } from "@/lib/flights/types";
 
 type SearchInput = URLSearchParams | Record<string, string | undefined>;
-
-function parseMockPrice(value: string | number) {
-    if (typeof value === "number") {
-        return Number.isFinite(value) ? value : 0;
-    }
-
-    const normalized = value.replace(/,/g, "").trim();
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function parseLegsPayload(raw: string | undefined) {
     if (!raw) return undefined;
@@ -81,169 +70,6 @@ function normalizeSearchInput(input: SearchInput) {
     };
 }
 
-function createMockLeg(params: {
-    legIndex: number;
-    airline: string;
-    flightNumber: string;
-    origin: string;
-    destination: string;
-    departure: Date;
-    arrival: Date;
-}): FlightLeg {
-    const durationMinutes = Math.max(
-        Math.round((params.arrival.getTime() - params.departure.getTime()) / 60000),
-        0,
-    );
-
-    return {
-        legIndex: params.legIndex,
-        origin: params.origin,
-        destination: params.destination,
-        departure: params.departure.toISOString(),
-        arrival: params.arrival.toISOString(),
-        durationMinutes,
-        stops: 0,
-        segments: [
-            {
-                segmentIndex: 0,
-                airline: params.airline,
-                flightNumber: params.flightNumber,
-                origin: params.origin,
-                destination: params.destination,
-                departure: params.departure.toISOString(),
-                arrival: params.arrival.toISOString(),
-                durationMinutes,
-                cabin: "Economy",
-                stops: 0,
-            },
-        ],
-    };
-}
-
-function mapMockDataToOffers(query?: FlightSearchQuery): FlightOffer[] {
-    if (query?.tripType === "multi-city" && (query.legs?.length ?? 0) > 0) {
-        const legsInput = query.legs ?? [];
-
-        return flightResults.map((flight, index) => {
-            const multiLegs = legsInput.map((leg, legIndex) => {
-                const departure = new Date(`${leg.departureDate}T08:00:00.000Z`);
-                const arrival = new Date(
-                    departure.getTime() + (3 + (legIndex % 3)) * 60 * 60 * 1000,
-                );
-
-                return createMockLeg({
-                    legIndex,
-                    airline: flight.airline,
-                    flightNumber: `${flight.airline.slice(0, 2).toUpperCase()}${410 + legIndex}`,
-                    origin: leg.origin,
-                    destination: leg.destination,
-                    departure,
-                    arrival,
-                });
-            });
-
-            const firstLeg = multiLegs[0];
-            const lastLeg = multiLegs[multiLegs.length - 1];
-
-            return {
-                id: `mock-multicity-${index + 1}`,
-                provider: "Mock",
-                airline: flight.airline,
-                origin: firstLeg.origin,
-                destination: lastLeg.destination,
-                departure: firstLeg.departure,
-                arrival: lastLeg.arrival,
-                durationMinutes: multiLegs.reduce(
-                    (acc, leg) => acc + (leg.durationMinutes ?? 0),
-                    0,
-                ),
-                // In multi-city, each leg is a separate journey; do not count legs as stopovers.
-                stops: multiLegs.reduce((acc, leg) => acc + (leg.stops ?? 0), 0),
-                cabin: "Economy",
-                price: parseMockPrice(flight.price) * multiLegs.length,
-                currency: flight.currency,
-                flightNumber: multiLegs[0]?.segments[0]?.flightNumber,
-                legs: multiLegs,
-            } satisfies FlightOffer;
-        });
-    }
-
-    return flightResults.map((flight, index) => {
-        const departureDate = new Date(flight.departure);
-        const arrivalDate = new Date(flight.arrival);
-        const flightNumber = flight.id.split("-").slice(0, 2).join(" ");
-        const outboundLeg = createMockLeg({
-            legIndex: 0,
-            airline: flight.airline,
-            flightNumber,
-            origin: flight.origin,
-            destination: flight.destination,
-            departure: departureDate,
-            arrival: arrivalDate,
-        });
-        const outboundPrice = parseMockPrice(flight.price);
-
-        if (query?.tripType === "round-trip") {
-            const baseReturnDate = query.returnDate
-                ? new Date(query.returnDate)
-                : new Date(departureDate.getTime() + 5 * 24 * 60 * 60 * 1000);
-            const rtDepartureDate = new Date(baseReturnDate);
-            rtDepartureDate.setHours(
-                Math.floor(Math.random() * 12) + 8,
-                Math.floor(Math.random() * 60),
-            );
-            const rtArrivalDate = new Date(rtDepartureDate);
-            rtArrivalDate.setHours(
-                rtArrivalDate.getHours() + Math.max(Math.round(outboundLeg.durationMinutes! / 60), 2),
-            );
-            const returnLeg = createMockLeg({
-                legIndex: 1,
-                airline: flight.airline,
-                flightNumber,
-                origin: flight.destination,
-                destination: flight.origin,
-                departure: rtDepartureDate,
-                arrival: rtArrivalDate,
-            });
-            const returnPrice = Math.ceil(outboundPrice * 0.95);
-
-            return {
-                id: `mock-roundtrip-${index + 1}`,
-                provider: "Mock",
-                airline: flight.airline,
-                origin: outboundLeg.origin,
-                destination: outboundLeg.destination,
-                departure: outboundLeg.departure,
-                arrival: outboundLeg.arrival,
-                durationMinutes: outboundLeg.durationMinutes,
-                stops: outboundLeg.stops,
-                cabin: "Economy",
-                price: outboundPrice + returnPrice,
-                currency: flight.currency,
-                flightNumber,
-                legs: [outboundLeg, returnLeg],
-            } satisfies FlightOffer;
-        }
-
-        return {
-            id: flight.id || `mock-outbound-${index + 1}`,
-            provider: "Mock",
-            airline: flight.airline,
-            origin: outboundLeg.origin,
-            destination: outboundLeg.destination,
-            departure: outboundLeg.departure,
-            arrival: outboundLeg.arrival,
-            durationMinutes: outboundLeg.durationMinutes,
-            stops: outboundLeg.stops,
-            cabin: "Economy",
-            price: outboundPrice,
-            currency: flight.currency,
-            flightNumber,
-            legs: [outboundLeg],
-        } satisfies FlightOffer;
-    });
-}
-
 function applyQueryFilters(offers: FlightOffer[], query: FlightSearchQuery) {
     if (query.tripType === "multi-city") {
         return offers.filter((offer) => {
@@ -301,6 +127,11 @@ export function parseFlightSearchQuery(input: SearchInput) {
     return result;
 }
 
+const NO_LIVE_FARES_MESSAGE =
+    "We couldn't find live fares for this search. Send us your trip details and a travel adviser will get back to you with a quote.";
+const LIVE_SEARCH_UNAVAILABLE_MESSAGE =
+    "Live fares are temporarily unavailable. Send us your trip details and a travel adviser will get back to you with a quote.";
+
 export async function searchFlights(input: SearchInput): Promise<FlightSearchResult> {
     const queryResult = parseFlightSearchQuery(input);
 
@@ -316,7 +147,6 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
     }
 
     const query = queryResult.data;
-    const warnings: string[] = [];
     const sabreSettings = await getActiveSabreSettings();
 
     if (!sabreSettings) {
@@ -324,8 +154,8 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
             ok: true,
             query,
             results: [],
-            source: "mock",
-            warnings,
+            source: "none",
+            warnings: [],
             liveSearchEnabled: false,
         };
     }
@@ -334,62 +164,24 @@ export async function searchFlights(input: SearchInput): Promise<FlightSearchRes
         const sabreResults = await searchSabreFlights(query, sabreSettings);
         const filteredResults = applyQueryFilters(sabreResults, query);
 
-        if (filteredResults.length > 0) {
-            return {
-                ok: true,
-                query,
-                results: filteredResults,
-                source: "sabre",
-                warnings,
-                liveSearchEnabled: true,
-            };
-        }
-
-        warnings.push(
-            "Live provider returned no matching fares for the selected route. Showing seeded fares while integrations warm up.",
-        );
-
-        if (query.tripType === "multi-city") {
-            return {
-                ok: true,
-                query,
-                results: [],
-                source: "sabre",
-                warnings: [
-                    "No live multi-city fares were returned for these legs. Please adjust dates/routes and try again.",
-                ],
-                liveSearchEnabled: true,
-            };
-        }
+        return {
+            ok: true,
+            query,
+            results: signOffers(filteredResults, query),
+            source: "sabre",
+            warnings: filteredResults.length > 0 ? [] : [NO_LIVE_FARES_MESSAGE],
+            liveSearchEnabled: true,
+        };
     } catch (error) {
-        warnings.push(
-            error instanceof Error
-                ? `Live flight search unavailable: ${error.message}`
-                : "Live flight search unavailable right now.",
-        );
-
-        if (query.tripType === "multi-city") {
-            return {
-                ok: true,
-                query,
-                results: [],
-                source: "sabre",
-                warnings: [
-                    "Live multi-city search is temporarily unavailable. Please try again shortly.",
-                ],
-                liveSearchEnabled: true,
-            };
-        }
+        // Provider details (endpoints, status codes, credentials hints) stay in the server log.
+        console.error("[flight-search] Live search failed:", error);
+        return {
+            ok: true,
+            query,
+            results: [],
+            source: "sabre",
+            warnings: [LIVE_SEARCH_UNAVAILABLE_MESSAGE],
+            liveSearchEnabled: true,
+        };
     }
-
-    const mockResults = applyQueryFilters(mapMockDataToOffers(query), query);
-
-    return {
-        ok: true,
-        query,
-        results: mockResults,
-        source: "mock",
-        warnings,
-        liveSearchEnabled: true,
-    };
 }

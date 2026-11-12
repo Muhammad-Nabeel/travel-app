@@ -4,16 +4,19 @@ import { ZodError } from "zod";
 import { prisma, markDatabaseUnavailable } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
 import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { sanitizeBlogHtml } from "@/lib/sanitize-blog-html";
 
 // The segment is a slug for public reads and the post id for admin writes.
 type Params = { params: Promise<{ slug: string }> };
 
-export async function GET(_request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
     const { slug } = await params;
+    // Drafts only with ?all=true, which the proxy limits to admins.
+    const includeDrafts = request.nextUrl.searchParams.get("all") === "true";
 
     try {
         const post = await prisma.blogPost.findUnique({ where: { slug } });
-        if (!post) {
+        if (!post || (!includeDrafts && post.status !== "PUBLISHED")) {
             return NextResponse.json(
                 { error: "Blog post not found" },
                 { status: 404 },
@@ -56,6 +59,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
             where: { id },
             data: {
                 ...data,
+                ...(data.content !== undefined
+                    ? { content: sanitizeBlogHtml(data.content) }
+                    : {}),
                 publishedAt:
                     data.publishedAt !== undefined
                         ? data.publishedAt

@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, PlaneTakeoff } from "lucide-react";
 import { useBrand } from "@/components/shared/brand-provider";
+import { useCaptcha } from "@/components/shared/captcha";
 import { useGoogleSignInEnabled } from "@/lib/hooks/use-google-sign-in";
 import { trackEvent } from "@/lib/analytics/ga4-events";
 
@@ -24,6 +25,7 @@ function SignUpForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const captcha = useCaptcha();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +41,11 @@ function SignUpForm() {
       return;
     }
 
+    if (!captcha.ready) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -49,6 +56,7 @@ function SignUpForm() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
+          captchaToken: captcha.token,
         }),
       });
 
@@ -57,6 +65,7 @@ function SignUpForm() {
       if (!res.ok) {
         setError(data.error ?? "Registration failed. Please try again.");
         setLoading(false);
+        captcha.reset();
         return;
       }
 
@@ -71,6 +80,7 @@ function SignUpForm() {
     } catch {
       setLoading(false);
       setError("Something went wrong. Please try again.");
+      captcha.reset();
     }
   }
 
@@ -268,9 +278,11 @@ function SignUpForm() {
               </div>
             </div>
 
+            {captcha.widget}
+
             <button
               type="submit"
-              disabled={loading || googleLoading}
+              disabled={loading || googleLoading || !captcha.ready}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="size-4 animate-spin" />}

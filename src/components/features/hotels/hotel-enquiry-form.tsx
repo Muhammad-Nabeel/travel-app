@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BedDouble, CalendarDays, CheckCircle, Loader2, MapPin, Send, Users } from "lucide-react";
 
 import type { HotelSearchQuery } from "@/lib/validations/search";
+import { useCaptcha } from "@/components/shared/captcha";
 import { submitServiceRequest } from "@/lib/service-requests";
 import { SlotIcon } from "@/components/shared/slot-icon";
 
@@ -58,6 +59,7 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
   >("idle");
   const [reference, setReference] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const captcha = useCaptcha();
 
   const guests = formatGuests(query);
   const nights = countNights(query.checkIn, query.checkOut);
@@ -87,12 +89,17 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!validate()) return;
+    if (!captcha.ready) {
+      setServerError("Please complete the security check.");
+      return;
+    }
 
     setStatus("submitting");
     setServerError(null);
 
     try {
       const response = await submitServiceRequest({
+        captchaToken: captcha.token,
         type: "HOTEL",
         title: `${STAY_TYPE_LABEL[query.stayType]} · ${query.destination} · ${query.checkIn} to ${query.checkOut} (${nightsLabel}) · ${guests}`,
         customerName: form.customerName.trim(),
@@ -121,6 +128,8 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
           : "Unable to submit your request. Please try again.",
       );
       setStatus("error");
+    } finally {
+      captcha.reset();
     }
   }
 
@@ -281,6 +290,8 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
                 />
               </div>
 
+              {captcha.widget}
+
               {serverError ? (
                 <p className="rounded-lg border border-deal/30 bg-deal/5 px-4 py-3 text-sm text-deal">
                   {serverError}
@@ -289,7 +300,7 @@ export function HotelEnquiryForm({ query }: HotelEnquiryFormProps) {
 
               <button
                 type="submit"
-                disabled={status === "submitting"}
+                disabled={status === "submitting" || !captcha.ready}
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {status === "submitting" ? (

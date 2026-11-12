@@ -1,18 +1,17 @@
 import { Prisma } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
 import { resolveBookingUserId } from "@/lib/bookings/link-user";
+import { priceServiceRequest } from "@/lib/bookings/service-request-pricing";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
+import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
+import { sendBookingRequestEmails } from "@/lib/email/booking-emails";
 import {
     buildServiceRequestReference,
+    formatServiceRequestType,
     isServiceRequestType,
     type ServiceRequestInput,
 } from "@/lib/service-requests";
-
-function toNumberOrNull(value: unknown) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-}
 
 function toInputJsonObject(value: unknown): Prisma.InputJsonObject | null {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -39,6 +38,9 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = (await request.json()) as ServiceRequestInput;
+
+        const captchaRejection = await rejectWithoutCaptcha(request, body.captchaToken);
+        if (captchaRejection) return captchaRejection;
         const type = typeof body.type === "string" ? body.type.toUpperCase() : "";
 
         if (!isServiceRequestType(type)) {
@@ -61,8 +63,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const payload = toInputJsonObject(body.payload);
-        if (!payload) {
+        const parsedPayload = toInputJsonObject(body.payload);
+        if (!parsedPayload) {
             return NextResponse.json(
                 {
                     ok: false,
@@ -72,9 +74,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const parsedAmount = toNumberOrNull(body.amount);
+        // The estimate comes from the package in the database, not body.amount.
+        const price = await priceServiceRequest(type, parsedPayload as Record<string, unknown>);
+        if (!price.ok) {
+            return NextResponse.json({ ok: false, error: price.error }, { status: 400 });
+        }
+        const payload: Prisma.InputJsonObject =
+            price.amount !== null && "estimatedTotal" in parsedPayload
+                ? { ...parsedPayload, estimatedTotal: price.amount }
+                : parsedPayload;
+
+        const customerName = body.customerName?.trim() || null;
+        const customerEmail = body.customerEmail?.trim().toLowerCase() || null;
+        const customerPhone = body.customerPhone?.trim() || null;
+        const title = body.title?.trim() || null;
         const reference = buildServiceRequestReference(type);
-        const userId = await resolveBookingUserId(body.customerEmail);
+        const userId = await resolveBookingUserId();
         const created = await prisma.booking.create({
             data: {
                 reference,
@@ -82,12 +97,12 @@ export async function POST(request: NextRequest) {
                 channel: "SERVICE_REQUEST",
                 status: "OPEN",
                 userId,
-                customerName: body.customerName?.trim() || null,
-                customerEmail: body.customerEmail?.trim() || null,
-                customerPhone: body.customerPhone?.trim() || null,
-                title: body.title?.trim() || null,
-                totalAmount: parsedAmount === null ? null : new Prisma.Decimal(parsedAmount),
-                currency: body.currency?.trim() || undefined,
+                customerName,
+                customerEmail,
+                customerPhone,
+                title,
+                totalAmount: price.amount === null ? null : new Prisma.Decimal(price.amount),
+                currency: price.currency ?? (body.currency?.trim() || undefined),
                 payload,
             },
             select: {
@@ -95,6 +110,23 @@ export async function POST(request: NextRequest) {
                 reference: true,
             },
         });
+
+        after(() =>
+            sendBookingRequestEmails({
+                bookingId: created.id,
+                isGuest: userId === null,
+                reference: created.reference,
+                kind: `${formatServiceRequestType(type)} enquiry`,
+                customerName,
+                customerEmail,
+                customerPhone,
+                summary: title ? [["Request", title]] : [],
+                total:
+                    price.amount !== null && price.currency
+                        ? { amount: price.amount, currency: price.currency }
+                        : null,
+            }),
+        );
 
         return NextResponse.json(
             {

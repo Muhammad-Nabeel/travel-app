@@ -5,10 +5,12 @@ import { packageSchema } from "@/lib/validations/package";
 import type { PackageRow } from "../route";
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> },
 ) {
     const { id } = await context.params;
+    // Drafts and archived packages only with ?all=true, which the proxy limits to admins.
+    const includeUnpublished = request.nextUrl.searchParams.get("all") === "true";
 
     if (shouldBypassDatabase()) {
         return NextResponse.json({ ok: false, error: "Package not found" }, { status: 404 });
@@ -16,7 +18,10 @@ export async function GET(
 
     try {
         const pkg = await prisma.umrahPackage.findFirst({
-            where: { OR: [{ id }, { slug: id }] },
+            where: {
+                OR: [{ id }, { slug: id }],
+                ...(includeUnpublished ? {} : { status: "PUBLISHED" }),
+            },
         });
         if (!pkg) {
             return NextResponse.json({ ok: false, error: "Package not found" }, { status: 404 });
@@ -48,9 +53,7 @@ export async function GET(
         return NextResponse.json(row);
     } catch (err) {
         markDatabaseUnavailable(err);
-        if (err instanceof Error) {
-            return NextResponse.json({ ok: false, error: err.message }, { status: 503 });
-        }
+        console.error("[packages] Failed to load package:", err);
         return NextResponse.json({ ok: false, error: "Fetch failed" }, { status: 503 });
     }
 }

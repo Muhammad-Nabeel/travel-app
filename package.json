@@ -28,6 +28,7 @@
     "@aws-sdk/lib-storage": "^3.1030.0",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.7.0",
+    "@sentry/nextjs": "^11.12.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/pg": "^8.20.0",
     "bcryptjs": "^3.0.3",
@@ -43,6 +44,7 @@
     "prisma": "^7.7.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "sanitize-html": "^2.18.2",
     "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },
@@ -53,6 +55,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "jest": "^30.3.0",
