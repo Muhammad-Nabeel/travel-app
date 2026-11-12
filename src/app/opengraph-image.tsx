@@ -4,8 +4,9 @@ import { ImageResponse } from "next/og";
 
 import { getStoredBrandSettings } from "@/lib/admin-settings/brand-settings";
 
-// Re-render with the brand name set in the admin dashboard.
-export const revalidate = 300;
+// Re-rendered when the brand settings are saved (revalidatePublicSite);
+// daily refresh as a safety net.
+export const revalidate = 86400;
 
 export const size = {
   width: 1200,

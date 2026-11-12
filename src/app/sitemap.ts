@@ -23,7 +23,9 @@ import { getVisaPath } from "@/lib/visa";
 // noindex". lastModified is only set where a real content date exists;
 // a constant "now" teaches Google to ignore the field.
 
-export const revalidate = 3600;
+// Re-rendered when content is saved in admin (revalidatePublicSite); daily
+// refresh as a safety net.
+export const revalidate = 86400;
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 

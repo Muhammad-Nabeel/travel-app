@@ -10,7 +10,13 @@ const globalForPrisma = globalThis as typeof globalThis & {
     prisma?: ExtendedPrismaClient;
 };
 
-const DEFAULT_POOL_MAX = process.env.NODE_ENV === "development" ? 3 : 10;
+// The database is a shared-hosting Postgres that times out when too many
+// connections open at once, so each app process uses at most 3 (pages are
+// cached, so few requests reach the database anyway). `next build` renders
+// pages in several worker processes at the same time, so each build worker
+// uses 2. PG_POOL_MAX overrides both.
+const IS_NEXT_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+const DEFAULT_POOL_MAX = IS_NEXT_BUILD ? 2 : 3;
 
 function createSanitizedConnectionUrl() {
     const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;

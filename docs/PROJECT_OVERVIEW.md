@@ -137,7 +137,8 @@ Configure integrations according to the features being used. This list contains 
 
 | Purpose | Variables |
 | --- | --- |
-| Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX`, optional `DATABASE_SSL_CA` (PEM text or path to the server's CA certificate; turns on TLS certificate verification) |
+| Database | `DATABASE_URL`, `DIRECT_URL`, optional `PG_POOL_MAX` (connections per app process; default 3, 2 per worker during `next build`), optional `DATABASE_SSL_CA` (PEM text or path to the server's CA certificate; turns on TLS certificate verification) |
+| Admin seed (`npm run db:seed`, `npm run db:admin`) | optional `ADMIN_EMAIL`; `ADMIN_PASSWORD` is required when the admin account has no password yet |
 | Authentication | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` (also signs flight offers between search and booking) |
 | Error tracking | none: the Sentry DSN, environment and tracing rate are set in Admin → Settings → Error Tracking (stored in the database; picked up by every server process within 5 minutes). Request bodies, headers, cookies, query strings and user details are never sent. |
 | Form protection | none: the Turnstile site key and secret key are entered in Admin → Settings → Form Protection and stored encrypted in the database (needs `ADMIN_SETTINGS_ENCRYPTION_KEY`) |

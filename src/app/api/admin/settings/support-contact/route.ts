@@ -5,6 +5,7 @@ import {
     saveStoredSupportContactSettings,
     type SupportContactSettings,
 } from "@/lib/admin-settings/support-contact-settings";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 
 export async function GET() {
     try {
@@ -28,6 +29,7 @@ export async function PUT(request: NextRequest) {
             address: body.address ?? "",
         });
 
+        revalidatePublicSite();
         return NextResponse.json(saved, { status: 200 });
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unexpected error";

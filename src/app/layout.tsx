@@ -33,11 +33,12 @@ const montserrat = Montserrat({
   subsets: ["latin"],
 });
 
-// Public pages read packages, posts and SEO settings from the database. Without
-// this they would be prerendered once at build time and admin edits would not
-// appear until the next deploy. Re-render at most every 5 minutes (ISR);
-// the SEO settings route also revalidates on save.
-export const revalidate = 300;
+// Public pages are cached and only re-rendered when their data changes: every
+// admin save that affects the public site calls revalidatePublicSite()
+// (lib/revalidate-site.ts), so an unchanged page is never rebuilt. The daily
+// refresh is only a safety net for data changed outside the admin panel.
+// Must stay a literal number (Next reads it at build time): 86400 s = 1 day.
+export const revalidate = 86400;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { name, assets } = await getPublicBrand();

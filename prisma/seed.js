@@ -614,11 +614,18 @@ const TOUR_PACKAGES_SEED = [
 ];
 
 const DEFAULT_ADMIN_EMAIL = "support@easytrip.com.pk";
-const DEFAULT_ADMIN_PASSWORD = "BOEING777100ER";
+
+// Only needed when the admin has no password yet; never hardcode one here.
+function requireAdminPassword() {
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) {
+    throw new Error("Set ADMIN_PASSWORD to create the admin account.");
+  }
+  return password;
+}
 
 async function ensureDefaultAdmin() {
   const email = (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).toLowerCase().trim();
-  const password = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
   const existing = await prisma.user.findUnique({
     where: { email },
     select: { id: true, passwordHash: true },
@@ -629,7 +636,7 @@ async function ensureDefaultAdmin() {
       data: {
         name: "EasyTrip Admin",
         email,
-        passwordHash: await bcrypt.hash(password, 12),
+        passwordHash: await bcrypt.hash(requireAdminPassword(), 12),
         role: "ADMIN",
         emailVerifiedAt: new Date(),
       },
@@ -644,7 +651,7 @@ async function ensureDefaultAdmin() {
     data: {
       role: "ADMIN",
       emailVerifiedAt: new Date(),
-      ...(existing.passwordHash ? {} : { passwordHash: await bcrypt.hash(password, 12) }),
+      ...(existing.passwordHash ? {} : { passwordHash: await bcrypt.hash(requireAdminPassword(), 12) }),
     },
   });
   console.log(`👤 Ensured ${email} is an admin`);
