@@ -117,6 +117,9 @@ versions.
   different Next.js version than the build used. Check with
   `node -p "require('next/package.json').version"`, then rebuild with
   `npm run package:webhostmost:npm` (it pins exact versions) and reinstall.
+- **"Database errors during the build; not packaging"**: the database dropped
+  connections while pages were being prerendered. The build stops rather than
+  cache pages with missing content. Run `npm run package:webhostmost` again.
 - **Sign-in redirects to localhost**: `NEXTAUTH_URL` is wrong or unset.
 - **Images from R2 blocked**: `CLOUDFLARE_R2_PUBLIC_URL` was missing at
   build time. Rebuild with it set.

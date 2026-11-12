@@ -17,7 +17,16 @@ else
   echo "Warning: $SERVER_ENV not found; NEXT_PUBLIC_* values come from .env" >&2
 fi
 
-npm run build
+# Fail on any database error during prerendering, including ones the app
+# caught and answered with fallback content: those pages would be cached.
+BUILD_LOG=$(mktemp)
+npm run build 2>&1 | tee "$BUILD_LOG"
+if grep -q "prisma:error" "$BUILD_LOG"; then
+  echo "Database errors during the build; not packaging. Run it again." >&2
+  rm -f "$BUILD_LOG"
+  exit 1
+fi
+rm -f "$BUILD_LOG"
 
 STANDALONE=.next/standalone
 if [ ! -f "$STANDALONE/server.js" ]; then

@@ -61,7 +61,27 @@ function describeDatabaseError(error: unknown): string {
     return [codes.join("/"), message].filter(Boolean).join(": ") || "unknown error";
 }
 
+const IS_NEXT_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+
+/** Errors raised by Prisma or the database driver, as opposed to the caller's own code. */
+function isDatabaseError(error: unknown) {
+    if (isConnectivityError(error)) return true;
+    const name = (error as { name?: unknown } | null)?.name;
+    return typeof name === "string" && name.startsWith("PrismaClient");
+}
+
 export function markDatabaseUnavailable(error: unknown) {
+    // A page prerendered during `next build` with fallback content is cached
+    // and served until the next revalidation, so a failed read must fail the
+    // page instead. Next retries a failed page once, then fails the build.
+    if (IS_NEXT_BUILD && isDatabaseError(error)) {
+        throw new Error(
+            `[db] Database read failed during build (${describeDatabaseError(error)}); ` +
+                "stopping so fallback content isn't cached.",
+            { cause: error },
+        );
+    }
+
     if (!isConnectivityError(error)) return;
 
     const wasOpen = Date.now() < databaseUnavailableUntil;

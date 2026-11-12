@@ -25,3 +25,32 @@ describe("isConnectivityError", () => {
         expect(shouldBypassDatabase()).toBe(true);
     });
 });
+
+describe("markDatabaseUnavailable during next build", () => {
+    const originalPhase = process.env.NEXT_PHASE;
+    afterEach(() => {
+        process.env.NEXT_PHASE = originalPhase;
+    });
+
+    async function loadDbInBuild(): Promise<typeof import("@/lib/db")> {
+        process.env.NEXT_PHASE = "phase-production-build";
+        let db!: typeof import("@/lib/db");
+        await jest.isolateModulesAsync(async () => {
+            db = await import("@/lib/db");
+        });
+        return db;
+    }
+
+    it("throws on any Prisma error so fallback content is never prerendered", async () => {
+        const db = await loadDbInBuild();
+        // An unrecognised Prisma error, like the empty ones seen in a real build.
+        const unknown = Object.assign(new Error(""), { name: "PrismaClientUnknownRequestError" });
+        expect(() => db.markDatabaseUnavailable(unknown)).toThrow(/during build/);
+        expect(() => db.markDatabaseUnavailable(Object.assign(new Error("x"), { code: "P1001" }))).toThrow(/during build/);
+    });
+
+    it("leaves non-database errors to the caller", async () => {
+        const db = await loadDbInBuild();
+        expect(() => db.markDatabaseUnavailable(new SyntaxError("Unexpected token"))).not.toThrow();
+    });
+});
