@@ -1,6 +1,13 @@
-export { createPrismaClient, prisma } from "../../prisma/client";
+import { connection } from "next/server";
 
-const DATABASE_RETRY_COOLDOWN_MS = 30_000;
+import { isConnectivityError } from "../../prisma/connectivity";
+
+export { createPrismaClient, prisma } from "../../prisma/client";
+export { isConnectivityError } from "../../prisma/connectivity";
+
+// Short: reads already retry once, so the breaker only opens after two
+// failures in a row, and admin pages shouldn't say "unavailable" for long.
+const DATABASE_RETRY_COOLDOWN_MS = 15_000;
 
 let databaseUnavailableUntil = 0;
 
@@ -8,74 +15,63 @@ export function isDatabaseConfigured() {
     return Boolean(process.env.DIRECT_URL ?? process.env.DATABASE_URL);
 }
 
+/**
+ * Pages are cached for 5 minutes (ISR). A page rendered while the database is
+ * unreachable has empty sections, and must not replace the good cached copy.
+ * connection() marks the current render as per-request: during a background
+ * refresh Next then fails the refresh and keeps serving the last good page;
+ * during a normal per-request render (and in dev) it does nothing, so the
+ * page still degrades to empty sections instead of an error.
+ */
+function keepOutageOutOfCache() {
+    try {
+        void connection().catch(() => {});
+    } catch {
+        // Static render: already recorded as not cacheable. Outside a request
+        // (scripts, tests, after() callbacks, the proxy) there is nothing to protect.
+    }
+}
+
 export function shouldBypassDatabase() {
     if (!isDatabaseConfigured()) {
         return true;
     }
 
-    return Date.now() < databaseUnavailableUntil;
-}
-
-/**
- * Prisma and Postgres driver codes that mean the database itself can't be
- * reached, as opposed to a bad query. Only these open the circuit breaker:
- * matching on words like "connection" used to trip it on unrelated errors.
- */
-const CONNECTIVITY_CODES = new Set([
-    // Prisma: can't reach server, timeout, server closed the connection, pool timeout
-    "P1001",
-    "P1002",
-    "P1008",
-    "P1017",
-    "P2024",
-    // Node / pg socket errors
-    "ECONNREFUSED",
-    "ECONNRESET",
-    "ETIMEDOUT",
-    "ENOTFOUND",
-    "EHOSTUNREACH",
-    "ENETUNREACH",
-    "EAI_AGAIN",
-    // Postgres: too many connections, cannot connect now, admin shutdown
-    "53300",
-    "57P03",
-    "57P01",
-]);
-
-/** Driver messages that carry no code (pg pool and the Prisma pg adapter). */
-const CONNECTIVITY_MESSAGES = [
-    "can't reach database server",
-    "timed out fetching a new connection",
-    "connection terminated unexpectedly",
-    "timeout exceeded when trying to connect",
-];
-
-export function isConnectivityError(error: unknown): boolean {
-    // Prisma and the pg adapter wrap the socket error; walk the cause chain.
-    for (let current: unknown = error, depth = 0; current && depth < 5; depth += 1) {
-        if (typeof current !== "object") break;
-        const candidate = current as {
-            code?: unknown;
-            errorCode?: unknown;
-            name?: unknown;
-            message?: unknown;
-            cause?: unknown;
-        };
-        if (candidate.name === "PrismaClientInitializationError") return true;
-        for (const code of [candidate.code, candidate.errorCode]) {
-            if (typeof code === "string" && CONNECTIVITY_CODES.has(code)) return true;
-        }
-        if (typeof candidate.message === "string") {
-            const message = candidate.message.toLowerCase();
-            if (CONNECTIVITY_MESSAGES.some((text) => message.includes(text))) return true;
-        }
-        current = candidate.cause;
+    if (Date.now() < databaseUnavailableUntil) {
+        keepOutageOutOfCache();
+        return true;
     }
     return false;
 }
 
+/** One short line naming the real cause; Prisma's own log cuts the reason off. */
+function describeDatabaseError(error: unknown): string {
+    const codes: string[] = [];
+    let message = "";
+    for (let current: unknown = error, depth = 0; current && depth < 5; depth += 1) {
+        if (typeof current !== "object") break;
+        const e = current as { code?: unknown; message?: unknown; cause?: unknown };
+        if (typeof e.code === "string" && !codes.includes(e.code)) codes.push(e.code);
+        // Prisma's message is mostly a code excerpt; the driver's cause says what happened.
+        if (typeof e.message === "string" && !e.message.includes("invocation")) {
+            message = e.message.split("\n")[0].trim().slice(0, 200);
+        }
+        current = e.cause;
+    }
+    return [codes.join("/"), message].filter(Boolean).join(": ") || "unknown error";
+}
+
 export function markDatabaseUnavailable(error: unknown) {
-    if (isConnectivityError(error)) {
-        databaseUnavailableUntil = Date.now() + DATABASE_RETRY_COOLDOWN_MS;
+    if (!isConnectivityError(error)) return;
+
+    const wasOpen = Date.now() < databaseUnavailableUntil;
+    databaseUnavailableUntil = Date.now() + DATABASE_RETRY_COOLDOWN_MS;
+    keepOutageOutOfCache();
+
+    if (!wasOpen) {
+        console.error(
+            `[db] Database unreachable (${describeDatabaseError(error)}). ` +
+                `Database-backed sections show empty for ${DATABASE_RETRY_COOLDOWN_MS / 1000}s, then retry.`,
+        );
     }
 }

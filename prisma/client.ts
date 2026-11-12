@@ -4,8 +4,10 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolConfig } from "pg";
 
+import { runWithReadRetry } from "./connectivity";
+
 const globalForPrisma = globalThis as typeof globalThis & {
-    prisma?: PrismaClient;
+    prisma?: ExtendedPrismaClient;
 };
 
 const DEFAULT_POOL_MAX = process.env.NODE_ENV === "development" ? 3 : 10;
@@ -58,19 +60,45 @@ function createPool() {
         max,
         idleTimeoutMillis: 10_000,
         allowExitOnIdle: true,
+        // The database is remote: keep-alive notices connections the server or
+        // network dropped instead of hanging a query on a dead socket, and a
+        // connect timeout turns a stalled handshake into a quick, retryable error.
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10_000,
+        connectionTimeoutMillis: 10_000,
     });
 }
 
+/**
+ * Reads are retried once after a short pause when the connection drops
+ * (a remote database closing an idle socket, a brief network blip), so one
+ * dropped connection doesn't trip the circuit breaker and blank every
+ * database-backed section. Writes are never retried: a write that reached
+ * the database before the connection dropped would be applied twice.
+ */
 function buildPrismaClient() {
     const adapter = new PrismaPg(createPool(), {
         disposeExternalPool: true,
     });
 
-    return new PrismaClient({
+    const base = new PrismaClient({
         adapter,
         log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
     });
+
+    return base.$extends({
+        name: "retry-reads-once",
+        query: {
+            $allModels: {
+                $allOperations({ operation, args, query }) {
+                    return runWithReadRetry(operation, () => query(args));
+                },
+            },
+        },
+    });
 }
+
+type ExtendedPrismaClient = ReturnType<typeof buildPrismaClient>;
 
 export function createPrismaClient() {
     return buildPrismaClient();
