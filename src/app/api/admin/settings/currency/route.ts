@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
     try {
         const settings = await saveStoredCurrencySettings(await request.json());
         revalidatePath("/", "layout");
+        // Route handlers aren't under the root layout; the public copy is cached separately.
+        revalidatePath("/api/settings/currency");
 
         return NextResponse.json({ ok: true, settings }, { status: 200 });
     } catch (error) {

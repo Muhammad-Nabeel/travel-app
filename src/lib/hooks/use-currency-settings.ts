@@ -34,6 +34,19 @@ async function fetchSettings(): Promise<LoadResult> {
     }
 }
 
+// The navbar, currency selector and flight search box all use this hook, so
+// they share one request per page load. A failed load is dropped so the next
+// component to mount tries again.
+let sharedLoad: Promise<LoadResult> | null = null;
+
+function loadShared(): Promise<LoadResult> {
+    sharedLoad ??= fetchSettings().then((result) => {
+        if (result.error) sharedLoad = null;
+        return result;
+    });
+    return sharedLoad;
+}
+
 export function useCurrencySettings() {
     const [settings, setSettings] = useState<CurrencySettings>(DEFAULT_SETTINGS);
     const [loading, setLoading] = useState(true);
@@ -47,7 +60,7 @@ export function useCurrencySettings() {
 
     useEffect(() => {
         let ignore = false;
-        void fetchSettings().then((result) => {
+        void loadShared().then((result) => {
             if (!ignore) apply(result);
         });
         return () => {
@@ -58,7 +71,8 @@ export function useCurrencySettings() {
     const refetch = useCallback(async () => {
         setLoading(true);
         setError(null);
-        apply(await fetchSettings());
+        sharedLoad = null;
+        apply(await loadShared());
     }, [apply]);
 
     return {

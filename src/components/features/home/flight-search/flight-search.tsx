@@ -524,7 +524,7 @@ export function FlightSearchEngine({
       cancelled = true;
       controller.abort();
     };
-  }, [currencySettings.defaultCurrency, currencyLoading]);
+  }, []);
 
   useEffect(() => {
     if (!showFareCalendar) return;

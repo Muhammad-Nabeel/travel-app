@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { getAirportRef } from "@/lib/aviation-reference";
-import { prisma, shouldBypassDatabase } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 const TRENDING_WINDOW_DAYS = 7;
 const TRENDING_LIMIT = 10;
+
+// The flight search box on the homepage and every destination and route page
+// fetches this on load. A week of searches barely moves in an hour, so the
+// grouped result is cached instead of re-counted for every visitor.
+export const revalidate = 3600;
 
 export async function GET() {
     if (shouldBypassDatabase()) {
@@ -48,13 +53,10 @@ export async function GET() {
 
         return NextResponse.json({ ok: true, routes });
     } catch (error) {
-        console.error("[trending] Failed to load trending searches:", error);
-        return NextResponse.json(
-            {
-                ok: false,
-                error: "Failed to load trending searches",
-            },
-            { status: 503 },
-        );
+        // Throw rather than return an error response: Next would cache that for
+        // the hour, while a failed refresh keeps serving the last good list.
+        // The search box shows no trending routes when the request fails.
+        markDatabaseUnavailable(error);
+        throw error;
     }
 }
