@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { getUniqueTourPackageSlug, toTourPackageRow } from "@/lib/tour-package-data";
 import type { TourPackage } from "@/lib/tour-packages";
 import { tourPackageSchema } from "@/lib/validations/tour-package";
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
                 slug: await getUniqueTourPackageSlug(data.title),
             },
         });
-        revalidatePublicSite();
+        revalidateContent("tourPackages");
         return NextResponse.json(toTourPackageRow(pkg), { status: 201 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {

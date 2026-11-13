@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, markDatabaseUnavailable } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { sanitizeBlogHtml } from "@/lib/sanitize-blog-html";
 
 export type BlogPostRow = {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("blog");
         return NextResponse.json(post, { status: 201 });
     } catch (err) {
         if (err instanceof Error) {

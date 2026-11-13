@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -9,6 +8,7 @@ import {
 } from "@/lib/admin-settings/brand-settings";
 import { saveStoredMediaSettings } from "@/lib/admin-settings/media-settings";
 import { isBrandAssetSlot, type FooterBadge } from "@/lib/brand-assets";
+import { revalidatePublicSite } from "@/lib/revalidate-site";
 import { isPassthroughImage, optimizeImage } from "@/lib/media/optimize-image";
 import { deleteFromR2, isR2Configured, uploadToR2 } from "@/lib/storage/r2";
 
@@ -34,9 +34,10 @@ function errorResponse(err: unknown, status = 500) {
     return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-// Brand appears in the root layout, so every cached page must re-render.
+// Brand appears in the root layout and the Open Graph image, so every cached
+// page must re-render.
 function revalidateSite() {
-    revalidatePath("/", "layout");
+    revalidatePublicSite();
 }
 
 async function deleteOldLogo(key: string | null) {

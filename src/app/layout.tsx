@@ -33,9 +33,10 @@ const montserrat = Montserrat({
   subsets: ["latin"],
 });
 
-// Public pages are cached and only re-rendered when their data changes: every
-// admin save that affects the public site calls revalidatePublicSite()
-// (lib/revalidate-site.ts), so an unchanged page is never rebuilt. The daily
+// Public pages are cached and only re-rendered when their data changes: an
+// admin save marks just the pages showing that data stale (revalidateContent
+// in lib/revalidate-site.ts), and only settings shown in this layout use
+// revalidatePublicSite(), so an unchanged page is never rebuilt. The daily
 // refresh is only a safety net for data changed outside the admin panel.
 // Must stay a literal number (Next reads it at build time): 86400 s = 1 day.
 export const revalidate = 86400;

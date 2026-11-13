@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 
 import { prisma, markDatabaseUnavailable } from "@/lib/db";
 import { blogPostSchema } from "@/lib/validations/blog";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { sanitizeBlogHtml } from "@/lib/sanitize-blog-html";
 
 // The segment is a slug for public reads and the post id for admin writes.
@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("blog");
         return NextResponse.json(post);
     } catch (err) {
         if (err instanceof ZodError) {
@@ -93,7 +93,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     try {
         const { slug: id } = await params;
         await prisma.blogPost.delete({ where: { id } });
-        revalidatePublicSite();
+        revalidateContent("blog");
         return NextResponse.json({ ok: true });
     } catch (err) {
         return NextResponse.json(

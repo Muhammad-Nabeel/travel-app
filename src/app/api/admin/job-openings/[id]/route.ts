@@ -6,7 +6,7 @@ import {
     normalizeJobOpeningInput,
     type JobOpeningInput,
 } from "@/lib/job-openings";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export async function PUT(
     request: NextRequest,
@@ -33,7 +33,7 @@ export async function PUT(
             data: payload,
         });
 
-        revalidatePublicSite();
+        revalidateContent("jobOpenings");
         return NextResponse.json(updated, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);
@@ -53,7 +53,7 @@ export async function DELETE(
         const { id } = await context.params;
         await prisma.jobOpening.delete({ where: { id } });
 
-        revalidatePublicSite();
+        revalidateContent("jobOpenings");
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);

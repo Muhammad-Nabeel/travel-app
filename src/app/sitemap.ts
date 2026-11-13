@@ -23,7 +23,7 @@ import { getVisaPath } from "@/lib/visa";
 // noindex". lastModified is only set where a real content date exists;
 // a constant "now" teaches Google to ignore the field.
 
-// Re-rendered when content is saved in admin (revalidatePublicSite); daily
+// Re-rendered when listed content is saved in admin (revalidateContent); daily
 // refresh as a safety net.
 export const revalidate = 86400;
 

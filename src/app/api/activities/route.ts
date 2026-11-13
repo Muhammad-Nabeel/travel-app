@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { prisma, markDatabaseUnavailable, shouldBypassDatabase } from "@/lib/db";
 import { activitySchema } from "@/lib/validations/activity";
 import { getUniqueActivitySlug } from "@/lib/activity-slug";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export type ActivityRow = {
     id: string;
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
                 seoDescription: validatedData.seoDescription,
             },
         });
-        revalidatePublicSite();
+        revalidateContent("activities");
         return NextResponse.json(activity, { status: 201 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {

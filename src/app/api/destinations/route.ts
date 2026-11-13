@@ -7,7 +7,7 @@ import {
     toDestinationFaqs,
     type DestinationFaq,
 } from "@/lib/validations/destination";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export type DestinationRow = {
     id: string;
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
                 seoDescription: validatedData.seoDescription,
             },
         });
-        revalidatePublicSite();
+        revalidateContent("destinations");
         return NextResponse.json(destination, { status: 201 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {

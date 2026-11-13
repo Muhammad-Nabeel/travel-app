@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { packageSchema } from "@/lib/validations/package";
 import type { PackageRow } from "../route";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export async function GET(
     request: NextRequest,
@@ -92,7 +92,7 @@ export async function PUT(
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("umrahPackages");
         return NextResponse.json(pkg);
     } catch (err: unknown) {
         if (err && typeof err === "object" && "issues" in err) {
@@ -114,7 +114,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         await prisma.umrahPackage.delete({ where: { id } });
-        revalidatePublicSite();
+        revalidateContent("umrahPackages");
         return NextResponse.json({ ok: true });
     } catch (err) {
         if (err instanceof Error) {

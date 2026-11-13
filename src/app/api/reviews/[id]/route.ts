@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export async function GET(
     _request: NextRequest,
@@ -71,7 +71,7 @@ export async function PUT(
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("reviews");
         return NextResponse.json(review);
     } catch (err) {
         console.error("[reviews/[id] PUT]", err);
@@ -91,7 +91,7 @@ export async function DELETE(
 
     try {
         await prisma.customerReview.delete({ where: { id } });
-        revalidatePublicSite();
+        revalidateContent("reviews");
         return NextResponse.json({ ok: true });
     } catch (err) {
         console.error("[reviews/[id] DELETE]", err);

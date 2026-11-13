@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 type BranchInput = {
     name?: string;
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
             data: payload,
         });
 
-        revalidatePublicSite();
+        revalidateContent("branches");
         return NextResponse.json(created, { status: 201 });
     } catch (error) {
         markDatabaseUnavailable(error);

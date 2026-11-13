@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { uploadAirlineLogo, validateLogoFile } from "@/lib/airline-partners";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { deleteFromR2, isR2Configured } from "@/lib/storage/r2";
 
 async function removeStoredLogo(storagePath: string | null) {
@@ -65,7 +65,7 @@ export async function PUT(
 
         if (logo) await removeStoredLogo(existing.storagePath);
 
-        revalidatePublicSite();
+        revalidateContent("airlinePartners");
         return NextResponse.json(updated, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);
@@ -89,7 +89,7 @@ export async function DELETE(
         const deleted = await prisma.airlinePartner.delete({ where: { id } });
         await removeStoredLogo(deleted.storagePath);
 
-        revalidatePublicSite();
+        revalidateContent("airlinePartners");
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);

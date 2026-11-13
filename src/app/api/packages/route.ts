@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { packageSchema } from "@/lib/validations/package";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export type PackageRow = {
     id: string;
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("umrahPackages");
         return NextResponse.json(pkg, { status: 201 });
     } catch (err: unknown) {
         if (err && typeof err === "object" && "issues" in err) {

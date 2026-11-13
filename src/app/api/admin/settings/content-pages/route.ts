@@ -5,7 +5,7 @@ import {
     saveStoredSitePagesSettings,
     type SitePagesSettings,
 } from "@/lib/admin-settings/site-pages-settings";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export async function GET() {
     try {
@@ -101,7 +101,7 @@ export async function PUT(request: NextRequest) {
         });
 
         // About, FAQ, careers and policy pages render this content.
-        revalidatePublicSite();
+        revalidateContent("contentPages");
         return NextResponse.json(saved, { status: 200 });
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unexpected error";

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { flightRouteErrorResponse } from "@/lib/flight-routes-api";
 import { toFlightRouteView } from "@/lib/flight-routes";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { flightRouteSchema, flightRouteSlug } from "@/lib/validations/flight-route";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -21,7 +21,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             data: { ...data, slug: flightRouteSlug(data.originCity, data.destinationCity) },
         });
 
-        revalidatePublicSite();
+        revalidateContent("flightRoutes");
         return NextResponse.json(toFlightRouteView(updated), { status: 200 });
     } catch (error) {
         return flightRouteErrorResponse(error, "Failed to update flight route.");
@@ -37,7 +37,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         const { id } = await context.params;
         await prisma.flightRoute.delete({ where: { id } });
 
-        revalidatePublicSite();
+        revalidateContent("flightRoutes");
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         return flightRouteErrorResponse(error, "Failed to delete flight route.");

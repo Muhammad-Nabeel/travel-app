@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 type BranchInput = {
     name?: string;
@@ -48,7 +48,7 @@ export async function PUT(
             data: payload,
         });
 
-        revalidatePublicSite();
+        revalidateContent("branches");
         return NextResponse.json(updated, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);
@@ -67,7 +67,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         await prisma.branch.delete({ where: { id } });
-        revalidatePublicSite();
+        revalidateContent("branches");
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);

@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { rejectWithoutCaptcha } from "@/lib/captcha/verify-captcha";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { authOptions } from "@/lib/providers/auth/auth-provider";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export type CustomerReviewRow = {
     id: string;
@@ -102,7 +102,8 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        revalidatePublicSite();
+        // Visitor submissions are saved unpublished and change nothing on the site.
+        if (review.isPublished) revalidateContent("reviews");
         return NextResponse.json(review, { status: 201 });
     } catch (err) {
         console.error("[reviews POST]", err);

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, shouldBypassDatabase } from "@/lib/db";
 import { flightRouteErrorResponse } from "@/lib/flight-routes-api";
 import { toFlightRouteView } from "@/lib/flight-routes";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { flightRouteSchema, flightRouteSlug } from "@/lib/validations/flight-route";
 
 export async function GET() {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             data: { ...data, slug: flightRouteSlug(data.originCity, data.destinationCity) },
         });
 
-        revalidatePublicSite();
+        revalidateContent("flightRoutes");
         return NextResponse.json(toFlightRouteView(created), { status: 201 });
     } catch (error) {
         return flightRouteErrorResponse(error, "Failed to create flight route.");

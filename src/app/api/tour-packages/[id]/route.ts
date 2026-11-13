@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { prisma } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { toTourPackageRow } from "@/lib/tour-package-data";
 import { tourPackageSchema } from "@/lib/validations/tour-package";
 
@@ -21,7 +21,7 @@ export async function PUT(
             where: { id },
             data,
         });
-        revalidatePublicSite();
+        revalidateContent("tourPackages");
         return NextResponse.json(toTourPackageRow(pkg), { status: 200 });
     } catch (err: unknown) {
         if (err instanceof ZodError) {
@@ -53,7 +53,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         await prisma.tourPackage.delete({ where: { id } });
-        revalidatePublicSite();
+        revalidateContent("tourPackages");
         return NextResponse.json({ ok: true });
     } catch (err) {
         if (err instanceof Error) {

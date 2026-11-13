@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { uploadAirlineLogo, validateLogoFile } from "@/lib/airline-partners";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 import { isR2Configured } from "@/lib/storage/r2";
 
 export async function GET() {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        revalidatePublicSite();
+        revalidateContent("airlinePartners");
         return NextResponse.json(created, { status: 201 });
     } catch (error) {
         markDatabaseUnavailable(error);

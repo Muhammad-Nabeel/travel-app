@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 /** Body: { ids: string[] } in the new display order. */
 export async function PUT(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest) {
             ),
         );
 
-        revalidatePublicSite();
+        revalidateContent("airlinePartners");
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
         markDatabaseUnavailable(error);

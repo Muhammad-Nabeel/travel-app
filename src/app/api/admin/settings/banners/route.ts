@@ -5,7 +5,7 @@ import {
     savePageBanner,
 } from "@/lib/admin-settings/page-banner-settings";
 import { BUILT_IN_PAGE_BANNERS, isPageBannerSlot } from "@/lib/page-banners";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 function errorResponse(err: unknown, status = 500) {
     const message = err instanceof Error ? err.message : "Unexpected error";
@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const banners = await savePageBanner(body.slot, body.url || BUILT_IN_PAGE_BANNERS[body.slot]);
-        revalidatePublicSite();
+        revalidateContent("pageBanners");
         return NextResponse.json({ banners });
     } catch (err) {
         return errorResponse(err);

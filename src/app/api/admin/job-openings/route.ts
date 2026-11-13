@@ -6,7 +6,7 @@ import {
     normalizeJobOpeningInput,
     type JobOpeningInput,
 } from "@/lib/job-openings";
-import { revalidatePublicSite } from "@/lib/revalidate-site";
+import { revalidateContent } from "@/lib/revalidate-site";
 
 export async function GET() {
     if (shouldBypassDatabase()) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
         const created = await prisma.jobOpening.create({ data: payload });
 
-        revalidatePublicSite();
+        revalidateContent("jobOpenings");
         return NextResponse.json(created, { status: 201 });
     } catch (error) {
         markDatabaseUnavailable(error);
