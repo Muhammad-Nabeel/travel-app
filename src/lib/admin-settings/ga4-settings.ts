@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { decryptString, encryptString } from "@/lib/admin-settings/encryption";
 import { ADS_CONVERSION_KEYS, type AdsConversionKey } from "@/lib/analytics/gtm-plan";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
@@ -102,7 +104,8 @@ async function backfillFromLegacy(): Promise<{
     return { site, dashboard };
 }
 
-export async function getStoredSiteAnalyticsSettings(): Promise<SiteAnalyticsSettings> {
+// Memoized per request: the layout and the page both read it during one render.
+export const getStoredSiteAnalyticsSettings = cache(async (): Promise<SiteAnalyticsSettings> => {
     if (shouldBypassDatabase()) return EMPTY_SITE;
 
     try {
@@ -118,7 +121,7 @@ export async function getStoredSiteAnalyticsSettings(): Promise<SiteAnalyticsSet
         markDatabaseUnavailable(err);
         return EMPTY_SITE;
     }
-}
+});
 
 export async function getStoredDashboardAnalyticsSettings(): Promise<DashboardAnalyticsSettings> {
     if (shouldBypassDatabase()) return EMPTY_DASHBOARD;

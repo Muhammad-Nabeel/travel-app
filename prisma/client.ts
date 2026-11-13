@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolConfig } from "pg";
 
+import { stripConnectionParams } from "./connection-url";
 import { runWithReadRetry } from "./connectivity";
 
 const globalForPrisma = globalThis as typeof globalThis & {
@@ -24,12 +25,8 @@ function createSanitizedConnectionUrl() {
         throw new Error("DATABASE_URL or DIRECT_URL environment variable is not set");
     }
 
-    // Supabase URLs often include sslmode in the query string, which can override
-    // explicit SSL config. Strip it and pass SSL settings directly.
-    return connectionString
-        .replace(/[?&]sslmode=[^&]*/g, "")
-        .replace(/[?&]pgbouncer=true/g, "")
-        .replace(/[?&]$/, "");
+    // SSL settings are passed directly instead (see sslConfig).
+    return stripConnectionParams(connectionString);
 }
 
 // Hosts without TLS on Postgres (e.g. cPanel) need sslmode=disable in the URL.

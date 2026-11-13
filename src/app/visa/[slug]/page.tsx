@@ -1,5 +1,6 @@
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import type { Metadata } from "next";
+import { throwIfDatabaseUnavailable } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { BadgeCheck, CalendarDays, Clock, FileCheck2, Globe2 } from "lucide-react";
 
@@ -81,6 +82,7 @@ export async function generateMetadata({
   const visa = await getVisaBySlug(slug);
 
   if (!visa) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Visa option not found",
       description: "The requested visa option could not be found.",
@@ -104,6 +106,7 @@ export default async function VisaDetailsPage({
   const visa = await getVisaBySlug(slug);
 
   if (!visa) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 

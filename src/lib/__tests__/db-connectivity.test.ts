@@ -54,3 +54,27 @@ describe("markDatabaseUnavailable during next build", () => {
         expect(() => db.markDatabaseUnavailable(new SyntaxError("Unexpected token"))).not.toThrow();
     });
 });
+
+describe("throwIfDatabaseUnavailable", () => {
+    async function freshDb(): Promise<typeof import("@/lib/db")> {
+        let db!: typeof import("@/lib/db");
+        await jest.isolateModulesAsync(async () => {
+            db = await import("@/lib/db");
+        });
+        return db;
+    }
+
+    it("lets a real missing page 404 while the database is up", async () => {
+        process.env.DATABASE_URL = "postgresql://x@localhost/db";
+        const db = await freshDb();
+        expect(() => db.throwIfDatabaseUnavailable()).not.toThrow();
+    });
+
+    it("throws during an outage so the page returns 500 instead of 404", async () => {
+        process.env.DATABASE_URL = "postgresql://x@localhost/db";
+        const db = await freshDb();
+        jest.spyOn(console, "error").mockImplementation(() => {});
+        db.markDatabaseUnavailable(Object.assign(new Error("x"), { code: "P1001" }));
+        expect(() => db.throwIfDatabaseUnavailable()).toThrow(/unavailable/);
+    });
+});

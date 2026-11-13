@@ -5,7 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 
 import { getActiveGoogleCredentials } from "@/lib/admin-settings/google-auth-settings";
-import { prisma } from "../../db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "../../db";
 
 /**
  * Static options for getServerSession(). Session decoding needs no providers,
@@ -118,7 +118,13 @@ export const authOptions: NextAuthOptions = {
             // role change without waiting 30 days for the token to expire.
             // Admin access itself is checked against the database in the proxy.
             const checkedAt = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
-            if (typeof token.id === "string" && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+            // Skipped while the database is down, so session checks don't each
+            // wait for a connection timeout; the claims are kept until it's back.
+            if (
+                typeof token.id === "string" &&
+                Date.now() - checkedAt > ROLE_REFRESH_MS &&
+                !shouldBypassDatabase()
+            ) {
                 try {
                     const dbUser = await prisma.user.findUnique({
                         where: { id: token.id },
@@ -126,8 +132,9 @@ export const authOptions: NextAuthOptions = {
                     });
                     token.role = dbUser?.role ?? "CUSTOMER";
                     token.roleCheckedAt = Date.now();
-                } catch {
+                } catch (error) {
                     // Keep the current claims; the next request retries.
+                    markDatabaseUnavailable(error);
                 }
             }
             return token;

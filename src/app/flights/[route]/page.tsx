@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { throwIfDatabaseUnavailable } from "@/lib/db";
 import { notFound } from "next/navigation";
 import {
   ArrowRight,
@@ -78,6 +79,7 @@ export async function generateMetadata({
   const route = await getActiveFlightRouteBySlug(slug);
 
   if (!route) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Flight route not found",
       description: "The requested flight route could not be found.",
@@ -110,6 +112,7 @@ export default async function FlightRoutePage({ params }: FlightRoutePageProps) 
   ]);
 
   if (!route) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 

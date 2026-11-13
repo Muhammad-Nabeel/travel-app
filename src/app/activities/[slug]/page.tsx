@@ -20,9 +20,10 @@ import {
 import { PhotoGallery } from "@/components/features/detail/photo-gallery";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
+  markDatabaseUnavailable,
   prisma,
   shouldBypassDatabase,
-  markDatabaseUnavailable,
+  throwIfDatabaseUnavailable,
 } from "@/lib/db";
 import {
   absoluteUrl,
@@ -104,6 +105,7 @@ export async function generateMetadata({
   const data = await getActivityDetails(slug);
 
   if (!data) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Activity Not Found",
       description: "The requested activity could not be found.",
@@ -134,6 +136,7 @@ export default async function ActivityDetailsPage({
   const data = await getActivityDetails(slug);
 
   if (!data) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 

@@ -1,4 +1,4 @@
-import { prisma, shouldBypassDatabase } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 export type SitePricingSettings = {
     serviceChargePercent: number;
@@ -82,7 +82,8 @@ export async function getStoredSitePricingSettings(): Promise<SitePricingSetting
 
     try {
         return (await readSitePricingSettings()) ?? defaultPricingSettings();
-    } catch {
+    } catch (err) {
+        markDatabaseUnavailable(err);
         return defaultPricingSettings();
     }
 }

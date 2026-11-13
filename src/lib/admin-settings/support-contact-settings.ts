@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 // Single source for the business contact details shown on the contact page,
@@ -59,7 +61,8 @@ export function getWhatsappLink(settings: SupportContactSettings): string | null
     return digits.length >= 10 ? `https://wa.me/${digits}` : null;
 }
 
-export async function getStoredSupportContactSettings(): Promise<SupportContactSettings> {
+// Memoized per request: the layout and the page both read it during one render.
+export const getStoredSupportContactSettings = cache(async (): Promise<SupportContactSettings> => {
     if (shouldBypassDatabase()) {
         return defaultSupportContactSettings();
     }
@@ -87,7 +90,7 @@ export async function getStoredSupportContactSettings(): Promise<SupportContactS
         markDatabaseUnavailable(err);
         return defaultSupportContactSettings();
     }
-}
+});
 
 export async function saveStoredSupportContactSettings(
     input: SupportContactSettings,

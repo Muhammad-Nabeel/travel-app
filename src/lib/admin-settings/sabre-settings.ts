@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { decryptString, encryptString } from "@/lib/admin-settings/encryption";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
@@ -108,7 +110,8 @@ export function missingSabreFields(settings: SabreSettings): string[] {
     return SABRE_REQUIRED_FIELDS.filter((field) => settings[field].length === 0);
 }
 
-export async function getStoredSabreSettings(): Promise<SabreSettings> {
+// Memoized per request: the layout and the page both read it during one render.
+export const getStoredSabreSettings = cache(async (): Promise<SabreSettings> => {
     if (shouldBypassDatabase()) {
         return emptySettings();
     }
@@ -130,7 +133,7 @@ export async function getStoredSabreSettings(): Promise<SabreSettings> {
         markDatabaseUnavailable(err);
         return emptySettings();
     }
-}
+});
 
 /** Returns the Sabre settings only when the integration is switched on and complete. */
 export async function getActiveSabreSettings(): Promise<ActiveSabreSettings | null> {

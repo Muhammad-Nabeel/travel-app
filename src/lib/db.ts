@@ -95,3 +95,16 @@ export function markDatabaseUnavailable(error: unknown) {
         );
     }
 }
+
+/**
+ * For a detail page whose lookup came back empty: while the database is
+ * unreachable, "no row" doesn't mean the page is gone. Throwing gives a 500
+ * (the root error.tsx) instead of a 404, so search engines treat it as a
+ * temporary server error and keep the page indexed rather than dropping it.
+ * Call it just before notFound(), and in generateMetadata's not-found branch.
+ */
+export function throwIfDatabaseUnavailable() {
+    if (isDatabaseConfigured() && Date.now() < databaseUnavailableUntil) {
+        throw new Error("[db] Database unavailable; not reporting this page as missing.");
+    }
+}

@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { z } from "zod";
 
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
@@ -226,7 +228,8 @@ export function findVisaSeoIssue(entries: Partial<VisaCountryEntry>[]): string |
     return null;
 }
 
-export async function getStoredVisaCountries(): Promise<VisaCountryEntry[]> {
+// Memoized per request: generateMetadata and the page both read it.
+export const getStoredVisaCountries = cache(async (): Promise<VisaCountryEntry[]> => {
     if (shouldBypassDatabase()) {
         return defaultVisaCountries();
     }
@@ -247,7 +250,7 @@ export async function getStoredVisaCountries(): Promise<VisaCountryEntry[]> {
         markDatabaseUnavailable(err);
         return defaultVisaCountries();
     }
-}
+});
 
 export async function saveStoredVisaCountries(
     input: VisaCountryEntry[],

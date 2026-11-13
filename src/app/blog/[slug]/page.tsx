@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { throwIfDatabaseUnavailable } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, Tag, User } from "lucide-react";
 
@@ -49,6 +50,7 @@ export async function generateMetadata({
   const post = await getPublishedBlogPostBySlug(slug);
 
   if (!post) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Blog Post Not Found",
       description: "The requested blog post could not be found.",
@@ -78,6 +80,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   ]);
 
   if (!post) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 

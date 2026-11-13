@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
 /**
@@ -59,7 +61,8 @@ export function validateErrorTrackingSettings(settings: ErrorTrackingSettings): 
     return null;
 }
 
-export async function getStoredErrorTrackingSettings(): Promise<ErrorTrackingSettings> {
+// Memoized per request: the layout and the page both read it during one render.
+export const getStoredErrorTrackingSettings = cache(async (): Promise<ErrorTrackingSettings> => {
     if (shouldBypassDatabase()) return DISABLED;
 
     try {
@@ -73,7 +76,7 @@ export async function getStoredErrorTrackingSettings(): Promise<ErrorTrackingSet
         markDatabaseUnavailable(err);
         return DISABLED;
     }
-}
+});
 
 /** Settings to report with, or null when tracking is off or incomplete. */
 export async function getActiveErrorTrackingSettings(): Promise<ErrorTrackingSettings | null> {

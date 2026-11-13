@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { decryptString, encryptString } from "@/lib/admin-settings/encryption";
 import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 
@@ -44,7 +46,8 @@ export function validateCaptchaSettings(settings: CaptchaSettings): string | nul
     return null;
 }
 
-export async function getStoredCaptchaSettings(): Promise<CaptchaSettings> {
+// Memoized per request: the layout and the page both read it during one render.
+export const getStoredCaptchaSettings = cache(async (): Promise<CaptchaSettings> => {
     if (shouldBypassDatabase()) return DISABLED;
 
     try {
@@ -62,7 +65,7 @@ export async function getStoredCaptchaSettings(): Promise<CaptchaSettings> {
         markDatabaseUnavailable(err);
         return DISABLED;
     }
-}
+});
 
 /** Settings forms should enforce, or null when protection is off or incomplete. */
 export async function getActiveCaptchaSettings(): Promise<CaptchaSettings | null> {

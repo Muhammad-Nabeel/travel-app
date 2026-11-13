@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import {
   ArrowLeft,
   CalendarClock,
@@ -15,7 +15,7 @@ import {
 import { cache } from "react";
 
 import { getActivityHref } from "@/lib/activity-href";
-import { prisma } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase, throwIfDatabaseUnavailable } from "@/lib/db";
 import { FlightSearchEngine } from "@/components/features/home/flight-search/flight-search";
 import { StructuredData } from "@/components/shared/structured-data";
 import {
@@ -45,31 +45,26 @@ function toStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
+// Same outage handling as the activity page: skip the database while it is
+// known to be down, and report a failed read so the result isn't cached.
 const getDestinationPageData = cache(async (slug: string) => {
-  const destination = await prisma.destination.findFirst({
-    where: {
-      OR: [{ slug }, { id: slug }],
-      isActive: true,
-    },
-  });
-
-  if (!destination) {
+  if (shouldBypassDatabase()) {
     return null;
   }
 
-  let activities: Array<{
-    id: string;
-    slug: string | null;
-    title: string;
-    description: string | null;
-    imageUrl: string;
-    cost: string;
-    reviews: number;
-    reviewCount: number;
-  }> = [];
-
   try {
-    activities = await prisma.activity.findMany({
+    const destination = await prisma.destination.findFirst({
+      where: {
+        OR: [{ slug }, { id: slug }],
+        isActive: true,
+      },
+    });
+
+    if (!destination) {
+      return null;
+    }
+
+    const activities = await prisma.activity.findMany({
       where: { destinationId: destination.id, isActive: true },
       orderBy: { sortOrder: "asc" },
       select: {
@@ -83,11 +78,12 @@ const getDestinationPageData = cache(async (slug: string) => {
         reviewCount: true,
       },
     });
-  } catch {
-    activities = [];
-  }
 
-  return { destination, activities };
+    return { destination, activities };
+  } catch (error) {
+    markDatabaseUnavailable(error);
+    return null;
+  }
 });
 
 // Render each page on its first visit, then serve it from the ISR cache
@@ -103,6 +99,7 @@ export async function generateMetadata({
   const data = await getDestinationPageData(slug);
 
   if (!data) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Destination Not Found",
       description: "The requested destination could not be found.",
@@ -135,10 +132,16 @@ export default async function DestinationDetailsPage({
   const data = await getDestinationPageData(slug);
 
   if (!data) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 
   const { destination, activities } = data;
+
+  // Old /destinations/<id> links move permanently to the slug URL.
+  if (destination.slug?.trim() && destination.slug !== slug) {
+    permanentRedirect(`/destinations/${destination.slug}`);
+  }
 
   const highlights = toStringArray(destination.highlights);
   const travelTips = toStringArray(destination.travelTips);

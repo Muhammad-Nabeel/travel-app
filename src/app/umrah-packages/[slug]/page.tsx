@@ -1,5 +1,6 @@
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
-import { notFound } from "next/navigation";
+import { throwIfDatabaseUnavailable } from "@/lib/db";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
@@ -47,6 +48,9 @@ import {
   configQuery,
   formatPax,
   priceForConfig,
+  toAdults,
+  toChildren,
+  toDuration,
   toStarRating,
 } from "@/lib/umrah-pricing";
 
@@ -121,13 +125,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const pkg = await getPublishedUmrahPackageBySlug(slug);
-  if (!pkg)
+  if (!pkg) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Package not found",
       description: "The requested Umrah package could not be found.",
       path: getUmrahPackagePath(slug),
       noIndex: true,
     });
+  }
 
   return buildMetadata({
     title: pkg.seoTitle,
@@ -153,16 +159,25 @@ export default async function UmrahPackageDetailPage({
     getPublishedUmrahPackageBySlug(slug),
     getPublishedUmrahPackages(),
   ]);
-  if (!pkg) notFound();
+  if (!pkg) {
+    throwIfDatabaseUnavailable();
+    notFound();
+  }
   const packagePath = getUmrahPackagePath(pkg.slug);
 
-  // Config from URL params (set by the configurator card link)
-  const nights = Math.max(1, Number(sp.nights) || 14);
-  const adults = Math.max(1, Number(sp.adults) || 2);
-  const children = Math.max(0, Number(sp.children) || 0);
+  // Config from URL params (set by the configurator card link), bounded the
+  // same way as the listing page so a hand-edited URL can't price 0 or 5,000 nights.
+  const nights = toDuration(sp.nights);
+  const adults = toAdults(sp.adults);
+  const children = toChildren(sp.children);
   const makkahStars = toStarRating(sp.makkahStars);
   const madinahStars = toStarRating(sp.madinahStars);
   const query = configQuery({ nights, adults, childCount: children, makkahStars, madinahStars });
+
+  // The lookup also matches a package id; send those to the one canonical URL.
+  if (slug !== pkg.slug) {
+    permanentRedirect(Object.keys(sp).length > 0 ? `${packagePath}?${query}` : packagePath);
+  }
 
   const pricing = priceForConfig(pkg, nights, adults, children, makkahStars, madinahStars);
   const totalAmount = pricing ? money(pkg, pricing.allPaxTotal) : money(pkg, pkg.basePrice);

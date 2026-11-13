@@ -742,8 +742,31 @@ async function main() {
 
     const destinationCount = await prisma.destination.count();
     if (destinationCount === 0) {
+      // Same slug rules as getUniqueDestinationSlug in src/app/api/destinations,
+      // so seeded pages live at /destinations/<city>, not /destinations/<id>.
+      const usedDestinationSlugs = new Set();
+      const destinationSlug = (city) => {
+        const base =
+          city
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 60) || "destination";
+        let slug = base;
+        for (let n = 2; usedDestinationSlugs.has(slug); n += 1) slug = `${base}-${n}`;
+        usedDestinationSlugs.add(slug);
+        return slug;
+      };
+
       await prisma.destination.createMany({
-        data: DESTINATIONS_SEED.map((d) => ({ ...d, ...destinationSeo(d) })),
+        data: DESTINATIONS_SEED.map((d) => ({
+          ...d,
+          ...destinationSeo(d),
+          slug: destinationSlug(d.city),
+        })),
       });
       console.log("🧭 Seeded destinations");
     }

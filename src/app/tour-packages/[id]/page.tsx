@@ -1,6 +1,7 @@
 import { ViewItemTracker } from "@/components/analytics/view-item-tracker";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { throwIfDatabaseUnavailable } from "@/lib/db";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CalendarDays, MapPin, Star, Tag } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/features/detail/breadcrumbs";
@@ -65,6 +66,7 @@ export async function generateMetadata({
   const pkg = await getActiveTourPackageBySlug(slug);
 
   if (!pkg) {
+    throwIfDatabaseUnavailable();
     return buildMetadata({
       title: "Tour package not found",
       description: "The requested tour package could not be found.",
@@ -93,10 +95,17 @@ export default async function TourPackageDetailsPage({
   ]);
 
   if (!pkg) {
+    throwIfDatabaseUnavailable();
     notFound();
   }
 
   const packagePath = getTourPackagePath(pkg.slug);
+
+  // The lookup also matches a package id; send those to the one canonical URL.
+  if (slug !== pkg.slug) {
+    permanentRedirect(packagePath);
+  }
+
   const fromPrice = `${pkg.currency} ${pkg.pricePerAdult.toLocaleString()}`;
   const related = packages
     .filter((other) => other.id !== pkg.id)

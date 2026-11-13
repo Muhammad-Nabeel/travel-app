@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { prisma } from "@/lib/db";
+import { markDatabaseUnavailable, prisma, shouldBypassDatabase } from "@/lib/db";
 import { createRateLimiter, type RateLimitResult, type RateLimitRule } from "@/lib/rate-limit";
 
 /**
@@ -32,6 +32,10 @@ function sweepExpired() {
 }
 
 export async function hitRateLimit(rule: RateLimitRule, clientKey: string): Promise<RateLimitResult> {
+    // While the database is known to be down, don't make every visitor wait
+    // for a connection timeout before falling back.
+    if (shouldBypassDatabase()) return fallback(rule, clientKey);
+
     const key = bucketKey(rule, clientKey);
 
     try {
@@ -67,6 +71,7 @@ export async function hitRateLimit(rule: RateLimitRule, clientKey: string): Prom
         return { ok: true, remaining: rule.limit - count };
     } catch (error) {
         console.error("[rate-limit] Database limiter unavailable, using in-memory limits:", error);
+        markDatabaseUnavailable(error);
         return fallback(rule, clientKey);
     }
 }
