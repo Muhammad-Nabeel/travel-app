@@ -204,6 +204,7 @@ export function FareCalendarStrip({ query }: FareCalendarStripProps) {
     query.departureDate,
     query.returnDate,
     query.cabinClass,
+    query.currency,
   ]);
 
   if (query.tripType === "multi-city" || !liveFaresEnabled) return null;

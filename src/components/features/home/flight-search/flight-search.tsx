@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -398,7 +398,9 @@ export function FlightSearchEngine({
     setCalendarMonth(startOfMonth(parseISODate(selectedDate)));
   };
 
-  const loadFareCalendar = async (monthStart: Date, signal?: AbortSignal) => {
+  // Stable between renders: the effect below lists it, and a new function on
+  // every render would abort and re-send the fare request in a loop.
+  const loadFareCalendar = useCallback(async (monthStart: Date, signal?: AbortSignal) => {
     const legContext =
       tripType === "multi-city" && calendarField === "multi-city"
         ? multiCityLegs[calendarLegIndex ?? 0]
@@ -478,7 +480,19 @@ export function FlightSearchEngine({
         setCalendarLoading(false);
       }
     }
-  };
+  }, [
+    tripType,
+    calendarField,
+    multiCityLegs,
+    calendarLegIndex,
+    origin,
+    originIata,
+    destination,
+    destinationIata,
+    cabinClass,
+    departureDate,
+    returnDate,
+  ]);
 
   useEffect(() => {
     // With live fares off the calendar is a plain date picker; no fare lookup.
