@@ -113,6 +113,9 @@ model UmrahPackage {
   seoDescription    String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+
+  /// Published packages listed by departure date.
+  @@index([status, startDate])
 }
 
 model FlightSearchLog {
@@ -157,6 +160,8 @@ model Booking {
   updatedAt      DateTime        @updatedAt
   events         BookingEvent[]
 
+  /// Newest-first admin list and dashboard when no filter is set.
+  @@index([createdAt])
   @@index([type, createdAt])
   @@index([status, createdAt])
   @@index([userId, createdAt])
@@ -191,6 +196,8 @@ model Destination {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   activities  Activity[]
+
+  @@index([isActive, sortOrder])
 }
 
 model Activity {
@@ -229,7 +236,9 @@ model Activity {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@index([destinationId])
+  /// A destination's active activities in display order; also covers the foreign key.
+  @@index([destinationId, isActive, sortOrder])
+  @@index([isActive, sortOrder])
 }
 
 model TourPackage {
@@ -278,6 +287,9 @@ model BlogPost {
   sortOrder      Int        @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+
+  /// Published posts, newest first.
+  @@index([status, publishedAt])
 }
 
 model JobOpening {
@@ -368,6 +380,8 @@ model CustomerReview {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([isPublished, sortOrder])
 }
 
 model Branch {
@@ -380,6 +394,8 @@ model Branch {
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }
 /// Request counters for rate-limited public endpoints (src/lib/rate-limit-store.ts).
 /// Shared by every app process; rows expire and are swept automatically.
@@ -407,4 +423,6 @@ model BookingEvent {
   createdAt  DateTime       @default(now())
 
   @@index([bookingId, createdAt])
+  /// Deleting a user sets actorId to null; without this it scans every event.
+  @@index([actorId])
 }
