@@ -15,7 +15,12 @@ import {
   getPublishedUmrahPackages,
   getUmrahPackagePath,
 } from "@/lib/umrah-packages";
-import { toDuration, toStarRating } from "@/lib/umrah-pricing";
+import {
+  toAdults,
+  toChildren,
+  toDuration,
+  toStarRating,
+} from "@/lib/umrah-pricing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const packages = await getPublishedUmrahPackages();
@@ -34,8 +39,8 @@ export default async function UmrahPackagesPage({
   // Restores a configuration carried back from a package page.
   const initial = {
     duration: toDuration(sp.nights),
-    adults: Math.min(20, Math.max(1, Number(sp.adults) || 2)),
-    children: Math.min(12, Math.max(0, Number(sp.children) || 0)),
+    adults: toAdults(sp.adults),
+    children: toChildren(sp.children),
     city: typeof sp.city === "string" ? sp.city : "All",
     makkahStars: toStarRating(sp.makkahStars),
     madinahStars: toStarRating(sp.madinahStars),

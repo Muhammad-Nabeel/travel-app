@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/db";
 import type { ServiceRequestType } from "@/lib/service-requests";
 import { toPackageRow } from "@/lib/umrah-packages";
-import { priceForConfig, toStarRating } from "@/lib/umrah-pricing";
+import {
+    DURATIONS,
+    MAX_ADULTS,
+    MAX_CHILDREN,
+    priceForConfig,
+    toStarRating,
+} from "@/lib/umrah-pricing";
 
 /**
  * The estimate saved on an enquiry is recomputed from the package in the
@@ -15,9 +21,15 @@ export type ServiceRequestPrice =
 
 const MAX_TRAVELLERS = 50;
 
-function toCount(value: unknown, min: number): number | null {
+function toCount(value: unknown, min: number, max = MAX_TRAVELLERS): number | null {
     const n = Number(value);
-    return Number.isInteger(n) && n >= min && n <= MAX_TRAVELLERS ? n : null;
+    return Number.isInteger(n) && n >= min && n <= max ? n : null;
+}
+
+/** Only the stay lengths the package page offers (7, 14, 21 or 28 nights). */
+function toUmrahNights(value: unknown): number | null {
+    const n = Number(value);
+    return (DURATIONS as readonly number[]).includes(n) ? n : null;
 }
 
 export async function priceServiceRequest(
@@ -26,9 +38,11 @@ export async function priceServiceRequest(
 ): Promise<ServiceRequestPrice> {
     if (type === "UMRAH") {
         const packageId = typeof payload.packageId === "string" ? payload.packageId : "";
-        const adults = toCount(payload.adults, 1);
-        const childCount = toCount(payload.childCount ?? 0, 0);
-        const nights = toCount(payload.nights, 1);
+        // Same limits as the package page, so a hand-made request can't save an
+        // estimate for a trip the site never offers.
+        const adults = toCount(payload.adults, 1, MAX_ADULTS);
+        const childCount = toCount(payload.childCount ?? 0, 0, MAX_CHILDREN);
+        const nights = toUmrahNights(payload.nights);
         if (!packageId || adults === null || childCount === null || nights === null) {
             return { ok: false, error: "Please choose your package options again." };
         }

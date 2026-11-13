@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { BookingFormClient } from "@/components/features/booking/booking-form-client";
 import { searchFlights } from "@/lib/flights/search-service";
-import type { FlightOffer } from "@/lib/flights/types";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -17,9 +17,10 @@ export const metadata: Metadata = buildMetadata({
 /**
  * /flights/booking?offerId=<id>&<same search params as /flights>
  *
- * The booking page re-runs the same search (server-side, cached by Next.js
- * fetch de-dup) so it can resolve the selected offer by ID without storing
- * anything client-side across navigations.
+ * The booking page re-runs the same live search so it can resolve the
+ * selected offer by ID without storing anything client-side across
+ * navigations. Offer IDs are derived from the itinerary and price, so a fare
+ * that changed or sold out since the results page is not found here.
  */
 
 type BookingPageProps = {
@@ -55,19 +56,36 @@ export default async function BookingPage({ searchParams }: BookingPageProps) {
     redirect(`/flights?${searchParams.toString()}`);
   }
 
-  let selectedOffer: FlightOffer | undefined;
+  const selectedOffer = offerId
+    ? result.results.find((o) => o.id === offerId)
+    : undefined;
 
-  if (offerId) {
-    selectedOffer = result.results.find((o) => o.id === offerId);
-  }
-
-  // Fall back to first result if ID not found (e.g. page refresh after sort)
+  // Never substitute another offer: the customer would book a flight or
+  // price they did not choose. Send them back to fresh results instead.
   if (!selectedOffer) {
-    selectedOffer = result.results[0];
-  }
-
-  if (!selectedOffer) {
-    notFound();
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchQuery)) {
+      if (value !== undefined) searchParams.set(key, value);
+    }
+    return (
+      <div className="section-shell flex-1 py-10">
+        <div className="alert alert-warning bg-amber-50 text-amber-900">
+          <div>
+            <p className="font-semibold">This fare is no longer available.</p>
+            <p className="mt-1 text-sm">
+              Airline prices and seats change quickly. Please pick a flight
+              from the latest results.
+            </p>
+            <Link
+              href={`/flights?${searchParams.toString()}`}
+              className="btn btn-sm mt-3"
+            >
+              See latest fares
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

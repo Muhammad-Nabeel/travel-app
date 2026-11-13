@@ -28,6 +28,25 @@ export function toDuration(value: unknown, fallback: Duration = 14): Duration {
   return (DURATIONS as readonly number[]).includes(n) ? (n as Duration) : fallback;
 }
 
+export const MAX_ADULTS = 20;
+export const MAX_CHILDREN = 12;
+
+/** A whole traveller count from a URL param, clamped to [min, max]. */
+function toPaxCount(value: unknown, min: number, max: number, fallback: number) {
+  const n = Math.floor(Number(value));
+  // Number("") is 0, so an empty param would otherwise clamp instead of defaulting.
+  if (!Number.isFinite(n) || value === "") return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+export function toAdults(value: unknown) {
+  return toPaxCount(value, 1, MAX_ADULTS, 2);
+}
+
+export function toChildren(value: unknown) {
+  return toPaxCount(value, 0, MAX_CHILDREN, 0);
+}
+
 export function toStarRating(value: unknown): StarRating {
   const n = Number(value);
   return n === 3 || n === 4 || n === 5 ? n : 0;

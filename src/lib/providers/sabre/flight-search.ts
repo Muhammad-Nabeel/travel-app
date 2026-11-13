@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 
 import type { ActiveSabreSettings } from "@/lib/admin-settings/sabre-settings";
 import type {
@@ -411,6 +412,36 @@ function addDays(dateStr: string, days: number): string {
 
 // ── Sabre response → FlightOffer[] ───────────────────────────────────────────
 
+/**
+ * An id built from what the customer is buying (flights, times, booking
+ * classes, price), not from the offer's position in the response. The booking
+ * page re-runs the search and looks the offer up by this id, and Sabre does
+ * not return itineraries in a fixed order, so a positional id could resolve
+ * to a different flight than the one the customer picked.
+ */
+export function stableOfferId(
+    legs: FlightLeg[],
+    price: number,
+    currency: string,
+    seen: Map<string, number>,
+): string {
+    const key = [
+        ...legs.flatMap((leg) =>
+            leg.segments.map((seg) =>
+                [seg.flightNumber, seg.origin, seg.destination, seg.departure, seg.bookingClass ?? "", seg.cabin].join("|"),
+            ),
+        ),
+        price,
+        currency,
+    ].join(";");
+    const base = `sabre-${createHash("sha256").update(key).digest("hex").slice(0, 16)}`;
+    // Identical itineraries at an identical price are interchangeable; the
+    // suffix only keeps React keys unique.
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count + 1}`;
+}
+
 function mapSabreResponseToOffers(data: unknown): FlightOffer[] {
     if (!data || typeof data !== "object") return [];
 
@@ -430,6 +461,7 @@ function mapSabreResponseToOffers(data: unknown): FlightOffer[] {
     );
 
     const offers: FlightOffer[] = [];
+    const seenOfferIds = new Map<string, number>();
 
     for (const group of gir.itineraryGroups ?? []) {
         const legDescriptions = group.groupDescription?.legDescriptions ?? [];
@@ -552,7 +584,7 @@ function mapSabreResponseToOffers(data: unknown): FlightOffer[] {
             const firstSegment = firstLeg.segments[0];
 
             offers.push({
-                id: `sabre-${offers.length + 1}`,
+                id: stableOfferId(legs, price, currency, seenOfferIds),
                 provider: "Sabre",
                 airline: firstSegment.airline,
                 flightNumber: firstSegment.flightNumber,
